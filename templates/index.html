@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+    <meta name="theme-color" content="#0D0D0D">
+    <title>Yuyutermux</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/ui.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    
+    <!-- Fonts: Cyber-Minimalist DNA -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Syntax Highlighter -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+</head>
+<body>
+<main class="paper-container">
+
+
+    <!-- TERMINAL -->
+    <section class="paper-card flex-grow">
+        <div class="panel-header">
+            <h2 class="section-title">TERMINAL OUTPUT</h2>
+            <a href="/docs" class="paper-btn" style="text-decoration:none">[ DOCS ]</a>
+            <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
+        </div>
+        <div id="outputArea" class="terminal-paper"><div class="placeholder">READY FOR COMMANDS_</div></div>
+    </section>
+
+    <!-- EXTRA KEYS (Sekarang di dalam flex flow) -->
+    <section class="extra-keys-paper" id="extraKeysPaper">
+        <div class="keys-row" id="extraKeysRow"></div>
+    </section>
+
+    <!-- INPUT (Sekarang di dalam flex flow) -->
+    <section class="input-paper">
+        <div class="input-line">
+            <span class="prompt">></span>
+            <textarea id="cmdInput" rows="1" placeholder="ENTER COMMAND..." autocomplete="off" spellcheck="false"></textarea>
+            <button id="sendBtn" class="paper-btn primary">[ EXEC ]</button>
+        </div>
+    </section>
+
+</main>
+
+<!-- FILE MANAGER MODAL -->
+<dialog id="fileModal" class="paper-modal">
+    <div class="modal-box" id="modalBox">
+        <header class="modal-header">
+            <h3>FILE MANAGER</h3>
+            <button id="modalCancel" class="paper-btn ghost">[ X ]</button>
+        </header>
+        <div class="breadcrumb" id="currentPathDisplay">/</div>
+        <div class="file-toolbar">
+            <button id="uploadBtn" class="paper-btn small">UPLOAD</button>
+            <input type="file" id="uploadInput" hidden>
+            <button id="refreshFileListBtn" class="paper-btn small">REFRESH</button>
+        </div>
+        <nav id="fileBrowser" class="file-list-paper"></nav>
+   <div class="textarea-container">
+       <div class="editor-wrapper" id="editorWrapper">
+           <div class="line-numbers" id="lineNumbers">1</div>
+           <textarea id="modalContent" class="editor-paper" placeholder="SELECT FILE TO EDIT..." spellcheck="false"></textarea>
+       </div>
+       <div class="editor-actions">
+           <button id="previewBtn" class="paper-btn small">PREVIEW (HIGHLIGHT)</button>
+       </div>
+    </div>
+        <footer class="modal-footer">
+            <button id="modalNewFile" class="paper-btn secondary">[ + NEW ]</button>
+            <button id="modalSave" class="paper-btn primary">[ SAVE ]</button>
+        </footer>
+    </div>
+</dialog>
+
+<!-- PREVIEW MODAL -->
+<dialog id="previewModal" class="paper-modal preview-modal">
+    <div class="modal-box preview-box">
+        <header class="modal-header">
+            <h3>PREVIEW (HIGHLIGHTED)</h3>
+            <button id="previewClose" class="paper-btn ghost">[ X ]</button>
+        </header>
+        <pre><code id="previewCode" class="language-plaintext"></code></pre>
+    </div>
+</dialog>
+
+<!-- PWA INSTALL PROMPT -->
+<div id="pwaInstallPrompt" class="pwa-prompt hidden">
+    <div class="prompt-content">
+        <p>Install Yuyutermux sebagai aplikasi?</p>
+        <div class="prompt-actions">
+            <button id="pwaInstallBtn" class="paper-btn primary">[ INSTALL ]</button>
+            <button id="pwaDismissBtn" class="paper-btn ghost">[ NANTI ]</button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+/* ===== MODAL SLIDE ===== */
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.paper-modal[open] .modal-box {
+    animation: slideUp 0.2s ease;
+}
+
+/* ===== MOBILE OVERRIDES ===== */
+@media (max-width: 640px) {
+    .modal-box { height: calc(90vh - env(keyboard-inset-height, 0px)); max-height: calc(90vh - env(keyboard-inset-height, 0px)); }
+    .textarea-container { height: 150px; min-height: 150px; }
+    .file-toolbar { flex-wrap: wrap; }
+}

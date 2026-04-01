@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#0D0D0D">
+    <meta name="description" content="Yuyutermux — terminal & file manager PWA untuk Termux">
+    <title>Yuyutermux · Docs</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/ui.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .docs-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-height: 100vh;
+        }
+
+        .docs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            background: var(--surface, #1a1a1a);
+            border: 2px solid var(--border, #2e2e2e);
+            padding: 0.875rem 1.25rem;
+            box-shadow: var(--shadow-lg, 0 8px 20px rgba(0,0,0,0.4));
+        }
+
+        .docs-header h1 {
+            font: 700 0.875rem/1.2 'Space Grotesk', monospace;
+            color: var(--accent, #3bc14a);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin: 0;
+        }
+
+        .docs-section {
+            background: var(--surface, #111);
+            border: 2px solid var(--border, #2a2a2a);
+            box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.3));
+            overflow: hidden;
+        }
+
+        .docs-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--dark, #0c0c0c);
+            border-bottom: 2px solid var(--border, #2a2a2a);
+            font: 700 0.75rem/1 'Space Grotesk', monospace;
+            color: var(--accent, #3bc14a);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .docs-section-header::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background: var(--accent, #3bc14a);
+            flex-shrink: 0;
+        }
+
+        .docs-section-header h2 {
+            font: inherit;
+            margin: 0;
+            font-size: 0.75rem;
+        }
+
+        .docs-section-body {
+            padding: 1.25rem;
+            font: 0.8125rem/1.65 'Space Mono', monospace;
+            color: var(--text, #e0e0e0);
+        }
+
+        .tree-box {
+            background: var(--bg, #030303);
+            border: 1px solid var(--border, #2a2a2a);
+            padding: 1rem;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 420px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.55;
+            white-space: pre;
+            color: var(--text2, #bcbcbc);
+        }
+
+        .stat-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            flex: 1;
+            min-width: 100px;
+            background: var(--bg, #080808);
+            border: 1px solid var(--border, #2a2a2a);
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+        }
+
+        .stat-box .num {
+            font: 700 1.75rem/1 'Space Grotesk', monospace;
+            color: var(--accent, #3bc14a);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-box .label {
+            font: 0.625rem/1 'Space Mono', monospace;
+            color: var(--cement, #8b8b8b);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .guide-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dotted var(--border, #2a2a2a);
+        }
+        .guide-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .guide-item h3 {
+            font: 700 0.75rem/1.3 'Space Grotesk', monospace;
+            color: var(--accent, #3bc14a);
+            margin: 0 0 0.5rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .guide-item p {
+            color: var(--text2, #c0c0c0);
+            font-size: 0.75rem;
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        kbd {
+            display: inline-block;
+            background: var(--light, #1e1e1e);
+            border: 1px solid var(--border, #3a3a3a);
+            padding: 0.125rem 0.5rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent, #3bc14a);
+            border-radius: 4px;
+            margin: 0 0.1rem;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .spec-card {
+            background: var(--bg, #0a0a0a);
+            border: 1px solid var(--border, #2a2a2a);
+            padding: 0.9rem;
+        }
+
+        .spec-card h4 {
+            font: 700 0.7rem/1 'Space Grotesk', monospace;
+            color: var(--cement, #b0b0b0);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin: 0 0 0.6rem 0;
+        }
+
+        .spec-card p {
+            color: var(--text, #ddd);
+            font-size: 0.75rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .back-link {
+            text-decoration: none;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            padding: 0.3rem 0.9rem;
+            background: transparent;
+            border: 1px solid var(--border, #3a3a3a);
+            color: var(--text, #ccc);
+            transition: 0.1s;
+        }
+
+        .back-link:hover {
+            background: var(--border, #2e2e2e);
+            color: var(--accent, #3bc14a);
+        }
+
+        @media (max-width: 640px) {
+            .docs-container {
+                padding: 0.75rem;
+                gap: 1rem;
+            }
+            .docs-section-body {
+                padding: 1rem;
+            }
+            .stat-box .num {
+                font-size: 1.4rem;
+            }
+            .spec-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="docs-container">
+
+    <!-- header -->
+    <div class="docs-header">
+        <h1>⌕ YUYUTERMUX · DOCS</h1>
+        <a href="/" class="back-link">← BACK</a>
+    </div>
+
+    <!-- LIVE PROJECT TREE -->
+    <section class="docs-section">
+        <div class="docs-section-header">
+            <h2>📁 live project tree</h2>
+        </div>
+        <div class="docs-section-body">
+            <div class="stat-row">
+                <div class="stat-box">
+                    <span class="num" id="statFolders">—</span>
+                    <span class="label">folders</span>
+                </div>
+                <div class="stat-box">
+                    <span class="num" id="statFiles">—</span>
+                    <span class="label">files</span>
+                </div>
+            </div>
+            <div class="tree-box" id="treeOutput" aria-live="polite">⟳ loading tree...</div>
+        </div>
+    </section>
+
+    <!-- QUICK GUIDE -->
+    <section class="docs-section">
+        <div class="docs-section-header">
+            <h2>⚡ quick guide</h2>
+        </div>
+        <div class="docs-section-body">
+            <div class="guide-item">
+                <h3>▶︎ terminal</h3>
+                <p>Ketik perintah Linux / Termux di input bawah. Tekan <kbd>Ctrl</kbd> + <kbd>Enter</kbd> atau klik tombol <kbd>[ EXEC ]</kbd>. Gunakan <kbd>↑</kbd> / <kbd>↓</kbd> pada extra keys untuk navigasi history.</p>
+            </div>
+            <div class="guide-item">
+                <h3>⌨️ extra keys</h3>
+                <p>Bar simbol di atas terminal: akses cepat <kbd>Tab</kbd> <kbd>|</kbd> <kbd>~</kbd> <kbd>$</kbd> <kbd>></kbd> dll. <kbd>CTRL+C</kbd> untuk menghentikan proses yang berjalan.</p>
+            </div>
+            <div class="guide-item">
+                <h3>📂 file manager</h3>
+                <p>Klik <kbd>[ FILES ]</kbd> di header terminal. Jelajahi folder, klik file untuk edit langsung. Gunakan tombol <kbd>[ SAVE ]</kbd> untuk menyimpan. Upload dari galeri Android / file manager native.</p>
+            </div>
+            <div class="guide-item">
+                <h3>🔍 global search</h3>
+                <p>Di dalam File Manager, klik tombol <kbd>SEARCH</kbd>. Cari teks di seluruh file project. Hasil pencarian bisa langsung membuka file dan scroll ke baris yang cocok.</p>
+            </div>
+            <div class="guide-item">
+                <h3>📲 PWA install</h3>
+                <p>Yuyutermux dapat diinstall sebagai aplikasi Android mandiri. Muncul prompt otomatis, atau pilih “Add to Home Screen” dari menu browser. Berjalan tanpa address bar seperti app native.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section class="docs-section">
+        <div class="docs-section-header">
+            <h2>🛠️ tech stack & architecture</h2>
+        </div>
+        <div class="docs-section-body">
+            <div class="spec-grid">
+                <div class="spec-card">
+                    <h4>backend</h4>
+                    <p>Python 3 + Flask · Waitress WSGI · subprocess isolation · shlex.quote anti-injection</p>
+                </div>
+                <div class="spec-card">
+                    <h4>frontend</h4>
+                    <p>Vanilla ES modules · zero build · Service Worker (PWA) · responsive & offline fallback</p>
+                </div>
+                <div class="spec-card">
+                    <h4>storage</h4>
+                    <p>LocalStorage (history, prefs) · flat file system · no database overhead</p>
+                </div>
+                <div class="spec-card">
+                    <h4>ui / ux</h4>
+                    <p>Cyber-minimalist OLED theme · WeeChat flex layout · highlight.js syntax</p>
+                </div>
+                <div class="spec-card">
+                    <h4>target platform</h4>
+                    <p>Termux on Android · Chrome / Kiwi · low resource & battery efficient</p>
+                </div>
+                <div class="spec-card">
+                    <h4>security</h4>
+                    <p>Path traversal guard · max file size 1MB · command sanitization · CORS-restricted</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    async function loadTree() {
+        const treeEl = document.getElementById('treeOutput');
+        const folderEl = document.getElementById('statFolders');
+        const fileEl = document.getElementById('statFiles');
+
+        if (!treeEl) return;
+        treeEl.textContent = 'Loading...';
+
+        try {
+            const res = await fetch('/api/project/info', { cache: 'no-store' });
+            const data = await res.json();
+
+            if (data.success) {
+                treeEl.textContent = data.tree || 'Empty';
+                if (folderEl) folderEl.textContent = data.folders || 0;
+                if (fileEl) fileEl.textContent = data.files || 0;
+            } else {
+                treeEl.textContent = 'Error: ' + (data.error || 'Unknown');
+            }
+        } catch (e) {
+            treeEl.textContent = 'Failed to connect to server 😍';
+        }
+    }
+
+    loadTree();
+</script>
+
+</body>
+</html>

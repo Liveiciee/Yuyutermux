@@ -1,0 +1,45 @@
+/* ===== CYBER-MINIMALIST OLED THEME ===== */
+:root {
+    --bg: #0D0D0D;
+    --surface: #1A1A1A;
+    --light: #2A2A2A;
+    --dark: #131313;
+    --cement: #474747;
+    --text: #E5E5E5;
+    --text2: #A98A80;
+    --accent: #FF6B35;
+    --accent-dim: #CC5529;
+    --danger: #FF4D4D;
+    --success: #4ADE80;
+    --border: #333333;
+    --mono: 'Space Mono', 'SF Mono', 'Consolas', monospace;
+    --sans: 'Space Grotesk', -apple-system, sans-serif;
+    --shadow: 2px 2px 0 0 rgba(0,0,0,0.4);
+    --shadow-lg: 4px 4px 0 0 rgba(0,0,0,0.6);
+}
+
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+    height: 100%; width: 100%; overflow: auto;
+    background: var(--bg); color: var(--text);
+    font: 14px/1.6 var(--mono);
+    letter-spacing: -0.01em;
+}
+
+/* ===== SCROLLBARS ===== */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--cement); border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ===== UTILITIES ===== */
+.hidden { display: none !important; }
+.reload-toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: var(--bg);
+    padding: 12px 24px; border: 2px solid var(--accent-dim);
+    font: 700 11px/1 var(--sans); text-transform: uppercase; letter-spacing: 0.1em;
+    z-index: 10000; box-shadow: var(--shadow);
+}
