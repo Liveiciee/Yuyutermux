@@ -31,6 +31,7 @@ def get_req_path() -> str:
         return request.args.get('path', '')
     return (request.json or {}).get('path', '')
 
+# ========== BLUEPRINTS ==========
 # ========== REGISTER BLUEPRINTS ==========
 from routes.pages import pages_bp
 from routes.terminal import terminal_bp
