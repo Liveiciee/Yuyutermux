@@ -21,6 +21,7 @@
 | **07** | `Attr Error` | `setpadding` error | Method tidak dikenal di 0.1.6 | Gunakan TextView kosong sebagai spacer |
 | **08** | `Event Error` | `event.get()` error | Event adalah Objek, bukan Dict | Akses via `str(event)` atau `event.type` |
 | 09 | Input Mismatch | Gak bisa ngetik & tombol kaku | Pakai `EditText` & `LinearLayout` Horizontal |
+| 10 | Layout Orientation | `setorientation` gak ada | Pakai sub-LinearLayout & setlinearlayoutparams(weight, w, h) |
 
 ---
 
