@@ -7,7 +7,6 @@ MAX_FILE_SIZE = 1024 * 1024  # 1MB
 
 
 def validate_path(user_path: str) -> str | None:
-    """Resolve path, restrict ke PROJECT_DIR."""
     if not user_path:
         return PROJECT_DIR
     base = user_path if os.path.isabs(user_path) else os.path.join(PROJECT_DIR, user_path)

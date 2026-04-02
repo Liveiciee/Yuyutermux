@@ -5,6 +5,7 @@ from utils import PROJECT_DIR
 from routes.pages import pages_bp
 from routes.terminal import terminal_bp
 from routes.files import files_bp
+from routes.github import github_bp
 
 app = Flask(__name__, static_folder='static')
 
@@ -17,6 +18,7 @@ def health_check():
 app.register_blueprint(pages_bp)
 app.register_blueprint(terminal_bp)
 app.register_blueprint(files_bp)
+app.register_blueprint(github_bp)
 
 
 if __name__ == '__main__':

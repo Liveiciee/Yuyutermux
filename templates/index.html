@@ -53,6 +53,7 @@
             <div class="header-actions">
                 <button id="clearAllBtn" class="paper-btn ghost" title="Clear all">[ CLR ]</button>
                 <a href="/docs" class="paper-btn">[ DOCS ]</a>
+                <button id="gitBtn" class="paper-btn git-header-btn" title="Git / GitHub">[ GIT ]</button>
                 <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
             </div>
         </div>
@@ -111,7 +112,7 @@
 
 </main>
 
-<!-- FILE MANAGER MODAL -->
+<!-- ====== FILE MANAGER MODAL ====== -->
 <dialog id="fileModal" class="paper-modal" aria-labelledby="fileModalTitle">
     <div class="modal-box" id="modalBox">
         <header class="modal-header">
@@ -162,7 +163,7 @@
     </div>
 </dialog>
 
-<!-- PREVIEW MODAL -->
+<!-- ====== PREVIEW MODAL ====== -->
 <dialog id="previewModal" class="paper-modal preview-modal" aria-labelledby="previewModalTitle">
     <div class="modal-box preview-box">
         <header class="modal-header">
@@ -170,6 +171,104 @@
             <button id="previewClose" class="paper-btn ghost">&times;</button>
         </header>
         <pre><code id="previewCode" class="language-plaintext"></code></pre>
+    </div>
+</dialog>
+
+<!-- ====== GIT MODAL ====== -->
+<dialog id="gitModal" class="paper-modal git-modal" aria-label="Git Panel">
+    <div class="modal-box git-box">
+
+        <!-- Header -->
+        <header class="modal-header git-modal-header">
+            <div class="git-header-left">
+                <span class="git-icon">⎇</span>
+                <h3>GIT</h3>
+                <span class="git-branch-badge" id="gitBranchBadge">—</span>
+                <span class="git-sync-badge hidden" id="gitSyncBadge"></span>
+            </div>
+            <div class="git-header-right">
+                <button id="gitRefreshBtn" class="paper-btn small ghost" title="Refresh">↺</button>
+                <button id="gitCloseBtn" class="paper-btn ghost">&times;</button>
+            </div>
+        </header>
+
+        <!-- Tab bar -->
+        <nav class="git-tabs">
+            <button class="git-tab active" data-tab="status">STATUS</button>
+            <button class="git-tab" data-tab="commit">COMMIT</button>
+            <button class="git-tab" data-tab="sync">SYNC</button>
+            <button class="git-tab" data-tab="log">LOG</button>
+            <button class="git-tab" data-tab="branches">BRANCHES</button>
+            <button class="git-tab" data-tab="config">CONFIG</button>
+        </nav>
+
+        <!-- Tab: STATUS -->
+        <div class="git-tab-pane" data-tab="status" id="gitStatusPane">
+            <div class="git-loading">Loading status...</div>
+        </div>
+
+        <!-- Tab: COMMIT -->
+        <div class="git-tab-pane hidden" data-tab="commit">
+            <div class="git-commit-area">
+                <div class="git-section-label">COMMIT MESSAGE</div>
+                <textarea id="gitCommitMsg" class="git-msg-input" placeholder="feat: describe your change...&#10;&#10;Ctrl+Enter to commit" rows="4"></textarea>
+                <div class="git-commit-hint" id="gitCommitHint">No files staged</div>
+                <div class="git-commit-actions">
+                    <button id="gitStageAllBtn" class="paper-btn secondary">STAGE ALL</button>
+                    <button id="gitCommitBtn" class="paper-btn primary">COMMIT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: SYNC -->
+        <div class="git-tab-pane hidden" data-tab="sync">
+            <div class="git-sync-area">
+                <div class="git-section-label">REMOTE</div>
+                <select id="gitRemoteSelect" class="git-select">
+                    <option value="origin">origin</option>
+                </select>
+                <div class="git-sync-buttons">
+                    <button id="gitPullBtn" class="paper-btn">PULL ↓</button>
+                    <button id="gitFetchBtn" class="paper-btn">FETCH</button>
+                    <button id="gitPushBtn" class="paper-btn primary">PUSH ↑</button>
+                </div>
+                <div class="git-sync-hint">
+                    Push requires a remote to be configured in CONFIG tab.<br>
+                    For GitHub, use HTTPS + Personal Access Token in the URL:<br>
+                    <code>https://&lt;token&gt;@github.com/user/repo.git</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: LOG -->
+        <div class="git-tab-pane hidden" data-tab="log" id="gitLogPane">
+            <div class="git-loading">Loading...</div>
+        </div>
+
+        <!-- Tab: BRANCHES -->
+        <div class="git-tab-pane hidden" data-tab="branches" id="gitBranchPane">
+            <div class="git-loading">Loading...</div>
+        </div>
+
+        <!-- Tab: CONFIG -->
+        <div class="git-tab-pane hidden" data-tab="config">
+            <div class="git-config-area">
+                <div class="git-section-label">IDENTITY (global)</div>
+                <input id="gitConfigName" class="git-input" type="text" placeholder="Your name">
+                <input id="gitConfigEmail" class="git-input" type="email" placeholder="your@email.com">
+                <button id="gitSaveConfigBtn" class="paper-btn primary" style="margin-top:8px">SAVE IDENTITY</button>
+
+                <div class="git-section-label" style="margin-top:20px">REMOTE</div>
+                <input id="gitRemoteName" class="git-input" type="text" placeholder="Remote name (default: origin)" value="origin">
+                <input id="gitRemoteUrl" class="git-input" type="text" placeholder="https://github.com/user/repo.git">
+                <div class="git-config-hint">
+                    For GitHub auth, embed your PAT:<br>
+                    <code>https://TOKEN@github.com/user/repo.git</code>
+                </div>
+                <button id="gitSaveRemoteBtn" class="paper-btn primary" style="margin-top:8px">SAVE REMOTE</button>
+            </div>
+        </div>
+
     </div>
 </dialog>
 
