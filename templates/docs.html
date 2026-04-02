@@ -2,155 +2,148 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="theme-color" content="#0D0D0D">
-    <meta name="description" content="Yuyutermux — terminal & file manager PWA untuk Termux">
-    <title>Yuyutermux · Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d0d0d">
+    <meta name="description" content="Yuyutermux Documentation">
+    <title>Yuyutermux · Documentation</title>
+    
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="/static/css/ui.css">
-    <link rel="stylesheet" href="/static/css/animations.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        .docs-container {
-            max-width: 960px;
+        :root {
+            --docs-max-width: 960px;
+            --docs-gap: 1.25rem;
+            --section-padding: 1.25rem;
+        }
+
+        .docs-layout {
+            max-width: var(--docs-max-width);
             margin: 0 auto;
-            padding: 1rem;
+            padding: var(--docs-gap);
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: var(--docs-gap);
             min-height: 100vh;
         }
 
-        .docs-header {
+        .docs-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            background: var(--surface, #1a1a1a);
-            border: 2px solid var(--border, #2e2e2e);
             padding: 0.875rem 1.25rem;
-            box-shadow: var(--shadow-lg, 0 8px 20px rgba(0,0,0,0.4));
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
         }
 
-        .docs-header h1 {
-            font: 700 0.875rem/1.2 'Space Grotesk', monospace;
-            color: var(--accent, #3bc14a);
+        .docs-title {
+            font: 700 0.875rem/1.2 var(--sans);
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 0.12em;
             margin: 0;
         }
 
         .docs-section {
-            background: var(--surface, #111);
-            border: 2px solid var(--border, #2a2a2a);
-            box-shadow: var(--shadow, 0 4px 12px rgba(0,0,0,0.3));
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             overflow: hidden;
         }
 
-        .docs-section-header {
+        .docs-header {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1.25rem;
-            background: var(--dark, #0c0c0c);
-            border-bottom: 2px solid var(--border, #2a2a2a);
-            font: 700 0.75rem/1 'Space Grotesk', monospace;
-            color: var(--accent, #3bc14a);
+            background: var(--dark);
+            border-bottom: 1px solid var(--border);
+            font: 700 0.75rem/1 var(--sans);
+            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 0.1em;
         }
 
-        .docs-section-header::before {
+        .docs-header::before {
             content: '';
-            display: inline-block;
             width: 4px;
             height: 14px;
-            background: var(--accent, #3bc14a);
-            flex-shrink: 0;
+            background: var(--accent);
         }
 
-        .docs-section-header h2 {
-            font: inherit;
-            margin: 0;
-            font-size: 0.75rem;
+        .docs-body {
+            padding: var(--section-padding);
+            font: 0.8125rem/1.65 var(--mono);
         }
 
-        .docs-section-body {
-            padding: 1.25rem;
-            font: 0.8125rem/1.65 'Space Mono', monospace;
-            color: var(--text, #e0e0e0);
-        }
-
-        .tree-box {
-            background: var(--bg, #030303);
-            border: 1px solid var(--border, #2a2a2a);
-            padding: 1rem;
-            overflow-x: auto;
-            overflow-y: auto;
-            max-height: 420px;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
-            line-height: 1.55;
-            white-space: pre;
-            color: var(--text2, #bcbcbc);
-        }
-
-        .stat-row {
-            display: flex;
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 1rem;
             margin-bottom: 1.25rem;
-            flex-wrap: wrap;
         }
 
-        .stat-box {
-            flex: 1;
-            min-width: 100px;
-            background: var(--bg, #080808);
-            border: 1px solid var(--border, #2a2a2a);
-            padding: 0.75rem 0.5rem;
+        .stat-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.75rem;
             text-align: center;
         }
 
-        .stat-box .num {
-            font: 700 1.75rem/1 'Space Grotesk', monospace;
-            color: var(--accent, #3bc14a);
+        .stat-value {
+            font: 700 1.75rem/1 var(--sans);
+            color: var(--accent);
             display: block;
-            margin-bottom: 0.25rem;
         }
 
-        .stat-box .label {
-            font: 0.625rem/1 'Space Mono', monospace;
-            color: var(--cement, #8b8b8b);
+        .stat-label {
+            font: 0.625rem/1 var(--mono);
+            color: var(--cement);
             text-transform: uppercase;
             letter-spacing: 0.08em;
+            margin-top: 0.25rem;
+        }
+
+        .tree-view {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            overflow: auto;
+            max-height: 420px;
+            font: 0.75rem/1.55 var(--mono);
+            white-space: pre;
+            color: var(--text2);
+        }
+
+        .guide-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .guide-item {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px dotted var(--border, #2a2a2a);
+            padding-bottom: 1.5rem;
+            border-bottom: 1px dotted var(--border);
         }
+
         .guide-item:last-child {
-            margin-bottom: 0;
             padding-bottom: 0;
             border-bottom: none;
         }
 
         .guide-item h3 {
-            font: 700 0.75rem/1.3 'Space Grotesk', monospace;
-            color: var(--accent, #3bc14a);
-            margin: 0 0 0.5rem 0;
+            font: 700 0.75rem/1.3 var(--sans);
+            color: var(--accent);
+            margin: 0 0 0.5rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
         }
 
         .guide-item p {
-            color: var(--text2, #c0c0c0);
+            color: var(--text2);
             font-size: 0.75rem;
             line-height: 1.65;
             margin: 0;
@@ -158,13 +151,13 @@
 
         kbd {
             display: inline-block;
-            background: var(--light, #1e1e1e);
-            border: 1px solid var(--border, #3a3a3a);
+            background: var(--light);
+            border: 1px solid var(--border);
             padding: 0.125rem 0.5rem;
-            font-family: 'Space Mono', monospace;
+            font-family: var(--mono);
             font-size: 0.7rem;
             font-weight: 600;
-            color: var(--accent, #3bc14a);
+            color: var(--accent);
             border-radius: 4px;
             margin: 0 0.1rem;
         }
@@ -175,54 +168,53 @@
             gap: 1rem;
         }
 
-        .spec-card {
-            background: var(--bg, #0a0a0a);
-            border: 1px solid var(--border, #2a2a2a);
+        .spec-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
             padding: 0.9rem;
         }
 
-        .spec-card h4 {
-            font: 700 0.7rem/1 'Space Grotesk', monospace;
-            color: var(--cement, #b0b0b0);
+        .spec-item h4 {
+            font: 700 0.7rem/1 var(--sans);
+            color: var(--cement);
             text-transform: uppercase;
             letter-spacing: 0.12em;
-            margin: 0 0 0.6rem 0;
+            margin: 0 0 0.6rem;
         }
 
-        .spec-card p {
-            color: var(--text, #ddd);
+        .spec-item p {
+            color: var(--text);
             font-size: 0.75rem;
             line-height: 1.5;
             margin: 0;
         }
 
-        .back-link {
+        .nav-link {
             text-decoration: none;
-            font-family: 'Space Mono', monospace;
+            font-family: var(--mono);
             font-size: 0.7rem;
             padding: 0.3rem 0.9rem;
             background: transparent;
-            border: 1px solid var(--border, #3a3a3a);
-            color: var(--text, #ccc);
+            border: 1px solid var(--border);
+            color: var(--text);
             transition: 0.1s;
         }
 
-        .back-link:hover {
-            background: var(--border, #2e2e2e);
-            color: var(--accent, #3bc14a);
+        .nav-link:hover {
+            background: var(--border);
+            color: var(--accent);
         }
 
         @media (max-width: 640px) {
-            .docs-container {
-                padding: 0.75rem;
-                gap: 1rem;
+            :root {
+                --docs-gap: 0.75rem;
+                --section-padding: 1rem;
             }
-            .docs-section-body {
-                padding: 1rem;
-            }
-            .stat-box .num {
+
+            .stat-value {
                 font-size: 1.4rem;
             }
+
             .spec-grid {
                 grid-template-columns: 1fr;
             }
@@ -231,126 +223,152 @@
 </head>
 <body>
 
-<div class="docs-container">
+<div class="docs-layout">
+    <nav class="docs-nav">
+        <h1 class="docs-title">⌕ Yuyutermux Documentation</h1>
+        <a href="/" class="nav-link">← Back</a>
+    </nav>
 
-    <!-- header -->
-    <div class="docs-header">
-        <h1>⌕ YUYUTERMUX · DOCS</h1>
-        <a href="/" class="back-link">← BACK</a>
-    </div>
-
-    <!-- LIVE PROJECT TREE -->
-    <section class="docs-section">
-        <div class="docs-section-header">
-            <h2>📁 live project tree</h2>
+    <section class="docs-section" aria-labelledby="tree-heading">
+        <div class="docs-header">
+            <h2 id="tree-heading">Project Structure</h2>
         </div>
-        <div class="docs-section-body">
-            <div class="stat-row">
-                <div class="stat-box">
-                    <span class="num" id="statFolders">—</span>
-                    <span class="label">folders</span>
+        <div class="docs-body">
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <span class="stat-value" id="folderCount">—</span>
+                    <span class="stat-label">Folders</span>
                 </div>
-                <div class="stat-box">
-                    <span class="num" id="statFiles">—</span>
-                    <span class="label">files</span>
+                <div class="stat-card">
+                    <span class="stat-value" id="fileCount">—</span>
+                    <span class="stat-label">Files</span>
                 </div>
             </div>
-            <div class="tree-box" id="treeOutput" aria-live="polite">⟳ loading tree...</div>
+            <pre class="tree-view" id="treeOutput" aria-live="polite">Loading tree...</pre>
         </div>
     </section>
 
-    <!-- QUICK GUIDE -->
-    <section class="docs-section">
-        <div class="docs-section-header">
-            <h2>⚡ quick guide</h2>
+    <section class="docs-section" aria-labelledby="guide-heading">
+        <div class="docs-header">
+            <h2 id="guide-heading">Quick Guide</h2>
         </div>
-        <div class="docs-section-body">
-            <div class="guide-item">
-                <h3>▶︎ terminal</h3>
-                <p>Ketik perintah Linux / Termux di input bawah. Tekan <kbd>Ctrl</kbd> + <kbd>Enter</kbd> atau klik tombol <kbd>[ EXEC ]</kbd>. Gunakan <kbd>↑</kbd> / <kbd>↓</kbd> pada extra keys untuk navigasi history.</p>
-            </div>
-            <div class="guide-item">
-                <h3>⌨️ extra keys</h3>
-                <p>Bar simbol di atas terminal: akses cepat <kbd>Tab</kbd> <kbd>|</kbd> <kbd>~</kbd> <kbd>$</kbd> <kbd>></kbd> dll. <kbd>CTRL+C</kbd> untuk menghentikan proses yang berjalan.</p>
-            </div>
-            <div class="guide-item">
-                <h3>📂 file manager</h3>
-                <p>Klik <kbd>[ FILES ]</kbd> di header terminal. Jelajahi folder, klik file untuk edit langsung. Gunakan tombol <kbd>[ SAVE ]</kbd> untuk menyimpan. Upload dari galeri Android / file manager native.</p>
-            </div>
-            <div class="guide-item">
-                <h3>🔍 global search</h3>
-                <p>Di dalam File Manager, klik tombol <kbd>SEARCH</kbd>. Cari teks di seluruh file project. Hasil pencarian bisa langsung membuka file dan scroll ke baris yang cocok.</p>
-            </div>
-            <div class="guide-item">
-                <h3>📲 PWA install</h3>
-                <p>Yuyutermux dapat diinstall sebagai aplikasi Android mandiri. Muncul prompt otomatis, atau pilih “Add to Home Screen” dari menu browser. Berjalan tanpa address bar seperti app native.</p>
+        <div class="docs-body">
+            <div class="guide-list">
+                <article class="guide-item">
+                    <h3>Terminal</h3>
+                    <p>Type Linux/Termux commands in the input field. Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or click <kbd>[EXEC]</kbd>. Use <kbd>↑</kbd>/<kbd>↓</kbd> keys for history navigation.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Extra Keys</h3>
+                    <p>Symbol bar above terminal provides quick access to <kbd>Tab</kbd>, <kbd>|</kbd>, <kbd>~</kbd>, <kbd>$</kbd>, <kbd>></kbd>. <kbd>CTRL+C</kbd> stops running processes.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>File Manager</h3>
+                    <p>Click <kbd>[FILES]</kbd> in header. Browse folders, click files to edit. Use <kbd>[SAVE]</kbd> to save changes. Upload from Android gallery or native file manager.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Global Search</h3>
+                    <p>In File Manager, click <kbd>SEARCH</kbd>. Search text across all project files. Results open files directly to matched lines.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>PWA Install</h3>
+                    <p>Install as standalone Android app. Automatic prompt appears, or use "Add to Home Screen" from browser menu. Runs without address bar like native app.</p>
+                </article>
             </div>
         </div>
     </section>
 
-    <!-- TECH STACK -->
-    <section class="docs-section">
-        <div class="docs-section-header">
-            <h2>🛠️ tech stack & architecture</h2>
+    <section class="docs-section" aria-labelledby="stack-heading">
+        <div class="docs-header">
+            <h2 id="stack-heading">Tech Stack</h2>
         </div>
-        <div class="docs-section-body">
+        <div class="docs-body">
             <div class="spec-grid">
-                <div class="spec-card">
-                    <h4>backend</h4>
+                <div class="spec-item">
+                    <h4>Backend</h4>
                     <p>Python 3 + Flask · Waitress WSGI · subprocess isolation · shlex.quote anti-injection</p>
                 </div>
-                <div class="spec-card">
-                    <h4>frontend</h4>
-                    <p>Vanilla ES modules · zero build · Service Worker (PWA) · responsive & offline fallback</p>
+                <div class="spec-item">
+                    <h4>Frontend</h4>
+                    <p>Vanilla ES modules · Zero build step · Service Worker (PWA) · Responsive design</p>
                 </div>
-                <div class="spec-card">
-                    <h4>storage</h4>
-                    <p>LocalStorage (history, prefs) · flat file system · no database overhead</p>
+                <div class="spec-item">
+                    <h4>Storage</h4>
+                    <p>LocalStorage (history, preferences) · Flat file system · No database overhead</p>
                 </div>
-                <div class="spec-card">
-                    <h4>ui / ux</h4>
+                <div class="spec-item">
+                    <h4>UI/UX</h4>
                     <p>Cyber-minimalist OLED theme · WeeChat flex layout · highlight.js syntax</p>
                 </div>
-                <div class="spec-card">
-                    <h4>target platform</h4>
-                    <p>Termux on Android · Chrome / Kiwi · low resource & battery efficient</p>
+                <div class="spec-item">
+                    <h4>Platform</h4>
+                    <p>Termux on Android · Chrome/Kiwi Browser · Low resource & battery efficient</p>
                 </div>
-                <div class="spec-card">
-                    <h4>security</h4>
-                    <p>Path traversal guard · max file size 1MB · command sanitization · CORS-restricted</p>
+                <div class="spec-item">
+                    <h4>Security</h4>
+                    <p>Path traversal guard · Max file size 1MB · Command sanitization · CORS-restricted</p>
                 </div>
             </div>
         </div>
     </section>
-
 </div>
 
-<script>
-    async function loadTree() {
-        const treeEl = document.getElementById('treeOutput');
-        const folderEl = document.getElementById('statFolders');
-        const fileEl = document.getElementById('statFiles');
-
-        if (!treeEl) return;
-        treeEl.textContent = 'Loading...';
-
-        try {
-            const res = await fetch('/api/project/info', { cache: 'no-store' });
-            const data = await res.json();
-
-            if (data.success) {
-                treeEl.textContent = data.tree || 'Empty';
-                if (folderEl) folderEl.textContent = data.folders || 0;
-                if (fileEl) fileEl.textContent = data.files || 0;
-            } else {
-                treeEl.textContent = 'Error: ' + (data.error || 'Unknown');
+<script type="module">
+    const API = {
+        async fetchTree() {
+            try {
+                const res = await fetch('/api/project/info', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.json();
+            } catch (err) {
+                throw new Error('Failed to connect to server');
             }
-        } catch (e) {
-            treeEl.textContent = 'Failed to connect to server 😍';
+        }
+    };
+
+    const UI = {
+        elements: {
+            tree: document.getElementById('treeOutput'),
+            folders: document.getElementById('folderCount'),
+            files: document.getElementById('fileCount')
+        },
+
+        updateStats(folders, files) {
+            if (this.elements.folders) this.elements.folders.textContent = folders;
+            if (this.elements.files) this.elements.files.textContent = files;
+        },
+
+        renderTree(tree) {
+            if (!this.elements.tree) return;
+            this.elements.tree.textContent = tree || 'No tree data available';
+        },
+
+        showError(message) {
+            if (!this.elements.tree) return;
+            this.elements.tree.textContent = `Error: ${message}`;
+        }
+    };
+
+    async function init() {
+        try {
+            const data = await API.fetchTree();
+            
+            if (data.success) {
+                UI.renderTree(data.tree);
+                UI.updateStats(data.folders, data.files);
+            } else {
+                UI.showError(data.error || 'Unknown error');
+            }
+        } catch (err) {
+            UI.showError(err.message);
         }
     }
 
-    loadTree();
+    init();
 </script>
 
 </body>
