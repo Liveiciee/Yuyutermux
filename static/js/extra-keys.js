@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { Terminal } from './terminal.js';
+import { Toast } from './terminal.js';
 
 export const ExtraKeys = {
     defaults: [
@@ -43,8 +44,11 @@ export const ExtraKeys = {
             input.selectionStart = input.selectionEnd = start + key.value.length;
             input.dispatchEvent(new Event('input'));
         } else if (key.type === 'action') {
-            if (key.action === 'clear') { input.value = ''; input.style.height = '24px'; }
-            else if (key.action === 'kill') api.post('/api/execute/kill');
+            if (key.action === 'clear') { input.value = ''; input.style.height = '22px'; document.getElementById('inputCharCount').textContent = '0 chars'; }
+            else if (key.action === 'kill') {
+                api.post('/api/execute/kill');
+                Toast.show('Kill signal sent', 'warning');
+            }
             else if (key.action === 'up') Terminal.navUp();
             else if (key.action === 'down') Terminal.navDown();
         }

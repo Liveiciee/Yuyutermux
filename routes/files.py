@@ -16,21 +16,32 @@ def api_files_list():
             try:
                 s = e.stat()
                 is_dir = e.is_dir()
+                # Human-readable file size
+                size_str = "-"
+                if not is_dir:
+                    sz = s.st_size
+                    if sz < 1024:
+                        size_str = f"{sz} B"
+                    elif sz < 1024 * 1024:
+                        size_str = f"{sz/1024:.1f}K"
+                    else:
+                        size_str = f"{sz/1024/1024:.1f}M"
+
                 items.append({
                     "name": e.name, "path": e.path,
                     "type": "directory" if is_dir else "file",
-                    "size": "-" if is_dir else f"{s.st_size} B",
+                    "size": size_str,
                     "modified": datetime.datetime.fromtimestamp(s.st_mtime).isoformat()
                 })
             except PermissionError:
                 continue
 
         items.sort(key=lambda x: (x['type'] != 'directory', x['name'].lower()))
-        
+
         if path == PROJECT_DIR:
-            display = '/Yuyutermux'
+            display = '~/Yuyutermux'
         else:
-            display = '/Yuyutermux/' + path.replace(PROJECT_DIR, '').lstrip('/')
+            display = '~/Yuyutermux/' + path.replace(PROJECT_DIR, '').lstrip('/')
 
         return json_ok(current_path=display, items=items)
     except Exception as e:
@@ -115,18 +126,18 @@ def search_files():
     folder = validate_path(request.args.get('folder', ''))
     case_sensitive = request.args.get('case', '0') == '1'
     use_regex = request.args.get('regex', '0') == '1'
-    
-    flags = ['-rn', '--include=*.py', '--include=*.js', '--include=*.html',
-             '--include=*.css', '--include=*.json', '--include=*.md',
-             '--include=*.txt', '--include=*.sh', '--include=*.yaml',
-             '--include=*.yml', '--include=*.toml', '--include=*.cfg',
-             '--exclude-dir=node_modules', '--exclude-dir=.git',
+
+    flags = ['-rn', '--include=*.py', '--include=*.js', '--include=*.ts',
+             '--include=*.html', '--include=*.css', '--include=*.json',
+             '--include=*.md', '--include=*.txt', '--include=*.sh',
+             '--include=*.yaml', '--include=*.yml', '--include=*.toml',
+             '--include=*.cfg', '--exclude-dir=node_modules', '--exclude-dir=.git',
              '--exclude-dir=__pycache__', '--exclude-dir=dist']
     if not case_sensitive: flags.append('-i')
-    
+
     pattern = q if use_regex else re.escape(q)
     cmd = f"grep {' '.join(flags)} -- {shlex.quote(pattern)} {shlex.quote(folder)} 2>/dev/null | head -300"
-    
+
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
         raw = result.stdout
@@ -134,7 +145,7 @@ def search_files():
         return json_err("Search timeout", 408)
     except Exception as e:
         return json_err(str(e))
-    
+
     file_map = {}
     for line in raw.split('\n'):
         if not line.strip(): continue
@@ -144,7 +155,7 @@ def search_files():
         rel = filepath[len(folder):].lstrip('/') if filepath.startswith(folder) else filepath
         if rel not in file_map: file_map[rel] = []
         file_map[rel].append({"line": int(lineno), "text": text.strip()})
-    
+
     results = sorted(
         [{"file": f, "matches": m} for f, m in file_map.items()],
         key=lambda x: len(x['matches']), reverse=True

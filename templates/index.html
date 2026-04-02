@@ -5,89 +5,169 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
     <meta name="theme-color" content="#0D0D0D">
     <title>Yuyutermux</title>
+    <link rel="icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="/static/css/ui.css">
-    <link rel="stylesheet" href="/static/css/animations.css">
-    
+    <link rel="stylesheet" href="/static/css/animation.css">
+
     <!-- Fonts: Cyber-Minimalist DNA -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <!-- Syntax Highlighter -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
 </head>
 <body>
-<main class="paper-container">
 
+<!-- ====== SPLASH SCREEN ====== -->
+<div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+        <div class="splash-logo">
+            <div class="splash-cursor"></div>
+            <span class="splash-text">yuyu<span class="splash-accent">termux</span></span>
+        </div>
+        <div class="splash-bar">
+            <div class="splash-bar-fill"></div>
+        </div>
+        <div class="splash-status">Initializing environment...</div>
+    </div>
+</div>
+
+<!-- ====== TOAST CONTAINER ====== -->
+<div id="toastContainer" class="toast-container"></div>
+
+<main class="paper-container">
 
     <!-- TERMINAL -->
     <section class="paper-card flex-grow">
         <div class="panel-header">
-            <h2 class="section-title">TERMINAL OUTPUT</h2>
-            <a href="/docs" class="paper-btn" style="text-decoration:none">[ DOCS ]</a>
-            <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
+            <div class="header-left">
+                <div class="header-dot red"></div>
+                <div class="header-dot yellow"></div>
+                <div class="header-dot green"></div>
+                <h2 class="section-title">TERMINAL</h2>
+            </div>
+            <div class="header-actions">
+                <button id="clearAllBtn" class="paper-btn ghost" title="Clear all">[ CLR ]</button>
+                <a href="/docs" class="paper-btn">[ DOCS ]</a>
+                <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
+            </div>
         </div>
-        <div id="outputArea" class="terminal-paper"><div class="placeholder">READY FOR COMMANDS_</div></div>
+        <div id="outputArea" class="terminal-paper">
+            <div class="placeholder">
+                <div class="placeholder-icon">
+                    <span class="placeholder-cursor">&gt;_</span>
+                </div>
+                <div class="placeholder-text">READY FOR COMMANDS</div>
+                <div class="placeholder-hint">Ctrl+Enter to execute &middot; Extra keys below</div>
+            </div>
+        </div>
     </section>
 
-    <!-- EXTRA KEYS (Sekarang di dalam flex flow) -->
+    <!-- STATUS BAR (Claude Code style) -->
+    <div class="status-bar" id="statusBar">
+        <div class="status-left">
+            <span class="status-dot connected" id="statusDot"></span>
+            <span id="statusConnection">CONNECTED</span>
+        </div>
+        <div class="status-center">
+            <span id="statusDir">~/Yuyutermux</span>
+        </div>
+        <div class="status-right">
+            <span id="statusCmdCount">0 cmds</span>
+            <span class="status-sep">&middot;</span>
+            <span id="statusTime">00:00</span>
+        </div>
+    </div>
+
+    <!-- EXTRA KEYS -->
     <section class="extra-keys-paper" id="extraKeysPaper">
         <div class="keys-row" id="extraKeysRow"></div>
     </section>
 
-    <!-- INPUT (Sekarang di dalam flex flow) -->
-    <section class="input-paper">
+    <!-- INPUT -->
+    <section class="input-paper" id="inputPaper">
         <div class="input-line">
-            <span class="prompt">></span>
-            <textarea id="cmdInput" rows="1" placeholder="ENTER COMMAND..." autocomplete="off" spellcheck="false"></textarea>
-            <button id="sendBtn" class="paper-btn primary">[ EXEC ]</button>
+            <div class="input-context" id="inputContext">
+                <span class="prompt-prefix">$</span>
+            </div>
+            <div class="input-wrapper">
+                <textarea id="cmdInput" rows="1" placeholder="Enter command..." autocomplete="off" spellcheck="false"></textarea>
+                <!-- Command Suggestions Dropdown -->
+                <div class="suggestions-dropdown hidden" id="suggestionsDropdown"></div>
+            </div>
+            <button id="sendBtn" class="send-btn" title="Execute (Ctrl+Enter)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+        <div class="input-meta">
+            <span id="inputCharCount">0 chars</span>
+            <span id="inputModeHint">Ctrl+Enter to send</span>
         </div>
     </section>
 
 </main>
 
 <!-- FILE MANAGER MODAL -->
-<dialog id="fileModal" class="paper-modal">
+<dialog id="fileModal" class="paper-modal" aria-labelledby="fileModalTitle">
     <div class="modal-box" id="modalBox">
         <header class="modal-header">
-            <h3>FILE MANAGER</h3>
-            <button id="modalCancel" class="paper-btn ghost">[ X ]</button>
+            <h3 id="fileModalTitle"><span class="modal-icon">&#9776;</span> FILE MANAGER</h3>
+            <button id="modalCancel" class="paper-btn ghost">&times;</button>
         </header>
-        <div class="breadcrumb" id="currentPathDisplay">/</div>
+        <div class="breadcrumb" id="currentPathDisplay">~/Yuyutermux</div>
         <div class="file-toolbar">
-            <button id="uploadBtn" class="paper-btn small">UPLOAD</button>
+            <button id="uploadBtn" class="paper-btn small">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                UPLOAD
+            </button>
             <input type="file" id="uploadInput" hidden>
-            <button id="refreshFileListBtn" class="paper-btn small">REFRESH</button>
+            <button id="refreshFileListBtn" class="paper-btn small">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
+                REFRESH
+            </button>
+            <div class="spacer"></div>
+            <button id="btn-global-search" class="paper-btn small accent">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                SEARCH
+            </button>
         </div>
-        <nav id="fileBrowser" class="file-list-paper"></nav>
-   <div class="textarea-container">
-       <div class="editor-wrapper" id="editorWrapper">
-           <div class="line-numbers" id="lineNumbers">1</div>
-           <textarea id="modalContent" class="editor-paper" placeholder="SELECT FILE TO EDIT..." spellcheck="false"></textarea>
-       </div>
-       <div class="editor-actions">
-           <button id="previewBtn" class="paper-btn small">PREVIEW (HIGHLIGHT)</button>
-       </div>
-    </div>
+        <div id="fileBrowser" class="file-list-paper" role="listbox" aria-label="File browser"></div>
+        <div class="textarea-container">
+            <div class="editor-header" id="editorHeader">
+                <span id="editorFileName">No file selected</span>
+                <span id="editorLang">—</span>
+            </div>
+            <div class="editor-wrapper" id="editorWrapper">
+                <div class="line-numbers" id="lineNumbers">1</div>
+                <textarea id="modalContent" class="editor-paper" placeholder="Select a file to edit..." spellcheck="false"></textarea>
+            </div>
+            <div class="editor-actions">
+                <button id="previewBtn" class="paper-btn small">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    PREVIEW
+                </button>
+            </div>
+        </div>
         <footer class="modal-footer">
-            <button id="modalNewFile" class="paper-btn secondary">[ + NEW ]</button>
-            <button id="modalSave" class="paper-btn primary">[ SAVE ]</button>
+            <button id="modalNewFile" class="paper-btn secondary">+ NEW FILE</button>
+            <div class="btn-group">
+                <button id="modalRename" class="paper-btn small ghost hidden">RENAME</button>
+                <button id="modalSave" class="paper-btn primary">SAVE</button>
+            </div>
         </footer>
     </div>
 </dialog>
 
 <!-- PREVIEW MODAL -->
-<dialog id="previewModal" class="paper-modal preview-modal">
+<dialog id="previewModal" class="paper-modal preview-modal" aria-labelledby="previewModalTitle">
     <div class="modal-box preview-box">
         <header class="modal-header">
-            <h3>PREVIEW (HIGHLIGHTED)</h3>
-            <button id="previewClose" class="paper-btn ghost">[ X ]</button>
+            <h3 id="previewModalTitle">PREVIEW (HIGHLIGHTED)</h3>
+            <button id="previewClose" class="paper-btn ghost">&times;</button>
         </header>
         <pre><code id="previewCode" class="language-plaintext"></code></pre>
     </div>
@@ -96,14 +176,22 @@
 <!-- PWA INSTALL PROMPT -->
 <div id="pwaInstallPrompt" class="pwa-prompt hidden">
     <div class="prompt-content">
-        <p>Install Yuyutermux sebagai aplikasi?</p>
-        <div class="prompt-actions">
-            <button id="pwaInstallBtn" class="paper-btn primary">[ INSTALL ]</button>
-            <button id="pwaDismissBtn" class="paper-btn ghost">[ NANTI ]</button>
+        <div class="pwa-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
         </div>
+        <div class="pwa-text">
+            <strong>Install Yuyutermux</strong>
+            <p>Add to home screen for app-like experience</p>
+        </div>
+        <button id="pwaInstallBtn" class="paper-btn primary">INSTALL</button>
+        <button id="pwaDismissBtn" class="paper-btn ghost">&times;</button>
     </div>
 </div>
 
+<!-- Scripts di bawah body, defer untuk non-blocking -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
 <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
