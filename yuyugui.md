@@ -22,6 +22,7 @@
 | **08** | `Event Error` | `event.get()` error | Event adalah Objek, bukan Dict | Akses via `str(event)` atau `event.type` |
 | 09 | Input Mismatch | Gak bisa ngetik & tombol kaku | Pakai `EditText` & `LinearLayout` Horizontal |
 | 10 | Layout Orientation | `setorientation` gak ada | Pakai sub-LinearLayout & setlinearlayoutparams(weight, w, h) |
+| 11 | Param Count | `setlinearlayoutparams` kelebihan argumen | Gunakan tepat 3: (weight, width, height) |
 
 ---
 
