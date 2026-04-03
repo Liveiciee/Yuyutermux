@@ -55,6 +55,19 @@ show_ip() {
 
 pause() { echo -e "\n${Y}Tekan Enter...${N}"; read -r; }
 
+show_token() {
+    local token_file="$APP_DIR/.auth_token"
+    if [ -f "$token_file" ]; then
+        local tok
+        tok=$(cat "$token_file")
+        echo -e "${Y}🔑 Auth Token: ${G}${tok}${N}"
+    elif [ -n "$YUYUTERMUX_TOKEN" ]; then
+        echo -e "${Y}🔑 Auth Token (env): ${G}${YUYUTERMUX_TOKEN}${N}"
+    else
+        echo -e "${R}⚠️  Token belum ada (server belum pernah jalan?)${N}"
+    fi
+}
+
 # ========== ACTIONS ==========
 do_stop() {
     is_running || { echo -e "${Y}⚠️  Server tidak berjalan${N}"; return 1; }
@@ -95,6 +108,7 @@ do_start() {
     if is_running; then
         echo -e "${G}✅ Started!${N}  PID: $(get_pid)  URL: http://localhost:$PORT"
         show_ip
+        show_token
     else
         echo -e "${R}❌ Failed to start${N}"
         rm -f "$PIDFILE"
@@ -125,6 +139,7 @@ do_status() {
     else
         echo -e "   Port $PORT: ${G}FREE${N}"
     fi
+    show_token
     
     # Tampilkan versi cache saat ini
     if [ -f "$SW_FILE" ]; then
@@ -184,7 +199,8 @@ while true; do
         echo "  [3] Status"
         echo "  [4] Log"
         echo "  [5] Bust Cache (Clear UI)"
-        echo "  [6] Exit"
+        echo "  [6] Show Token"
+        echo "  [7] Exit"
     else
         echo -e "${R}● Stopped${N}\n"
         echo "  [1] Start"
@@ -200,7 +216,8 @@ while true; do
             3) do_status ;;
             4) do_log ;;
             5) do_bust_cache ;;
-            6) echo -e "${G}Server tetap berjalan${N}"; exit 0 ;;
+            6) show_token; pause ;;
+            7) echo -e "${G}Server tetap berjalan${N}"; exit 0 ;;
         esac
     else
         case $REPLY in
