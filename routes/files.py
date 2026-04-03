@@ -123,6 +123,7 @@ def api_files_write():
 
 
 @files_bp.route('/api/files/delete', methods=['POST'])
+@rate_limit(max_requests=15, window=60)
 def api_files_delete():
     path = validate_path(get_req_path())
     if not path:
@@ -147,6 +148,7 @@ def api_files_delete():
 
 
 @files_bp.route('/api/files/create', methods=['POST'])
+@rate_limit(max_requests=15, window=60)
 def api_files_create():
     data = request.json or {}
     filename = data.get('filename', '')
@@ -158,12 +160,6 @@ def api_files_create():
     filename = os.path.basename(filename)
     if not filename or filename.startswith('.'):
         return json_err("Invalid filename", 400)
-
-    # Block suspicious extensions
-    dangerous_ext = {'.sh', '.py', '.bash', '.php', '.cgi', '.pl', '.rb'}
-    # Note: allow .py and .sh since this is a code editor, but warn
-    # Actually for a code editor we need to allow these. Remove the check.
-    # The protection is that we stay within PROJECT_DIR
 
     dir_path = validate_path(data.get('path', ''))
     if not dir_path:

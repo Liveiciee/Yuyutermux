@@ -9,6 +9,7 @@ import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
 document.addEventListener('DOMContentLoaded', () => {
+  initViewport()
   initSplash()
   initInput()
   initTerminal()
@@ -18,6 +19,27 @@ document.addEventListener('DOMContentLoaded', () => {
   initModules()
   initAuth()
 })
+
+function initViewport() {
+  // Use 100dvh natively (modern browsers) — no JS hack needed.
+  // For older browsers that lack dvh support, fall back to window.innerHeight.
+  if (!CSS.supports('height', '100dvh')) {
+    const update = () => {
+      const h = window.visualViewport?.height || window.innerHeight
+      if (h > 0) {
+        document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`)
+      }
+    }
+    update()
+    let rafId = 0
+    const debounced = () => {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(update)
+    }
+    window.visualViewport?.addEventListener('resize', debounced)
+    window.addEventListener('resize', debounced)
+  }
+}
 
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')

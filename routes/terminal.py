@@ -16,9 +16,6 @@ _active_processes: dict[int, subprocess.Popen] = {}
 _proc_counter = 0
 current_dir = PROJECT_DIR
 
-# ── SECURITY: Maximum process execution time (seconds) ───────────────────────
-MAX_PROCESS_TIMEOUT = 300  # 5 minutes
-
 
 @terminal_bp.route('/api/execute/cwd', methods=['GET'])
 def api_get_cwd():
@@ -92,10 +89,6 @@ def api_execute_stream():
             def _cd_exc():
                 yield f"cd: error: invalid arguments\n[EXIT_CODE:1]\n"
             return Response(stream_with_context(_cd_exc()), mimetype='text/plain')
-
-    # ── SECURITY: Double-check command base name for blocked list ──
-    if base_cmd in BLOCKED_COMMANDS:
-        return jsonify({"success": False, "error": f"Command blocked for security"}), 403
 
     _proc_counter += 1
     proc_id = _proc_counter

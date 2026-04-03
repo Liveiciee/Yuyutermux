@@ -2,8 +2,7 @@ import os
 import secrets
 import time
 import functools
-from flask import request, jsonify, Response, g
-from werkzeug.exceptions import TooManyRequests
+from flask import request, jsonify, Response
 
 HOME_DIR = os.path.expanduser('~')
 PROJECT_DIR = os.path.join(HOME_DIR, 'Yuyutermux')
@@ -38,16 +37,6 @@ def check_auth():
     if not token:
         return False
     return secrets.compare_digest(token, AUTH_TOKEN)
-
-
-def require_auth(f):
-    """Decorator: require valid auth token for endpoint."""
-    @functools.wraps(f)
-    def decorated(*args, **kwargs):
-        if not check_auth():
-            return jsonify({"success": False, "error": "Unauthorized"}), 401
-        return f(*args, **kwargs)
-    return decorated
 
 
 # ── SECURITY: Rate limiting ───────────────────────────────────────────────────
