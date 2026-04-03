@@ -123,7 +123,7 @@ def validate_path(user_path: str) -> str | None:
 
 
 def validate_path_terminal(user_path: str) -> str | None:
-    """Lighter path validation for terminal cd — allows HOME but not system dirs."""
+    """Path validation for terminal cd — restricts to within home directory."""
     if not user_path:
         return PROJECT_DIR
 
@@ -133,11 +133,10 @@ def validate_path_terminal(user_path: str) -> str | None:
     base = user_path if os.path.isabs(user_path) else os.path.join(os.path.expanduser('~'), user_path)
     resolved = os.path.realpath(base)
 
-    # Block dangerous system directories
-    blocked_prefixes = ['/proc', '/sys', '/dev', '/boot', '/lib', '/lib64', '/usr/lib', '/bin', '/sbin']
-    for prefix in blocked_prefixes:
-        if resolved.startswith(prefix + os.sep) or resolved == prefix:
-            return None
+    home = os.path.expanduser('~')
+    # Only allow navigation within home directory
+    if not (resolved.startswith(home + os.sep) or resolved == home):
+        return None
 
     return resolved
 

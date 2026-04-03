@@ -3,7 +3,6 @@ import { Storage } from './storage.js'
 import { ExtraKeys } from './extra-keys.js'
 import { FileManager } from './file-manager.js'
 import { ModalKeyboard } from './modal-keyboard.js'
-import { ViewportFix } from './viewport-fix.js'
 import { Editor } from './editor.js'
 import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
@@ -195,7 +194,6 @@ function initPWA() {
 }
 
 function initModules() {
-  ViewportFix.init()
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
