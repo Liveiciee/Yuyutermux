@@ -103,14 +103,21 @@ function initTerminal() {
 
   document.getElementById('clearAllBtn').onclick = () => Terminal.clearAll()
 
-  // Live cwd in status bar - poll every 2 seconds
+  // BUG FIX #11: CWD status bar update — sebelumnya poll /api/health yang TIDAK punya
+  //   field "display" di response-nya (hanya {"status":"ok","service":"yuyutermux"}),
+  //   jadi kondisi `if (el && data.display)` SELALU false → CWD tidak pernah update.
+  //   Fix: poll /api/execute/cwd yang return {"cwd":"~","display":"~"}.
   const updateCwd = async () => {
     try {
-      const res = await fetch('/api/health')
+      const res = await fetch('/api/execute/cwd')
       if (res.ok) {
         const data = await res.json()
-        const el = document.getElementById('statusDir')
-        if (el && data.display) el.textContent = data.display
+        if (res.status !== 401) {
+          const el = document.getElementById('statusDir')
+          if (el && data.success && data.display) {
+            el.textContent = data.display
+          }
+        }
       }
     } catch { /* server might not be ready yet */ }
   }

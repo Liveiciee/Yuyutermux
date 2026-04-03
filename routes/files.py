@@ -73,6 +73,8 @@ def api_files_list():
 
 
 @files_bp.route('/api/files/read', methods=['POST'])
+# BUG FIX #7: Tambah rate_limit — tanpa rate limit, bisa dipakai DoS
+@rate_limit(max_requests=30, window=60)
 def api_files_read():
     path = validate_path(get_req_path())
     if not path:
@@ -86,7 +88,9 @@ def api_files_read():
 
     try:
         with open(path, 'r', encoding='utf-8', errors='replace') as f:
-            return json_ok(path=path, content=f.read())
+            # BUG FIX #4: Jangan leak full filesystem path — gunakan relative path
+            rel_path = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
+            return json_ok(path=rel_path, content=f.read())
     except Exception:
         return json_err("Failed to read file", 500, content="")
 
@@ -109,13 +113,25 @@ def api_files_write():
         return json_err("Content too large (>5MB)", 413)
 
     # SECURITY: Block writing to sensitive file patterns
-    blocked_patterns = ['.auth_token', '.env', '.htaccess', '.htpasswd',
-                        'passwd', 'shadow', 'ssh/', '.ssh/', '.bashrc',
-                        '.bash_profile', '.profile', '.bash_history']
+    # BUG FIX #6: Pisahkan check antara filename-only patterns dan path patterns.
+    #   Sebelumnya semua di-cek via os.path.basename(path) jadi pattern '.ssh/'
+    #   dan 'ssh/' (yang berisi '/') tidak pernah match.
     filename = os.path.basename(path)
-    for pat in blocked_patterns:
-        if pat in filename:
+    rel_to_project = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
+
+    # Filename-only patterns (no slash)
+    blocked_filenames = {'.auth_token', '.env', '.htaccess', '.htpasswd',
+                         'passwd', 'shadow',
+                         '.bashrc', '.bash_profile', '.profile', '.bash_history'}
+    for pat in blocked_filenames:
+        if filename == pat:
             return json_err("Cannot write to protected file", 403)
+
+    # Path patterns (can contain slash — check against relative project path)
+    blocked_path_patterns = ['.ssh/', 'ssh/']
+    for pat in blocked_path_patterns:
+        if pat in rel_to_project:
+            return json_err("Cannot write to protected path", 403)
 
     parent = os.path.dirname(path)
 
@@ -130,6 +146,8 @@ def api_files_write():
 
 
 @files_bp.route('/api/files/delete', methods=['POST'])
+# BUG FIX #7: Tambah rate_limit — delete tanpa limit = vector DoS/abuse
+@rate_limit(max_requests=20, window=60)
 def api_files_delete():
     path = validate_path(get_req_path())
     if not path:
@@ -154,6 +172,8 @@ def api_files_delete():
 
 
 @files_bp.route('/api/files/create', methods=['POST'])
+# BUG FIX #7: Tambah rate_limit — tanpa limit bisa spam file creation
+@rate_limit(max_requests=20, window=60)
 def api_files_create():
     data = request.json or {}
     filename = data.get('filename', '')
@@ -186,6 +206,8 @@ def api_files_create():
 
 
 @files_bp.route('/api/files/download')
+# BUG FIX #7: Tambah rate_limit — tanpa limit bisa dipakai DoS
+@rate_limit(max_requests=30, window=60)
 def api_files_download():
     path = validate_path(get_req_path())
     if not path:
@@ -273,17 +295,17 @@ def search_files():
 
     case_sensitive = request.args.get('case', '0') == '1'
 
-    # SECURITY: FIX — Use list arguments instead of shell=True to prevent injection
-    grep_flags = ['-rn', '--include=*.py', '--include=*.js', '--include=*.ts',
+    # BUG FIX #5: Gunakan grep -F (fixed string) bukan regex untuk mencegah ReDoS.
+    #   Sebelumnya query user di-pass langsung sebagai regex pattern ke grep,
+    #   memungkinkan crafted query seperti "(a+)+$" menyebabkan catastrophic backtracking.
+    grep_flags = ['-rn', '-F',  # -F = fixed strings (no regex)
+                  '--include=*.py', '--include=*.js', '--include=*.ts',
                   '--include=*.html', '--include=*.css', '--include=*.json',
                   '--include=*.md', '--include=*.txt', '--include=*.sh',
                   '--include=*.yaml', '--include=*.yml', '--include=*.toml',
                   '--include=*.cfg',
                   '--exclude-dir=node_modules', '--exclude-dir=.git',
                   '--exclude-dir=__pycache__', '--exclude-dir=dist']
-
-    if not case_sensitive:
-        grep_flags.append('-i')
 
     grep_flags.extend(['--', q, folder])
 

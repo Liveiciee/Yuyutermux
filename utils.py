@@ -115,21 +115,27 @@ def rate_limit_execute(max_requests: int = 10, window: int = 60):
 # ── SECURITY: Path validation (hardened) ──────────────────────────────────────
 
 # Commands that are explicitly DANGEROUS - never allow these
+# BUG FIX #2: Hapus chmod, chown dari BLOCKED — user butuh manage permission file.
+# BUG FIX #2: Hapus duplikat 'perl' (ada di baris 125 dan 129).
 BLOCKED_COMMANDS = {
     'rm', 'rmdir', 'mkfs', 'dd', 'fdisk', 'parted', 'mkswap',
     'shutdown', 'reboot', 'halt', 'poweroff', 'init',
     'passwd', 'su', 'sudo', 'chroot', 'mount', 'umount',
-    'chmod', 'chown', 'chgrp',
+    'chgrp',
     'iptables', 'nft', 'ufw', 'firewalld',
     'curl', 'wget', 'nc', 'ncat', 'netcat',  # network exfil prevention
     'python3', 'python', 'node', 'ruby', 'perl', 'php',  # code exec prevention
     # FIX: Block indirection vectors that can bypass command blocklist
     'env', 'exec', 'eval', 'source', 'busybox', 'xargs',
     'nohup', 'setsid', 'unshare', 'nsenter',
-    'find', 'awk', 'sed', 'perl',  # can execute commands
+    'find', 'awk', 'sed',  # can execute commands
 }
 
-# Commands that are allowed but only with strict validation
+# Commands that are allowed — used as reference/documentation.
+# NOTE: This set is NOT actively enforced in the terminal command check.
+#       BLOCKED_COMMANDS is checked first via os.path.basename(cmd_parts[0]).
+#       Commands NOT in BLOCKED_COMMANDS are implicitly allowed.
+# BUG FIX #3: Bersihkan konflik — hapus entry yang juga ada di BLOCKED_COMMANDS.
 ALLOWED_GNU_COREUTILS = {
     'ls', 'cat', 'head', 'tail', 'less', 'more', 'wc', 'sort',
     'uniq', 'grep', 'diff', 'file', 'stat', 'which', 'whoami',
@@ -145,7 +151,7 @@ ALLOWED_GNU_COREUTILS = {
     'cut', 'tr', 'paste', 'tee', 'split', 'join',
     'basename', 'dirname', 'realpath', 'readlink',
     'id', 'hostname', 'uname', 'arch', 'nproc',
-    'env', 'printenv', 'export', 'set', 'unset', 'alias',
+    'printenv', 'export', 'set', 'unset', 'alias',
     'history', 'type', 'command', 'builtin',
     'true', 'false', 'test', '[',
     'sleep', 'wait', 'exit', 'logout',

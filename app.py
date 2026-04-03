@@ -22,7 +22,13 @@ DEBUG_MODE = os.environ.get('YUYUTERMUX_DEBUG', '0') == '1'
 # ── SECURITY: Bind to localhost only by default ──────────────────────────────
 # Prevents exposure to the network. Override with YUYUTERMUX_HOST env var.
 APP_HOST = os.environ.get('YUYUTERMUX_HOST', '127.0.0.1')
-APP_PORT = int(os.environ.get('YUYUTERMUX_PORT', '5000'))
+
+# BUG FIX #1: int() crash jika YUYUTERMUX_PORT non-numerik — tambah try/except
+try:
+    APP_PORT = int(os.environ.get('YUYUTERMUX_PORT', '5000'))
+except (ValueError, TypeError):
+    APP_PORT = 5000
+    print(f"[WARN] Invalid YUYUTERMUX_PORT value, defaulting to {APP_PORT}")
 
 # ── SECURITY: Global auth check for all /api/ routes ─────────────────────────
 _AUTH_EXEMPT = {'/api/health', '/api/auth/login', '/api/auth/logout'}

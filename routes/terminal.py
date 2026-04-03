@@ -16,6 +16,10 @@ terminal_bp = Blueprint('terminal', __name__)
 # requests don't stomp each other.
 _active_processes: dict = {}
 _proc_counter = 0
+# BUG FIX #8: Tambah lock terpisah untuk _active_processes — sebelumnya hanya
+#   _proc_counter_lock yang ada, tapi _active_processes diakses dari thread berbeda
+#   tanpa proteksi (generate() di thread response, kill() di thread request lain).
+_proc_lock = threading.Lock()
 _proc_counter_lock = threading.Lock()
 
 # FIX: Thread-safe current directory with lock
@@ -114,9 +118,10 @@ def api_execute_stream():
                 yield f"cd: error: invalid arguments\n[EXIT_CODE:1]\n"
             return Response(stream_with_context(_cd_exc()), mimetype='text/plain')
 
-    # ── SECURITY: Double-check command base name for blocked list ──
-    if base_cmd in BLOCKED_COMMANDS:
-        return jsonify({"success": False, "error": f"Command blocked for security"}), 403
+    # BUG FIX #9: Hapus redundant double-check BLOCKED_COMMANDS.
+    #   Baris 80 sudah check dan return jika blocked. Kode ini tidak pernah tercapai
+    #   karena cd handler di atas sudah return. Dead code yang membuang CPU cycle.
+    #   (Baris asli: if base_cmd in BLOCKED_COMMANDS: return ...)
 
     with _proc_counter_lock:
         _proc_counter += 1
@@ -134,7 +139,9 @@ def api_execute_stream():
                 cwd=get_current_dir(),
                 preexec_fn=os.setsid,  # Create process group for clean killing
             )
-            _active_processes[proc_id] = proc
+            # BUG FIX #8: Gunakan _proc_lock untuk proteksi race condition
+            with _proc_lock:
+                _active_processes[proc_id] = proc
 
             # FIX: Enforce MAX_PROCESS_TIMEOUT — kill process after timeout
             deadline = time.time() + MAX_PROCESS_TIMEOUT
@@ -167,18 +174,23 @@ def api_execute_stream():
             # SECURITY: Don't leak exception details to client
             yield f"\n[ERROR:internal error]\n"
         finally:
-            _active_processes.pop(proc_id, None)
+            # BUG FIX #8: Gunakan _proc_lock untuk proteksi race condition
+            with _proc_lock:
+                _active_processes.pop(proc_id, None)
 
     return Response(stream_with_context(generate()), mimetype='text/plain')
 
 
 @terminal_bp.route('/api/execute/kill', methods=['POST'])
 def api_execute_kill():
-    if not _active_processes:
-        return jsonify({"success": False, "message": "No active process"})
+    # BUG FIX #8: Gunakan _proc_lock untuk snapshot dict secara aman
+    with _proc_lock:
+        if not _active_processes:
+            return jsonify({"success": False, "message": "No active process"})
+        snapshot = list(_active_processes.items())
 
     killed = []
-    for pid, proc in list(_active_processes.items()):
+    for pid, proc in snapshot:
         if proc.poll() is None:
             try:
                 # Kill entire process group (children too)

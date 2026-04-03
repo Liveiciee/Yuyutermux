@@ -335,12 +335,17 @@ def git_checkout():
     branch = data.get('branch', '').strip()
     create = data.get('create', False)
 
+    # BUG FIX #10: Cek kosong dulu SEBELUM validasi regex.
+    #   Sebelumnya: _validate_branch_name('') → False → error "Invalid branch name"
+    #   Padahal pesan yang benar adalah "Branch name required".
+    #   Urutan: empty check → validation → execution.
+    if not branch:
+        return jsonify({"success": False, "error": "Branch name required"})
+
     # SECURITY: Validate branch name
     if not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name. Use only letters, numbers, dots, hyphens, underscores, and slashes."})
 
-    if not branch:
-        return jsonify({"success": False, "error": "Branch name required"})
     args = ['checkout', '-b', branch] if create else ['checkout', branch]
     ok, out, err = git_run(args)
     if ok:
