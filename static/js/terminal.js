@@ -18,7 +18,7 @@ const ICONS = {
 // TOAST SYSTEM
 export const Toast = {
   container: null,
-  icons: { success: 'âœ“', error: 'âœ—', info: 'â„¹', warning: 'âš ' },
+  icons: { success: '\u2713', error: '\u2717', info: '\u2139', warning: '\u26A0' },
 
   init() {
     this.container = document.getElementById('toastContainer')
@@ -28,7 +28,7 @@ export const Toast = {
     if (!this.container) return
     const toast = document.createElement('div')
     toast.className = `toast ${type}`
-    toast.innerHTML = `<span class="toast-icon">${this.icons[type] || 'â„¹'}</span><span>${esc(message)}</span>`
+    toast.innerHTML = `<span class="toast-icon">${this.icons[type] || '\u2139'}</span><span>${esc(message)}</span>`
     this.container.appendChild(toast)
 
     setTimeout(() => {
@@ -97,7 +97,7 @@ export function bindEntryActions(entry) {
     copyBtn.onclick = () => {
       if (!pre) return
       navigator.clipboard.writeText(pre.textContent).then(() => {
-        copyBtn.innerHTML = '<span style="color:var(--success)">âœ“</span> COPIED'
+        copyBtn.innerHTML = '<span style="color:var(--success)">\u2713</span> COPIED'
         setTimeout(() => copyBtn.innerHTML = `${ICONS.copy} COPY`, 1500)
       })
     }
@@ -112,7 +112,7 @@ export function bindEntryActions(entry) {
     }
   }
 
-  // FIX Bug #7: Rebind KILL button â€” inline onclick gak bisa akses module scope
+  // FIX Bug #7: Rebind KILL button - inline onclick gak bisa akses module scope
   const killBtn = entry.querySelector('.hang-warning button')
   if (killBtn) {
     killBtn.onclick = () => Terminal.kill(killBtn)
@@ -179,7 +179,7 @@ export const Terminal = {
 
       const badge = document.createElement('span')
       badge.className = `cmd-status-badge ${success ? 'success' : 'error'}`
-      badge.textContent = success ? `âœ“ EXIT 0` : `âœ— EXIT ${exitCode}`
+      badge.textContent = success ? `\u2713 EXIT 0` : `\u2717 EXIT ${exitCode}`
       entry.querySelector('.cmd-line > div').appendChild(badge)
     }
 
@@ -279,7 +279,7 @@ export const Terminal = {
   log(message, isError = false) {
     this.area.querySelector('.placeholder')?.remove()
     const entry = document.createElement('div')
-    entry.className = `output-entry${isError ? ' error' : 'success'}`
+    entry.className = `output-entry${isError ? ' error' : ' success'}`
     entry.innerHTML = `
       <div class="cmd-line">
         <div><strong>$</strong> ${esc(message)}</div>
@@ -315,7 +315,7 @@ export const Terminal = {
         <div class="placeholder">
           <div class="placeholder-icon"><span class="placeholder-cursor">&gt;_</span></div>
           <div class="placeholder-text">READY FOR COMMANDS</div>
-          <div class="placeholder-hint">Ctrl+Enter to execute Â· Extra keys below</div>
+          <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
         </div>`
       Toast.show('Terminal cleared', 'info')
     }, 200)
@@ -382,7 +382,7 @@ export const Suggestions = {
     this.activeIndex = -1
     this.dropdown.innerHTML = matches.map((m, i) => `
       <div class="suggestion-item" data-index="${i}" data-value="${esc(m)}">
-        ${esc(m)}<span class="suggestion-hint">â†‘â†“ enter</span>
+        ${esc(m)}<span class="suggestion-hint">\u2191\u2193 enter</span>
       </div>
     `).join('')
 

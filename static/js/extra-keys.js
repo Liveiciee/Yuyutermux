@@ -15,8 +15,8 @@ export const ExtraKeys = {
     { label: '$', value: '$', type: 'insert' },
     { label: 'CTRL+C', value: '', type: 'action', action: 'kill' },
     { label: 'ESC', value: '', type: 'action', action: 'clear' },
-    { label: '↑', value: '', type: 'action', action: 'up' },
-    { label: '↓', value: '', type: 'action', action: 'down' }
+    { label: '\u2191', value: '', type: 'action', action: 'up' },
+    { label: '\u2193', value: '', type: 'action', action: 'down' }
   ],
 
   init() {

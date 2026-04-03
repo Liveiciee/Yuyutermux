@@ -6,7 +6,7 @@ import { Toast } from './terminal.js'
 const TEMPLATE = `
 <div class="modal-box" style="height:80vh;display:flex;flex-direction:column">
   <header class="modal-header">
-    <h3>⌕ FIND IN FILES</h3>
+    <h3>\u2312 FIND IN FILES</h3>
     <button id="gs-close" class="paper-btn ghost">&times;</button>
   </header>
   <div class="file-toolbar">
@@ -40,18 +40,15 @@ export const GlobalSearch = {
     this.dialog.addEventListener('click', (e) => {
       if (e.target === this.dialog) this.hide()
     })
-
+    
     this.input.onkeydown = (e) => {
       if (e.key === 'Enter') this.doSearch()
       if (e.key === 'Escape') this.hide()
     }
-
+    
     document.getElementById('gs-btn-search').onclick = () => this.doSearch()
     this.setupCaseToggle()
     this.setupResultsHandler()
-
-    // FIX Bug #1: Bind tombol SEARCH di file manager toolbar
-    document.getElementById('btn-global-search')?.addEventListener('click', () => this.show())
   },
 
   setupCaseToggle() {
@@ -71,13 +68,13 @@ export const GlobalSearch = {
         FileManager.openFileWithLine(match.dataset.file, parseInt(match.dataset.line))
         return
       }
-
+      
       const header = e.target.closest('.gs-file-header')
       if (header) {
         const matches = header.nextElementSibling
         if (matches) {
           matches.classList.toggle('hidden')
-          header.querySelector('.gs-arrow').textContent = matches.classList.contains('hidden') ? '▸' : '▾'
+          header.querySelector('.gs-arrow').textContent = matches.classList.contains('hidden') ? '\u25B8' : '\u25BE'
           header.style.borderLeftColor = matches.classList.contains('hidden') ? 'transparent' : 'var(--accent)'
         }
       }
@@ -100,24 +97,24 @@ export const GlobalSearch = {
   async doSearch() {
     const q = this.input.value.trim()
     if (!q) return
-
+    
     const btn = document.getElementById('gs-btn-search')
-    btn.innerHTML = '···'
+    btn.innerHTML = '\u00B7\u00B7\u00B7'
     btn.disabled = true
     this.resultsEl.innerHTML = '<div style="padding:20px;color:var(--cement);text-align:center">Searching...</div>'
-
+    
     const { ok, data } = await api.get(`/api/files/search?q=${encodeURIComponent(q)}&case=${this.caseSensitive ? '1' : '0'}`)
-
+    
     btn.innerHTML = 'SEARCH'
     btn.disabled = false
-
+    
     const results = (ok && data?.success) ? data.results : []
     this.renderResults(results, q)
   },
 
   renderResults(results, q) {
     const total = results.reduce((sum, r) => sum + r.matches.length, 0)
-
+    
     if (results.length === 0) {
       this.resultsEl.innerHTML = '<div style="padding:20px;color:var(--cement);text-align:center;font-size:11px">No results found</div>'
       Toast.show('No results found', 'info')
@@ -140,7 +137,7 @@ export const GlobalSearch = {
     return `
       <div>
         <div class="gs-file-header" data-file="${esc(file)}" style="display:flex;align-items:center;gap:6px;padding:4px 12px;cursor:pointer;border-left:2px solid ${isExpanded ? 'var(--accent)' : 'transparent'}">
-          <span style="color:var(--cement);font-size:10px" class="gs-arrow">${isExpanded ? '▾' : '▸'}</span>
+          <span style="color:var(--cement);font-size:10px" class="gs-arrow">${isExpanded ? '\u25BE' : '\u25B8'}</span>
           <span style="font-size:11px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(file)}</span>
           <span style="font-size:9px;color:var(--cement);background:var(--dark);padding:1px 6px;border-radius:2px">${matches.length}</span>
         </div>
@@ -153,7 +150,7 @@ export const GlobalSearch = {
   renderMatch(match, file, q) {
     const highlighted = highlightMatch(match.text, q, this.caseSensitive)
       .replace('<mark>', '<mark style="background:rgba(255,107,53,.15);color:var(--accent);padding:0 2px">')
-
+    
     return `
       <div class="gs-match" data-file="${esc(file)}" data-line="${match.line}" style="display:flex;gap:8px;padding:3px 12px 3px 28px;cursor:pointer">
         <span style="font-size:10px;color:var(--cement);min-width:28px;text-align:right">${match.line}</span>

@@ -1,7 +1,7 @@
 import { api, esc } from './api.js'
 import { Toast } from './terminal.js'
 
-// ── GITHUB / GIT PANEL ────────────────────────────────────────────────────────
+// -- GITHUB / GIT PANEL --
 
 export const GitHub = {
   state: null,
@@ -14,7 +14,7 @@ export const GitHub = {
     this._bindStaticEvents()
   },
 
-  // ── OPEN / CLOSE ─────────────────────────────────────────────────────────
+  // -- OPEN / CLOSE --
 
   async open() {
     const modal = document.getElementById('gitModal')
@@ -32,7 +32,7 @@ export const GitHub = {
     document.getElementById('extraKeysPaper')?.classList.remove('hidden')
   },
 
-  // ── TABS ─────────────────────────────────────────────────────────────────
+  // -- TABS --
 
   switchTab(tab) {
     this.activeTab = tab
@@ -46,15 +46,15 @@ export const GitHub = {
     if (tab === 'branches') this._loadBranches()
   },
 
-  // ── REFRESH STATUS ────────────────────────────────────────────────────────
+  // -- REFRESH STATUS --
 
   async refresh() {
     const btn = document.getElementById('gitRefreshBtn')
-    if (btn) { btn.textContent = '↻'; btn.disabled = true }
+    if (btn) { btn.textContent = '\u21BB'; btn.disabled = true }
 
     const { ok, data } = await api.get('/api/git/status')
 
-    if (btn) { btn.textContent = '↺'; btn.disabled = false }
+    if (btn) { btn.textContent = '\u21BA'; btn.disabled = false }
 
     if (!ok || !data) { this._renderError('Server unreachable'); return }
 
@@ -74,7 +74,7 @@ export const GitHub = {
     if (hint) hint.textContent = staged > 0 ? `${staged} file(s) staged` : 'No files staged'
   },
 
-  // ── RENDER HELPERS ────────────────────────────────────────────────────────
+  // -- RENDER HELPERS --
 
   _renderBranchBadge(data) {
     const badge = document.getElementById('gitBranchBadge')
@@ -83,8 +83,8 @@ export const GitHub = {
     const sync = document.getElementById('gitSyncBadge')
     if (!sync) return
     const parts = []
-    if (data.ahead > 0) parts.push(`↑${data.ahead}`)
-    if (data.behind > 0) parts.push(`↓${data.behind}`)
+    if (data.ahead > 0) parts.push(`\u2191${data.ahead}`)
+    if (data.behind > 0) parts.push(`\u2193${data.behind}`)
     sync.textContent = parts.join(' ')
     sync.style.display = parts.length ? 'inline-flex' : 'none'
   },
@@ -94,7 +94,7 @@ export const GitHub = {
     if (badge) badge.textContent = 'NO REPO'
     document.getElementById('gitStatusPane').innerHTML = `
       <div class="git-empty">
-        <div class="git-empty-icon">⚠</div>
+        <div class="git-empty-icon">\u26A0</div>
         <div style="margin-bottom:12px">Not a git repository</div>
         <button class="paper-btn primary" id="gitInitBtn">GIT INIT</button>
       </div>`
@@ -103,7 +103,7 @@ export const GitHub = {
 
   _renderError(msg) {
     document.getElementById('gitStatusPane').innerHTML =
-      `<div class="git-empty"><div class="git-empty-icon" style="color:var(--danger)">✗</div><div>${esc(msg)}</div></div>`
+      `<div class="git-empty"><div class="git-empty-icon" style="color:var(--danger)">\u2717</div><div>${esc(msg)}</div></div>`
   },
 
   _renderStatusTab(data) {
@@ -111,7 +111,7 @@ export const GitHub = {
     const total = (data.staged?.length || 0) + (data.unstaged?.length || 0) + (data.untracked?.length || 0)
 
     if (total === 0) {
-      pane.innerHTML = `<div class="git-clean"><span>✓</span> Working tree clean</div>`
+      pane.innerHTML = `<div class="git-clean"><span>\u2713</span> Working tree clean</div>`
       return
     }
 
@@ -127,7 +127,7 @@ export const GitHub = {
           <span class="git-status-badge success">${esc(f.status)}</span>
           <span class="git-file-label">${esc(f.file)}</span>
           <div class="git-row-actions">
-            <button class="paper-btn small" data-action="unstage" data-file="${esc(f.file)}">−</button>
+            <button class="paper-btn small" data-action="unstage" data-file="${esc(f.file)}">\u2212</button>
           </div>
         </div>`
       })
@@ -144,7 +144,7 @@ export const GitHub = {
           <span class="git-file-label">${esc(f.file)}</span>
           <div class="git-row-actions">
             <button class="paper-btn small accent" data-action="stage" data-file="${esc(f.file)}">+</button>
-            <button class="paper-btn small" data-action="discard" data-file="${esc(f.file)}" style="color:var(--danger)">↩</button>
+            <button class="paper-btn small" data-action="discard" data-file="${esc(f.file)}" style="color:var(--danger)">\u21A9</button>
           </div>
         </div>`
       })
@@ -188,7 +188,7 @@ export const GitHub = {
     }, { once: true })   // re-bound on next render
   },
 
-  // ── FILE OPERATIONS ───────────────────────────────────────────────────────
+  // -- FILE OPERATIONS --
 
   async _stageFile(file) {
     const { ok, data } = await api.post('/api/git/add', { files: [file] })
@@ -221,7 +221,7 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // ── COMMIT ────────────────────────────────────────────────────────────────
+  // -- COMMIT --
 
   async commit() {
     const msgEl = document.getElementById('gitCommitMsg')
@@ -246,7 +246,7 @@ export const GitHub = {
     }
   },
 
-  // ── SYNC (push / pull / fetch) ────────────────────────────────────────────
+  // -- SYNC (push / pull / fetch) --
 
   async push() {
     const btn = document.getElementById('gitPushBtn')
@@ -257,7 +257,7 @@ export const GitHub = {
     const { ok, data } = await api.post('/api/git/push', { remote })
 
     btn.disabled = false
-    btn.textContent = 'PUSH ↑'
+    btn.textContent = 'PUSH \u2191'
 
     if (ok && data?.success) {
       Toast.show('Pushed!', 'success')
@@ -289,7 +289,7 @@ export const GitHub = {
     const { ok, data } = await api.post('/api/git/pull', { remote })
 
     btn.disabled = false
-    btn.textContent = 'PULL ↓'
+    btn.textContent = 'PULL \u2193'
 
     if (ok && data?.success) {
       Toast.show(data.message || 'Pulled!', 'success')
@@ -313,7 +313,7 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // ── LOG ───────────────────────────────────────────────────────────────────
+  // -- LOG --
 
   async _loadLog() {
     const pane = document.getElementById('gitLogPane')
@@ -337,7 +337,7 @@ export const GitHub = {
       </div>`).join('')
   },
 
-  // ── BRANCHES ─────────────────────────────────────────────────────────────
+  // -- BRANCHES --
 
   async _loadBranches() {
     const pane = document.getElementById('gitBranchPane')
@@ -356,7 +356,7 @@ export const GitHub = {
       </div>
       ${data.branches.map(b => `
         <div class="git-branch-row ${b.current ? 'current' : ''}">
-          <span class="git-branch-dot">${b.current ? '●' : '○'}</span>
+          <span class="git-branch-dot">${b.current ? '\u25CF' : '\u25CB'}</span>
           <span class="git-branch-name">${esc(b.name)}</span>
           ${b.current
             ? '<span class="git-branch-current-badge">CURRENT</span>'
@@ -393,7 +393,7 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // ── INIT REPO ─────────────────────────────────────────────────────────────
+  // -- INIT REPO --
 
   async initRepo() {
     const { ok, data } = await api.post('/api/git/init', {})
@@ -401,7 +401,7 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // ── CONFIG ────────────────────────────────────────────────────────────────
+  // -- CONFIG --
 
   async _loadConfig() {
     const { ok, data } = await api.get('/api/git/config')
@@ -436,7 +436,7 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // ── STATIC EVENT BINDING ──────────────────────────────────────────────────
+  // -- STATIC EVENT BINDING --
 
   _bindStaticEvents() {
     // Tab bar

@@ -24,15 +24,15 @@ const FileTemplates = {
         </span>
         <span class="file-size">${size}</span>
         <div class="file-actions">
-          ${item.type === 'file' ? '<button class="file-download">↓</button>' : ''}
-          <button class="file-del">×</button>
+          ${item.type === 'file' ? '<button class="file-download">\u2193</button>' : ''}
+          <button class="file-del">\u00D7</button>
         </div>
       </div>`
   },
   
   parentDir: (parentPath) => `
     <div class="file-item" data-path="${esc(parentPath)}" data-type="directory">
-      <span class="file-name"><span class="file-icon dir">📁</span> ..</span>
+      <span class="file-name"><span class="file-icon dir">\u{1F4C1}</span> ..</span>
       <span class="file-size">PARENT</span>
     </div>`,
   
@@ -145,7 +145,7 @@ export const FileManager = {
     this.content = ''
     this.el.editor.value = ''
     document.getElementById('editorFileName').textContent = 'No file selected'
-    document.getElementById('editorLang').textContent = '—'
+    document.getElementById('editorLang').textContent = '\u2014'
     document.getElementById('modalRename').classList.add('hidden')
   },
 
@@ -170,10 +170,10 @@ export const FileManager = {
     
     if (ok && data?.success) {
       this.content = this.el.editor.value
-      btn.innerHTML = '✓ SAVED'
+      btn.innerHTML = '\u2713 SAVED'
       const filename = this.file.split('/').pop()
       Toast.show(`${filename} saved`, 'success')
-      Terminal.log(`SAVE ${filename} — File saved successfully`)
+      Terminal.log(`SAVE ${filename} \u2014 File saved successfully`)
       setTimeout(() => btn.innerHTML = originalText, 1500)
     } else {
       btn.innerHTML = originalText
@@ -248,7 +248,7 @@ export const FileManager = {
       
       if (res.ok && data.success) {
         Toast.show(`Uploaded: ${file.name}`, 'success')
-        Terminal.log(`UPLOAD ${file.name} — Upload successful`)
+        Terminal.log(`UPLOAD ${file.name} \u2014 Upload successful`)
         this.load(this.dir)
       } else {
         Toast.show(data.error || 'Upload failed', 'error')

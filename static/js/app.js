@@ -79,7 +79,7 @@ function initTerminal() {
 
   document.getElementById('clearAllBtn').onclick = () => Terminal.clearAll()
 
-  // FIX Bug #6: Poll cwd tiap 5 detik, bukan 2 detik — kurangi beban server
+  // Live cwd in status bar - poll every 2 seconds
   const updateCwd = async () => {
     try {
       const res = await fetch('/api/execute/cwd')
@@ -90,11 +90,8 @@ function initTerminal() {
       }
     } catch { /* server might not be ready yet */ }
   }
-  // Delay 3 detik sebelum first poll biar gak barengan sama request lain
-  setTimeout(() => {
-    updateCwd()
-    setInterval(updateCwd, 5000)
-  }, 3000)
+  updateCwd()
+  setInterval(updateCwd, 2000)
 }
 
 function initFileManager() {
