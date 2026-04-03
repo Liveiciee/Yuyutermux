@@ -10,7 +10,10 @@ import { Auth } from './api.js'
 
 // FIX: Store interval references for cleanup
 let _cwdInterval = null
-let _connectionInterval = null
+// FIX: Use {} not null — typeof null === 'object' in JS, so StatusBar.init() would
+// try to set null.interval = id, which crashes in strict mode (ES modules),
+// killing Editor.init() and every init after it.
+let _connectionInterval = {}
 
 document.addEventListener('DOMContentLoaded', () => {
   // FIX: Wrap each init in try-catch so one failure doesn't kill ALL event handlers.
@@ -232,5 +235,5 @@ function initModules() {
 // FIX: Cleanup intervals on page unload to prevent memory leaks
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
-  if (_connectionInterval) clearInterval(_connectionInterval)
+  if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)
 })

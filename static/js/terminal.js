@@ -50,7 +50,7 @@ export const StatusBar = {
     this.checkConnection()
     // FIX: Store interval reference for cleanup in app.js
     const id = setInterval(() => this.checkConnection(), 15000)
-    if (typeof intervalRef === 'object') {
+    if (intervalRef && typeof intervalRef === 'object') {
       // Export the reference back to the caller
       intervalRef.interval = id
     }
