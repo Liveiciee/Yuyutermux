@@ -126,7 +126,12 @@ export function bindEntryActions(entry) {
 
 // TERMINAL CORE
 export const Terminal = {
-  area: document.getElementById('outputArea'),
+  // FIX: Lazy-init DOM reference — avoids null if module evaluates before DOM is ready
+  _area: null,
+  get area() {
+    if (!this._area) this._area = document.getElementById('outputArea')
+    return this._area
+  },
   history: [],
   idx: -1,
   activeCmd: '',
@@ -231,6 +236,14 @@ export const Terminal = {
         body: JSON.stringify({ command: cmd }),
         signal: controller.signal
       })
+
+      // FIX: Handle 401 — redirect to login like api.request() does.
+      // Previously used raw fetch() without auth handling, so auth failures
+      // showed cryptic "STREAM ERROR: HTTP 401" instead of redirecting.
+      if (res.status === 401) {
+        window.location.href = '/login'
+        return
+      }
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const reader = res.body.getReader()

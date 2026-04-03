@@ -83,7 +83,12 @@ export const GlobalSearch = {
 
   show() {
     if (!this.dialog) return
-    this.dialog.showModal()
+    try {
+      this.dialog.showModal()
+    } catch (err) {
+      console.warn('[globalSearchModal] showModal failed:', err)
+      this.dialog.hidden = false
+    }
     this.input.value = ''
     this.resultsEl.innerHTML = ''
     setTimeout(() => this.input.focus(), 50)

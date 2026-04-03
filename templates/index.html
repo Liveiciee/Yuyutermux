@@ -125,11 +125,18 @@
         </header>
         <div class="breadcrumb" id="currentPathDisplay">~/Yuyutermux</div>
         <div class="file-toolbar">
-            <button id="uploadBtn" class="paper-btn small">
+            <!-- FIX: Changed upload button to <label> wrapping the hidden input.
+                 On mobile browsers, programmatic .click() on a hidden file input often
+                 fails to open the file picker. Using <label for="uploadInput"> ensures
+                 the file picker opens on all platforms. -->
+            <label for="uploadInput" id="uploadBtn" class="paper-btn small" style="cursor:pointer">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 UPLOAD
-            </button>
-            <input type="file" id="uploadInput" hidden>
+            </label>
+            <!-- FIX: Use CSS-based hiding instead of [hidden] attribute.
+                 The hidden attribute (display:none) prevents file picker from opening
+                 on many mobile browsers when triggered programmatically. -->
+            <input type="file" id="uploadInput" style="position:fixed;left:-9999px;opacity:0;width:1px;height:1px;pointer-events:none">
             <button id="refreshFileListBtn" class="paper-btn small">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
                 REFRESH

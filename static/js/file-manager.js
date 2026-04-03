@@ -239,14 +239,25 @@ export const FileManager = {
     formData.append('file', file)
     formData.append('path', this.dir)
     
+    // FIX: uploadBtn is now a <label>, not a <button> — labels don't have .disabled
     const btn = document.getElementById('uploadBtn')
-    const originalText = btn.innerHTML
+    const originalText = btn?.innerHTML
     
-    btn.innerHTML = 'UPLOADING...'
-    btn.disabled = true
+    if (btn) {
+      btn.innerHTML = 'UPLOADING...'
+      btn.style.pointerEvents = 'none'
+      btn.style.opacity = '0.5'
+    }
     
     try {
       const res = await fetch('/api/files/upload', { method: 'POST', body: formData })
+
+      // FIX: Handle 401 — redirect to login (same pattern as api.request)
+      if (res.status === 401) {
+        window.location.href = '/login'
+        return
+      }
+
       const data = await res.json()
       
       if (res.ok && data.success) {
@@ -259,8 +270,12 @@ export const FileManager = {
     } catch {
       Toast.show('Connection failed', 'error')
     } finally {
-      btn.innerHTML = originalText
-      btn.disabled = false
+      // FIX: Restore label state (not .disabled, which labels don't have)
+      if (btn) {
+        btn.innerHTML = originalText
+        btn.style.pointerEvents = ''
+        btn.style.opacity = ''
+      }
     }
   },
 
@@ -283,7 +298,15 @@ export const FileManager = {
       hljs.highlightElement(block)
     }
     
-    document.getElementById('previewModal').showModal()
+    const previewModal = document.getElementById('previewModal')
+    if (previewModal) {
+      try {
+        previewModal.showModal()
+      } catch (err) {
+        console.warn('[previewModal] showModal failed:', err)
+        previewModal.hidden = false
+      }
+    }
   },
 
   async openFileWithLine(filepath, targetLine) {

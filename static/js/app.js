@@ -13,15 +13,17 @@ let _cwdInterval = null
 let _connectionInterval = null
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSplash()
-  initInput()
-  // FIX: Initialize core modules FIRST (especially Toast which is used by other modules)
-  initModules()
-  initTerminal()
-  initFileManager()
-  initGitHub()
-  initPWA()
-  initAuth()
+  // FIX: Wrap each init in try-catch so one failure doesn't kill ALL event handlers.
+  // Previously, if initModules() threw, initTerminal/initFileManager/initGitHub never ran —
+  // making ALL buttons (send, git modal, file upload) appear completely dead.
+  try { initSplash() } catch (e) { console.error('[initSplash]', e) }
+  try { initInput() } catch (e) { console.error('[initInput]', e) }
+  try { initModules() } catch (e) { console.error('[initModules]', e) }
+  try { initTerminal() } catch (e) { console.error('[initTerminal]', e) }
+  try { initFileManager() } catch (e) { console.error('[initFileManager]', e) }
+  try { initGitHub() } catch (e) { console.error('[initGitHub]', e) }
+  try { initPWA() } catch (e) { console.error('[initPWA]', e) }
+  try { initAuth() } catch (e) { console.error('[initAuth]', e) }
 })
 
 function initAuth() {
@@ -118,6 +120,11 @@ function initFileManager() {
   const extraKeysPaper = document.getElementById('extraKeysPaper')
   const browser = document.getElementById('fileBrowser')
 
+  if (!fileModal || !browser) {
+    console.error('[initFileManager] Missing DOM elements')
+    return
+  }
+
   browser.addEventListener('click', (e) => {
     const item = e.target.closest('.file-item')
     if (!item) return
@@ -136,14 +143,21 @@ function initFileManager() {
   })
 
   document.getElementById('editFileBtn').onclick = () => {
-    fileModal.showModal()
-    extraKeysPaper.classList.add('hidden')
+    try {
+      fileModal.showModal()
+    } catch (err) {
+      // FIX: If dialog already open or browser doesn't support showModal,
+      // fall back to removing [hidden] attribute
+      console.warn('[fileModal] showModal failed:', err)
+      fileModal.show?.() || (fileModal.hidden = false)
+    }
+    extraKeysPaper?.classList.add('hidden')
     FileManager.load('')
   }
 
   document.getElementById('modalCancel').onclick = () => {
     fileModal.close()
-    extraKeysPaper.classList.remove('hidden')
+    extraKeysPaper?.classList.remove('hidden')
   }
 
   document.getElementById('modalSave').onclick = () => FileManager.save()
@@ -153,8 +167,11 @@ function initFileManager() {
   document.getElementById('previewBtn').onclick = () => FileManager.showPreview()
   document.getElementById('previewClose').onclick = () => document.getElementById('previewModal').close()
 
-  document.getElementById('uploadBtn').onclick = () => document.getElementById('uploadInput').click()
-  document.getElementById('uploadInput').onchange = (e) => {
+  // FIX: Upload uses <label for="uploadInput"> in HTML — no JS click handler needed.
+  // The label's for="uploadInput" attribute natively triggers the file picker on all platforms,
+  // including mobile browsers where hidden input .click() often fails.
+  const uploadInput = document.getElementById('uploadInput')
+  uploadInput.onchange = (e) => {
     if (e.target.files[0]) FileManager.uploadFile(e.target.files[0])
     e.target.value = ''
   }
@@ -162,7 +179,7 @@ function initFileManager() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
       fileModal.close()
-      extraKeysPaper.classList.remove('hidden')
+      extraKeysPaper?.classList.remove('hidden')
     }
   })
 }

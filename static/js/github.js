@@ -19,7 +19,13 @@ export const GitHub = {
   async open() {
     const modal = document.getElementById('gitModal')
     if (!modal) return
-    modal.showModal()
+    // FIX: Wrap showModal in try-catch — throws if dialog already open
+    try {
+      modal.showModal()
+    } catch (err) {
+      console.warn('[gitModal] showModal failed:', err)
+      modal.show?.() || (modal.hidden = false)
+    }
     document.getElementById('extraKeysPaper')?.classList.add('hidden')
     this.switchTab('status')
     await this.refresh()
