@@ -1,4 +1,4 @@
-const CACHE = 'yuyutermux-v16';
+const CACHE = 'yuyutermux-v19';
 
 // Only cache main HTML & CSS
 const ASSETS = [

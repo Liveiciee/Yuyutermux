@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0d0d0d">
-    <meta name="description" content="Yuyutermux Documentation">
+    <meta name="description" content="Yuyutermux Documentation — Web-based terminal and file manager for Termux">
     <title>Yuyutermux · Documentation</title>
 
     <link rel="manifest" href="/static/manifest.json">
@@ -159,7 +159,7 @@
         }
 
         .sub-list li::before {
-            content: '·';
+            content: '\00b7';
             color: var(--accent);
             margin-right: 0.5rem;
         }
@@ -331,6 +331,43 @@
         .shortcut-action { color: var(--text2); }
         .shortcut-keys { color: var(--accent); font-size: 0.68rem; text-align: right; }
 
+        .toc-list {
+            color: var(--text2);
+            font-size: 0.75rem;
+            line-height: 2;
+            margin: 0;
+            padding: 0 0 0 1rem;
+            list-style: none;
+        }
+
+        .toc-list li::before {
+            content: '\203a';
+            color: var(--accent);
+            margin-right: 0.5rem;
+        }
+
+        .toc-list a {
+            color: var(--text2);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .toc-list a:hover {
+            color: var(--accent);
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: var(--accent-glow);
+            border: 1px solid var(--accent-dim);
+            color: var(--accent);
+            font: 700 0.6rem/1 var(--mono);
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
         @media (max-width: 640px) {
             :root {
                 --docs-gap: 0.75rem;
@@ -350,22 +387,59 @@
 
 <div class="docs-layout">
     <nav class="docs-nav">
-        <h1 class="docs-title">⌕ Yuyutermux Documentation</h1>
-        <a href="/" class="nav-link">← Back</a>
+        <h1 class="docs-title">\u2312 Yuyutermux Documentation</h1>
+        <a href="/" class="nav-link">\u2190 Back</a>
     </nav>
 
-    <!-- PROJECT STRUCTURE -->
-    <section class="docs-section" aria-labelledby="tree-heading">
-        <div class="docs-header"><h2 id="tree-heading">Project Structure</h2></div>
+    <!-- TABLE OF CONTENTS -->
+    <section class="docs-section" aria-labelledby="toc-heading">
+        <div class="docs-header"><h2 id="toc-heading">Table of Contents</h2></div>
         <div class="docs-body">
+            <ul class="toc-list">
+                <li><a href="#overview">Overview &amp; Project Structure</a></li>
+                <li><a href="#features">Feature Overview</a></li>
+                <li><a href="#guide">Quick Guide</a></li>
+                <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
+                <li><a href="#api">API Endpoints</a></li>
+                <li><a href="#stack">Tech Stack</a></li>
+                <li><a href="#security">Security Model</a></li>
+                <li><a href="#architecture">Frontend Architecture</a></li>
+                <li><a href="#changelog">Changelog</a></li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- OVERVIEW & PROJECT STRUCTURE -->
+    <section class="docs-section" id="overview" aria-labelledby="tree-heading">
+        <div class="docs-header"><h2 id="tree-heading">Overview &amp; Project Structure</h2></div>
+        <div class="docs-body">
+            <p style="color:var(--text2);font-size:0.75rem;line-height:1.65;margin:0 0 1rem">
+                Yuyutermux is a self-hosted web-based terminal and file manager built for Termux on Android. It provides a full-featured terminal emulator, code editor with syntax highlighting, file manager with upload/download, Git client, and global search &mdash; all accessible from a mobile browser. The project uses Flask on the backend and vanilla ES modules on the frontend with zero build step. Originally evolved from a native Android GUI experiment using the <code>termuxgui</code> library, the project pivoted to a Flask/PWA architecture for long-term stability.
+            </p>
             <div class="stat-grid">
                 <div class="stat-card">
-                    <span class="stat-value" id="folderCount">—</span>
+                    <span class="stat-value" id="folderCount">&mdash;</span>
                     <span class="stat-label">Folders</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value" id="fileCount">—</span>
+                    <span class="stat-value" id="fileCount">&mdash;</span>
                     <span class="stat-label">Files</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">4</span>
+                    <span class="stat-label">CSS Files</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">11</span>
+                    <span class="stat-label">JS Modules</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">5</span>
+                    <span class="stat-label">Py Routes</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">28+</span>
+                    <span class="stat-label">API Endpoints</span>
                 </div>
             </div>
             <pre class="tree-view" id="treeOutput" aria-live="polite">Loading tree...</pre>
@@ -373,47 +447,49 @@
     </section>
 
     <!-- FEATURE OVERVIEW -->
-    <section class="docs-section" aria-labelledby="features-heading">
+    <section class="docs-section" id="features" aria-labelledby="features-heading">
         <div class="docs-header"><h2 id="features-heading">Feature Overview</h2></div>
         <div class="docs-body">
             <div class="badge-grid">
-                <div class="badge"><strong>Terminal</strong> — Streaming command execution via SSE</div>
-                <div class="badge"><strong>File Manager</strong> — Browse, edit, upload, download, rename</div>
-                <div class="badge"><strong>Code Editor</strong> — Line numbers, auto-indent, syntax highlight preview</div>
-                <div class="badge"><strong>Global Search</strong> — Grep-based text search across all project files</div>
-                <div class="badge"><strong>Git Panel</strong> — Full Git workflow: status, commit, push/pull, branches</div>
-                <div class="badge"><strong>PWA</strong> — Installable as standalone Android app</div>
-                <div class="badge"><strong>Status Bar</strong> — Live CWD, connection status, command counter, uptime</div>
-                <div class="badge"><strong>Extra Keys</strong> — Quick-access symbol bar (Tab, |, ~, $, etc.)</div>
-                <div class="badge"><strong>Command History</strong> — Navigate with ↑↓, suggestions dropdown</div>
-                <div class="badge"><strong>Offline Support</strong> — Service Worker cache with smart invalidation</div>
-                <div class="badge"><strong>Terminal Persistence</strong> — History saved to localStorage</div>
-                <div class="badge"><strong>Auth &amp; Security</strong> — Bearer token auth, CSP, security headers, rate limiting</div>
-                <div class="badge"><strong>CLI Tools</strong> — run.sh server manager + edit.sh file wizard</div>
+                <div class="badge"><strong>Terminal</strong> &mdash; Streaming command execution via chunked transfer encoding</div>
+                <div class="badge"><strong>File Manager</strong> &mdash; Browse, edit, upload (50MB), download, rename, delete</div>
+                <div class="badge"><strong>Code Editor</strong> &mdash; Real-time syntax highlighting overlay, line numbers, auto-indent (Python/JS/CSS/JSON)</div>
+                <div class="badge"><strong>Global Search</strong> &mdash; Grep-based text search with case toggle, click-to-open with line highlight</div>
+                <div class="badge"><strong>Git Panel</strong> &mdash; Full Git workflow: status, commit, push/pull/fetch, branches, diff, config</div>
+                <div class="badge"><strong>PWA</strong> &mdash; Installable as standalone Android app via Service Worker</div>
+                <div class="badge"><strong>Status Bar</strong> &mdash; Live CWD, connection status, command counter, session uptime</div>
+                <div class="badge"><strong>Extra Keys</strong> &mdash; Quick-access symbol bar (Tab, |, ~, $, &gt;, &lt;, *, etc.)</div>
+                <div class="badge"><strong>Command History</strong> &mdash; 50 entries, navigate with arrow keys, live suggestions dropdown</div>
+                <div class="badge"><strong>Virtual Scroll</strong> &mdash; Auto-collapse older terminal entries for smooth performance</div>
+                <div class="badge"><strong>Terminal Persistence</strong> &mdash; History saved to localStorage with XSS sanitization</div>
+                <div class="badge"><strong>Auth &amp; Security</strong> &mdash; Bearer token + HttpOnly cookie, CSP, SRI, rate limiting, blocked commands</div>
+                <div class="badge"><strong>CLI Tools</strong> &mdash; run.sh server manager + edit.sh file wizard</div>
             </div>
         </div>
     </section>
 
     <!-- QUICK GUIDE -->
-    <section class="docs-section" aria-labelledby="guide-heading">
+    <section class="docs-section" id="guide" aria-labelledby="guide-heading">
         <div class="docs-header"><h2 id="guide-heading">Quick Guide</h2></div>
         <div class="docs-body">
             <div class="guide-list">
 
                 <article class="guide-item">
                     <h3>Terminal</h3>
-                    <p>Type any Linux/Termux command in the input field. Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or tap <kbd>[EXEC]</kbd> to run. Output streams in real-time. The terminal supports <code>cd</code> natively to change working directory, so you can navigate the filesystem without leaving the web UI. If a process hangs for 10 seconds, a warning appears with a <kbd>KILL</kbd> button to terminate it. Each command entry shows timestamp, exit code badge, and action buttons to copy output or delete the entry. The terminal keeps up to 30 entries visible and up to 50 commands in history.</p>
+                    <p>Type any Linux/Termux command in the input field. Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or tap the send button to execute. Output streams in real-time via chunked transfer encoding (not SSE). The terminal handles <code>cd</code> natively in Python, so the working directory persists across commands without spawning a subshell. A hung process warning appears after 10 seconds of no output, with a <kbd>KILL</kbd> button that terminates the entire process group via <code>os.killpg()</code>. Each command entry shows a timestamp, exit code badge (green for 0, red for non-zero), and action buttons to copy output or delete the entry. The terminal keeps up to 30 entries visible on screen (older entries auto-collapse) and stores up to 50 commands in history. Commands have a maximum length of 10,000 characters and a process timeout of 5 minutes (300 seconds).</p>
                     <ul class="sub-list">
-                        <li><kbd>↑</kbd> / <kbd>↓</kbd> — Navigate command history</li>
-                        <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> — Execute command</li>
-                        <li>Start typing to see suggestions from previous commands</li>
-                        <li>Hung process auto-detection after 10s with kill option</li>
+                        <li><kbd>\u2191</kbd> / <kbd>\u2193</kbd> &mdash; Navigate command history</li>
+                        <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> &mdash; Execute command</li>
+                        <li>Start typing to see live suggestions from previous commands (top 5 matches)</li>
+                        <li>Hung process auto-detection after 10s with kill button</li>
+                        <li>Click any terminal entry to expand/collapse it</li>
+                        <li>Staggered fade-out animation when clearing all entries</li>
                     </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>Extra Keys</h3>
-                    <p>Symbol bar above the input provides quick access to characters that are tedious to type on mobile keyboards. Each key either inserts a character at the cursor position or triggers an action. The accent-colored keys are action buttons.</p>
+                    <p>Symbol bar above the input provides quick access to characters that are tedious to type on mobile keyboards. Each key either inserts a character at the cursor position or triggers an action. Accent-colored keys are action buttons. Every press triggers a ripple animation for tactile feedback.</p>
                     <div class="key-grid">
                         <div class="key-item"><span class="key-label">TAB</span><span class="key-desc">Insert tab</span></div>
                         <div class="key-item"><span class="key-label">|</span><span class="key-desc">Insert pipe</span></div>
@@ -426,74 +502,99 @@
                         <div class="key-item"><span class="key-label">$</span><span class="key-desc">Variable</span></div>
                         <div class="key-item"><span class="key-label">CTRL+C</span><span class="key-desc">Kill process</span></div>
                         <div class="key-item"><span class="key-label">ESC</span><span class="key-desc">Clear input</span></div>
-                        <div class="key-item"><span class="key-label">↑ ↓</span><span class="key-desc">History nav</span></div>
+                        <div class="key-item"><span class="key-label">\u2191 \u2193</span><span class="key-desc">History nav</span></div>
                     </div>
                 </article>
 
                 <article class="guide-item">
                     <h3>File Manager</h3>
-                    <p>Click <kbd>[FILES]</kbd> in the header to open the file manager dialog. Browse directories by clicking folders, click any file to open it in the built-in editor. The editor supports line numbers, auto-indentation (including Python-style after <code>:</code>), Tab-to-spaces (4 spaces), and <kbd>Ctrl</kbd>+<kbd>S</kbd> to save. Use <kbd>[PREVIEW]</kbd> to see syntax-highlighted code via highlight.js. The toolbar provides upload from Android gallery/native file manager, refresh, and global search. Navigate up with the <code>..</code> parent directory entry.</p>
+                    <p>Click <kbd>[FILES]</kbd> in the header to open the file manager dialog. Browse directories by clicking folders, click any file to open it in the built-in code editor. The editor features real-time syntax highlighting via an overlay technique &mdash; a <code>&lt;pre&gt;</code> layer behind the textarea displays highlight.js-colored code, while the textarea sits on top with transparent text so the user sees colors through it. This means syntax highlighting is live, not a separate preview mode. The editor supports line numbers with scroll sync, auto-indentation for multiple languages (Python <code>:</code>, JavaScript/CSS/JSON <code>{</code> <code>(</code> <code>[</code>), Tab-to-spaces (4 spaces), and <kbd>Ctrl</kbd>+<kbd>S</kbd> to save. Upload uses a <code>&lt;label for="uploadInput"&gt;</code> pattern instead of programmatic <code>.click()</code> to ensure file picker works on all mobile browsers. Duplicate filenames are handled with timestamp-based renaming.</p>
                     <ul class="sub-list">
-                        <li><kbd>[SAVE]</kbd> — Save file (or <kbd>Ctrl</kbd>+<kbd>S</kbd> in editor)</li>
-                        <li><kbd>[+ NEW FILE]</kbd> — Create empty file in current directory</li>
-                        <li><kbd>[RENAME]</kbd> — Rename currently open file</li>
-                        <li><kbd>[UPLOAD]</kbd> — Upload file from device</li>
-                        <li><kbd>↓</kbd> button on file — Download file to device</li>
-                        <li><kbd>×</kbd> button on file — Delete file/directory</li>
-                        <li><kbd>[PREVIEW]</kbd> — Syntax-highlighted read-only view</li>
+                        <li><kbd>[SAVE]</kbd> &mdash; Save file (or <kbd>Ctrl</kbd>+<kbd>S</kbd> in editor)</li>
+                        <li><kbd>[+ NEW FILE]</kbd> &mdash; Create empty file in current directory</li>
+                        <li><kbd>[RENAME]</kbd> &mdash; Rename currently open file (read-write-delete sequence)</li>
+                        <li><kbd>UPLOAD</kbd> &mdash; Upload file from device (max 50MB, duplicate-safe)</li>
+                        <li><kbd>\u2193</kbd> button on file &mdash; Download file to device</li>
+                        <li><kbd>\u00d7</kbd> button on file &mdash; Delete file or directory</li>
+                        <li>Click any file to open in editor with live syntax highlighting</li>
+                        <li>Click <code>..</code> to navigate to parent directory</li>
+                    </ul>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Code Editor</h3>
+                    <p>The editor uses a dual-layer technique: a <code>&lt;pre&gt;&lt;code&gt;</code> highlight layer sits behind the textarea. When highlighting is active, the textarea's text color becomes transparent and its background becomes transparent, revealing the colored syntax layer beneath. The caret stays visible via <code>caret-color</code>. This approach provides real-time syntax highlighting without a separate preview mode. Highlighting is debounced at 100ms to avoid performance issues during rapid typing. The editor uses <code>document.execCommand('insertText')</code> for Tab and Enter key handling to preserve browser undo/redo history.</p>
+                    <ul class="sub-list">
+                        <li><strong>Languages</strong> &mdash; Python, JavaScript, TypeScript, HTML, CSS, JSON, Markdown, YAML, TOML, INI</li>
+                        <li><strong>Auto-indent</strong> &mdash; After <code>:</code> (Python), <code>{</code> (JS/JSON), <code>(</code>, <code>[</code> &mdash; adds 4-space indent</li>
+                        <li><strong>Undo/Redo</strong> &mdash; Preserved via execCommand insertText, not .value assignment</li>
+                        <li><strong>Line Numbers</strong> &mdash; Optimized for large files (chunked rendering for 1000+ lines)</li>
+                        <li><strong>Scroll Sync</strong> &mdash; Gutter, textarea, and highlight layer scroll in unison</li>
+                        <li><strong>Viewport Aware</strong> &mdash; Adapts to virtual keyboard height via visualViewport API</li>
                     </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>Global Search</h3>
-                    <p>In File Manager, click <kbd>SEARCH</kbd> to open the "Find in Files" dialog. Type a query and press Enter or click Search. Results are grouped by file with match counts. Click any match to jump directly to that line in the editor with the matching text highlighted and selected. Toggle case-sensitive mode with the <code>Aa</code> button. The search uses <code>grep</code> on the server across Python, JS, TS, HTML, CSS, JSON, Markdown, YAML, TOML, shell, and config files, excluding <code>node_modules</code>, <code>.git</code>, <code>__pycache__</code>, and <code>dist</code> directories. Results are capped at 300 lines.</p>
+                    <p>In File Manager, click <kbd>SEARCH</kbd> to open the "Find in Files" dialog. Type a query and press Enter or click Search. Results are grouped by file with match counts per file, and each result is expandable/collapsible. Click any match to jump directly to that line in the editor with the matching text highlighted and selected, plus a brief orange flash on the editor wrapper. Toggle case-sensitive mode with the <code>Aa</code> button. The search uses <code>grep</code> on the server across 14 file types (Python, JS, TS, HTML, CSS, JSON, Markdown, TXT, Shell, YAML, TOML, CFG), excluding <code>node_modules</code>, <code>.git</code>, <code>__pycache__</code>, and <code>dist</code> directories. Results are capped at 300 lines and each match line is truncated at 500 characters. The search query is limited to 200 characters.</p>
                 </article>
 
                 <article class="guide-item">
                     <h3>Git / GitHub Panel</h3>
-                    <p>Click <kbd>[GIT]</kbd> in the header to open the Git panel. This is a full-featured Git client built directly into the web UI. It provides 6 tabs covering the entire Git workflow — from initializing a repository to pushing commits to GitHub. The panel displays the current branch, sync status (ahead/behind count), and comprehensive file change tracking with staged, unstaged, and untracked file groups. Each file shows its change type and provides stage, unstage, and discard actions.</p>
+                    <p>Click <kbd>[GIT]</kbd> in the header to open the Git panel. This is a full-featured Git client with 6 tabs covering the entire Git workflow. The panel displays the current branch name, sync status (ahead/behind count), and comprehensive file change tracking. Remote URLs containing tokens are automatically masked in the status display (shown as <code>https://***@github.com/...</code>). Push operations auto-detect missing upstream and offer to set it with <code>--set-upstream</code>. Branch names and remote names are validated against regex patterns to prevent injection.</p>
                     <ul class="sub-list">
-                        <li><strong>Status Tab</strong> — View staged, modified, untracked files. Stage/unstage/discard individual files or in bulk.</li>
-                        <li><strong>Commit Tab</strong> — Write commit messages, stage all, and commit. Supports <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to commit.</li>
-                        <li><strong>Sync Tab</strong> — Push, pull, and fetch from remote. Auto-detects missing upstream and offers to set it.</li>
-                        <li><strong>Log Tab</strong> — View commit history with hash, message, author, and relative time (up to 50 commits).</li>
-                        <li><strong>Branches Tab</strong> — List all branches (local + remote), checkout, or create new branches.</li>
-                        <li><strong>Config Tab</strong> — Set global Git identity (name + email) and manage remote URLs. For GitHub, embed your Personal Access Token in the URL: <code>https://TOKEN@github.com/user/repo.git</code></li>
+                        <li><strong>Status Tab</strong> &mdash; View staged, modified, untracked files with change type badges. Stage/unstage/discard individual files or in bulk (UNSTAGE ALL, STAGE ALL, ADD ALL).</li>
+                        <li><strong>Commit Tab</strong> &mdash; Write commit messages (max 5000 chars), stage all, and commit. Supports <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to commit.</li>
+                        <li><strong>Sync Tab</strong> &mdash; Push (with force option), pull, and fetch from remote. Auto-detects missing upstream and offers to set it.</li>
+                        <li><strong>Log Tab</strong> &mdash; View commit history with short hash, message, author, and relative time (up to 50 commits).</li>
+                        <li><strong>Branches Tab</strong> &mdash; List all branches (local + remote) with current marker. Checkout existing branches or create new ones.</li>
+                        <li><strong>Config Tab</strong> &mdash; Set global Git identity (name + email, max 200 chars each, control characters rejected) and manage remote URLs. For GitHub, embed your Personal Access Token: <code>https://TOKEN@github.com/user/repo.git</code></li>
                     </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>Status Bar</h3>
-                    <p>The status bar at the bottom of the terminal displays real-time system information. It polls the server to detect connection status and updates the current working directory live every 2 seconds. The command counter increments with each executed command, and the uptime timer starts when the page loads. A green dot means connected, red means offline.</p>
+                    <p>The status bar at the bottom of the terminal displays real-time system information. Connection status is checked via <code>/api/health</code> (lightweight, no directory scanning) every 15 seconds. The working directory is polled every 2 seconds. The command counter increments with each executed command, and the uptime timer starts when the page loads and updates every second. A green pulsing dot means connected, a red pulsing dot means offline. On mobile (&lt;640px), the center CWD display is hidden to save space.</p>
                     <ul class="sub-list">
-                        <li><strong>Left</strong> — Connection status dot + label (CONNECTED / OFFLINE)</li>
-                        <li><strong>Center</strong> — Live current working directory (updates every 2s)</li>
-                        <li><strong>Right</strong> — Command count + session uptime timer</li>
+                        <li><strong>Left</strong> &mdash; Connection status dot + label (CONNECTED / OFFLINE)</li>
+                        <li><strong>Center</strong> &mdash; Live current working directory with ~/ shorthand (updates every 2s, hidden on mobile)</li>
+                        <li><strong>Right</strong> &mdash; Command count + session uptime timer (MM:SS)</li>
                     </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>PWA Install</h3>
-                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app — no browser address bar, icon on home screen, runs like a native app. An automatic install prompt appears when conditions are met. Alternatively, use "Add to Home Screen" from the browser menu. The Service Worker caches HTML pages and CSS for offline access. API requests are never cached to ensure fresh data. Dynamic assets (JS modules, CDN fonts) are cached at runtime on first load. To force a cache refresh, use the cache-bust feature in <code>run.sh</code> or clear browser data.</p>
+                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app &mdash; no browser address bar, icon on home screen, runs like a native app in standalone mode. An automatic install prompt appears when conditions are met, or use "Add to Home Screen" from the browser menu. The Service Worker pre-caches HTML pages and CSS for offline access, caches dynamic assets (JS modules, CDN fonts) at runtime on first load, and never caches API requests. Cache is limited to 100 entries to prevent flooding. Internal URLs (<code>file://</code>, <code>data:text/html</code>) are blocked for security. To force a cache refresh, use the "Bust Cache" feature in <code>run.sh</code> which increments the cache version (currently v16) without requiring a server restart.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Authentication</h3>
+                    <p>On first visit, the browser redirects to <code>/login</code> where the auth token is entered manually. The token is generated fresh in-memory on every server start via <code>secrets.token_urlsafe(32)</code>, or can be set via the <code>YUYUTERMUX_TOKEN</code> environment variable. On successful login, a <code>yuyu_token</code> HttpOnly cookie is set (valid 30 days, SameSite=Strict). Logout clears the cookie but the server keeps running. Token comparison uses <code>secrets.compare_digest()</code> for constant-time comparison to prevent timing attacks. Error messages are uniform &mdash; they never reveal whether the token was empty, wrong, or the system has no token configured.</p>
+                    <ul class="sub-list">
+                        <li>Token displayed once in server log on startup</li>
+                        <li>View token via <code>run.sh</code> &rarr; Show Token, or set via <code>YUYUTERMUX_TOKEN</code> env var</li>
+                        <li>Cookie is HttpOnly (prevents XSS theft) and SameSite=Strict (prevents CSRF)</li>
+                        <li>All API routes require auth except <code>/api/health</code>, <code>/api/auth/login</code>, <code>/api/auth/logout</code></li>
+                    </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>CLI: run.sh (Server Manager)</h3>
-                    <p>The <code>run.sh</code> script is an interactive terminal menu for managing the Yuyutermux server. It uses Waitress as the production WSGI server (not Flask's built-in dev server). The script handles port conflict detection, PID file management, graceful shutdown with SIGTERM followed by SIGKILL fallback, and displays the server's local IP for cross-device access.</p>
+                    <p>The <code>run.sh</code> script is an interactive terminal menu for managing the Yuyutermux server. It uses Waitress as the production WSGI server (not Flask's built-in dev server). Requires <code>waitress-serve</code> to be installed. The script handles port conflict detection using <code>ss</code> (preferred) or <code>netstat</code> (fallback), PID file management, graceful shutdown with SIGTERM followed by SIGKILL fallback, and displays the server's local IP for cross-device access.</p>
                     <ul class="sub-list">
-                        <li><strong>Start</strong> — Launch Waitress on port 5000, auto-detect and free busy ports. Displays auth token on startup.</li>
-                        <li><strong>Stop</strong> — Graceful shutdown with PID tracking</li>
-                        <li><strong>Restart</strong> — Stop + Start in sequence</li>
-                        <li><strong>Status</strong> — Show PID, uptime, port status, log size, SW cache version, auth token</li>
-                        <li><strong>Log</strong> — View last 20 lines of server log</li>
-                        <li><strong>Bust Cache</strong> — Increment Service Worker cache version (no restart needed)</li>
-                        <li><strong>Show Token</strong> — Display current auth token dari server log</li>
+                        <li><strong>Start</strong> &mdash; Launch Waitress on 0.0.0.0:5000, auto-detect and free busy ports. Displays auth token on startup.</li>
+                        <li><strong>Stop</strong> &mdash; Graceful shutdown with PID tracking (SIGTERM, then SIGKILL after 5s)</li>
+                        <li><strong>Restart</strong> &mdash; Stop + Start in sequence</li>
+                        <li><strong>Status</strong> &mdash; Show PID, uptime, port status, log size, SW cache version, auth token</li>
+                        <li><strong>Log</strong> &mdash; View last 20 lines of server log</li>
+                        <li><strong>Bust Cache</strong> &mdash; Increment Service Worker cache version (no restart needed)</li>
+                        <li><strong>Show Token</strong> &mdash; Display current auth token from env var or server log</li>
                     </ul>
                 </article>
 
                 <article class="guide-item">
                     <h3>CLI: edit.sh (File Wizard)</h3>
-                    <p>A standalone CLI tool for quick file editing directly from Termux terminal. It scans the project directory for code files (max depth 3), lets you pick one interactively (supports fzf for fuzzy search), then choose an action: edit in nano, delete, empty and edit, or copy to clipboard. Optional dependencies: <code>fzf</code> for fuzzy file picker, <code>termux-clipboard-set</code> for clipboard support.</p>
+                    <p>A standalone CLI tool for quick file editing directly from Termux terminal. It scans the project directory for code files up to depth 3 (Python, JS, TS, HTML, CSS, JSON, TXT, MD, YAML, TOML, SH, CFG), lets you pick one interactively &mdash; with <code>fzf</code> for fuzzy search if available, or numbered list otherwise &mdash; then choose an action: edit in nano, delete, empty and edit, or copy to clipboard. Optional dependencies: <code>fzf</code> for fuzzy file picker with preview, <code>termux-clipboard-set</code> for clipboard support (with 1MB size warning).</p>
                 </article>
 
             </div>
@@ -501,14 +602,19 @@
     </section>
 
     <!-- KEYBOARD SHORTCUTS -->
-    <section class="docs-section" aria-labelledby="shortcuts-heading">
+    <section class="docs-section" id="shortcuts" aria-labelledby="shortcuts-heading">
         <div class="docs-header"><h2 id="shortcuts-heading">Keyboard Shortcuts</h2></div>
         <div class="docs-body">
             <div class="shortcut-row"><span class="shortcut-action">Execute command</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Save file (in editor)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Commit (in Git message box)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>↑</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>↓</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>\u2191</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>\u2193</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Clear terminal input</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Clear terminal output</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Open Files modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Open Git modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>G</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Toggle extra keys panel</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Close dialog / modal</span><span class="shortcut-keys"><kbd>Escape</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Insert tab in editor</span><span class="shortcut-keys"><kbd>Tab</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Auto-indent new line</span><span class="shortcut-keys"><kbd>Enter</kbd> (editor)</span></div>
@@ -517,22 +623,22 @@
     </section>
 
     <!-- API ENDPOINTS -->
-    <section class="docs-section" aria-labelledby="api-heading">
+    <section class="docs-section" id="api" aria-labelledby="api-heading">
         <div class="docs-header"><h2 id="api-heading">API Endpoints</h2></div>
         <div class="docs-body">
             <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Terminal</h3>
             <div class="api-grid" style="margin-bottom:1.25rem">
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/execute/stream</span>
-                    <div class="api-desc">Execute command. Returns streaming output via chunked transfer. Handles <code>cd</code> natively.</div>
+                    <div class="api-desc">Execute command via chunked transfer. Handles <code>cd</code> natively. Max 10,000 chars. Blocked command list enforced. 5-minute timeout.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/execute/kill</span>
-                    <div class="api-desc">Kill all active running processes.</div>
+                    <div class="api-desc">Kill all active running processes as process group (<code>os.killpg</code>).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/execute/cwd</span>
-                    <div class="api-desc">Get current working directory with display path (~/ shorthand).</div>
+                    <div class="api-desc">Get current working directory. Returns display path with ~/ shorthand only (never leaks real path).</div>
                 </div>
             </div>
 
@@ -540,23 +646,23 @@
             <div class="api-grid" style="margin-bottom:1.25rem">
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/files/list?path=</span>
-                    <div class="api-desc">Directory listing. Returns file names, types, sizes (human-readable), and modification times.</div>
+                    <div class="api-desc">Directory listing. Returns relative paths, file names, types, sizes (human-readable), and modification times.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/files/read</span>
-                    <div class="api-desc">Read file content. Max 1MB. Returns UTF-8 text with errors ignored.</div>
+                    <div class="api-desc">Read file content. Max 1MB. Returns UTF-8 text with errors replaced (not ignored).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/files/write</span>
-                    <div class="api-desc">Write content to file. Auto-creates parent directories.</div>
+                    <div class="api-desc">Write content to file (max 5MB). Auto-creates parent dirs. Blocks protected file patterns (.auth_token, .env, .bashrc, etc.).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/files/delete</span>
-                    <div class="api-desc">Delete file or empty directory by path.</div>
+                    <div class="api-desc">Delete file or directory (via shutil.rmtree). Protects critical project files (app.py, utils.py, run.sh).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/files/create</span>
-                    <div class="api-desc">Create new empty file in specified directory.</div>
+                    <div class="api-desc">Create new empty file. Sanitizes filename, rejects hidden files and path separators.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/files/download?path=</span>
@@ -564,15 +670,15 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/files/upload</span>
-                    <div class="api-desc">Upload file via multipart form data.</div>
+                    <div class="api-desc">Upload file via multipart (max 50MB). Generates timestamp-based unique name on collision. Sanitizes filename.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/files/search?q=&amp;case=</span>
-                    <div class="api-desc">Grep-based text search. Supports case toggle. 15 file types, excludes common dirs. Max 300 lines.</div>
+                    <div class="api-desc">Grep-based text search (max 200 char query). 14 file types, 300 line cap. 10s timeout. Uses list args (no shell=True).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/project/info</span>
-                    <div class="api-desc">Project tree (via <code>tree</code> command) + file/folder counts.</div>
+                    <div class="api-desc">Project tree (via <code>tree</code> command) + file/folder counts. Skips hidden dirs.</div>
                 </div>
             </div>
 
@@ -580,11 +686,11 @@
             <div class="api-grid" style="margin-bottom:1.25rem">
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/git/status</span>
-                    <div class="api-desc">Full status: branch, staged/unstaged/untracked files, remotes, ahead/behind count.</div>
+                    <div class="api-desc">Full status: branch, staged/unstaged/untracked files, remotes (token-masked), ahead/behind count.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/git/log?limit=</span>
-                    <div class="api-desc">Commit history with hash, message, author, time. Limit 1–50, default 15.</div>
+                    <div class="api-desc">Commit history with full hash, short hash, message, author, relative time. Limit 1&ndash;50, default 15.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/git/branches</span>
@@ -596,7 +702,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/add</span>
-                    <div class="api-desc">Stage files. Accepts file list or <code>.</code> for all.</div>
+                    <div class="api-desc">Stage files. Accepts file list or <code>.</code> for all. Validates against path traversal.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/unstage</span>
@@ -608,15 +714,15 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/commit</span>
-                    <div class="api-desc">Commit staged changes with message.</div>
+                    <div class="api-desc">Commit staged changes with message (max 5000 chars).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/push</span>
-                    <div class="api-desc">Push to remote. Supports force push and auto-set-upstream on failure.</div>
+                    <div class="api-desc">Push to remote. Supports force push. Auto-set-upstream on failure. Validates branch/remote names.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/pull</span>
-                    <div class="api-desc">Pull from remote. Default: origin.</div>
+                    <div class="api-desc">Pull from remote. Default: origin. Validates branch/remote names.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/fetch</span>
@@ -624,11 +730,11 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/checkout</span>
-                    <div class="api-desc">Switch branch or create new with <code>create: true</code>.</div>
+                    <div class="api-desc">Switch branch or create new with <code>create: true</code>. Validates branch name regex.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/remote</span>
-                    <div class="api-desc">Add or remove remote. Auto-updates if remote name exists.</div>
+                    <div class="api-desc">Add or remove remote (auto-updates if exists). Validates name and URL format.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/git/config</span>
@@ -636,7 +742,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/git/config</span>
-                    <div class="api-desc">Set global Git identity (name + email).</div>
+                    <div class="api-desc">Set global Git identity. Max 200 chars, rejects control characters to prevent config injection.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/git/diff</span>
@@ -644,221 +750,222 @@
                 </div>
             </div>
 
+            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Auth</h3>
+            <div class="api-grid" style="margin-bottom:1.25rem">
+                <div class="api-card">
+                    <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/login</span>
+                    <div class="api-desc">Login with token. Sets HttpOnly cookie (30 days, SameSite=Strict). Uniform error messages.</div>
+                </div>
+                <div class="api-card">
+                    <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/logout</span>
+                    <div class="api-desc">Logout. Clears cookie. Server keeps running.</div>
+                </div>
+            </div>
+
             <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">System</h3>
             <div class="api-grid">
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/health</span>
-                    <div class="api-desc">Health check. Returns <code>{"status": "ok"}</code>.</div>
+                    <div class="api-desc">Health check (no auth required). Returns <code>{"status": "ok", "service": "yuyutermux"}</code>.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/</span>
-                    <div class="api-desc">Main app page (index.html).</div>
+                    <div class="api-desc">Main app page (index.html). Protected by auth.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/docs</span>
-                    <div class="api-desc">This documentation page.</div>
+                    <div class="api-desc">This documentation page. Protected by auth.</div>
+                </div>
+                <div class="api-card">
+                    <span class="api-method get">GET</span><span class="api-endpoint">/login</span>
+                    <div class="api-desc">Login page. Redirects to <code>/</code> if already authenticated.</div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- TECH STACK -->
-    <section class="docs-section" aria-labelledby="stack-heading">
+    <section class="docs-section" id="stack" aria-labelledby="stack-heading">
         <div class="docs-header"><h2 id="stack-heading">Tech Stack</h2></div>
         <div class="docs-body">
             <div class="spec-grid">
                 <div class="spec-item">
                     <h4>Backend</h4>
-                    <p>Python 3 + Flask 3 · Waitress WSGI (production) · subprocess isolation · shlex.quote anti-injection · Blueprint routing</p>
+                    <p>Python 3 + Flask 3 &middot; Waitress WSGI (production) &middot; subprocess isolation &middot; shlex.split() anti-injection &middot; Blueprint routing (4 blueprints) &middot; Thread-safe CWD management</p>
                 </div>
                 <div class="spec-item">
                     <h4>Frontend</h4>
-                    <p>Vanilla ES modules · Zero build step · 11 modular JS files · Service Worker (PWA) · Responsive mobile-first design</p>
+                    <p>Vanilla ES modules &middot; Zero build step &middot; 11 modular JS files &middot; Service Worker (PWA) &middot; Responsive mobile-first design &middot; Dialog API for modals</p>
                 </div>
                 <div class="spec-item">
                     <h4>Code Editor</h4>
-                    <p>highlight.js 11.9 (Atom One Dark) · Python + Bash language support · Line numbers + scroll sync · Auto-indent</p>
+                    <p>highlight.js 11.9 (Atom One Dark theme) &middot; 10 languages (Python, JS, TS, HTML, CSS, JSON, Markdown, YAML, TOML, INI) &middot; Dual-layer overlay technique &middot; Debounced highlighting (100ms) &middot; execCommand undo/redo preservation</p>
                 </div>
                 <div class="spec-item">
                     <h4>Fonts</h4>
-                    <p>Space Grotesk (headings/UI) · Space Mono (code/terminal) · Google Fonts CDN with preconnect</p>
+                    <p>Space Grotesk (headings/UI) &middot; Space Mono (code/terminal) &middot; Google Fonts CDN with preconnect &middot; SRI integrity hashes</p>
                 </div>
                 <div class="spec-item">
                     <h4>Storage</h4>
-                    <p>LocalStorage (terminal history, max 30 entries) · Flat file system · No database overhead</p>
+                    <p>LocalStorage (terminal history, max 30 entries) &middot; Version-based invalidation (v2) &middot; XSS sanitization on restore &middot; Flat file system &middot; No database overhead</p>
                 </div>
                 <div class="spec-item">
                     <h4>UI/UX</h4>
-                    <p>Cyber-minimalist OLED dark theme · WeeChat flex layout · 4 CSS files (base, layout, ui, animation)</p>
+                    <p>Cyber-minimalist OLED dark theme &middot; 4 CSS files (base, layout, ui, animation) &middot; color-mix() for theme-aware animations &middot; @supports fallback for env() &middot; Reduced-motion media query</p>
                 </div>
                 <div class="spec-item">
                     <h4>Platform</h4>
-                    <p>Termux on Android 14+ · Chrome / Kiwi Browser · Portrait orientation · Virtual keyboard aware</p>
+                    <p>Termux on Android 14+ &middot; Chrome / Kiwi Browser &middot; Portrait orientation &middot; Virtual keyboard aware (visualViewport API) &middot; Safe area insets support</p>
                 </div>
                 <div class="spec-item">
                     <h4>Security</h4>
-                    <p>Bearer token auth (file or env) · Auto-token-prompt on 401 · Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) · SRI on CDN assets · Rate limiting · Blocked commands list · Path traversal guard · Max file size 1MB · Localhost bind by default · Debug off in production</p>
+                    <p>Bearer token + HttpOnly cookie &middot; secrets.compare_digest() timing-safe &middot; CSP + SRI &middot; Security headers (6 types) &middot; Rate limiting (periodic cleanup) &middot; 30+ blocked commands &middot; Path traversal guard &middot; Protected file patterns &middot; Process group kill &middot; Content-Type enforcement &middot; Sanitized error messages</p>
                 </div>
                 <div class="spec-item">
                     <h4>Caching</h4>
-                    <p>Service Worker v10 · Pre-cache HTML+CSS · Runtime cache JS/fonts · API requests never cached · Cache size limit · Cache-bust via run.sh</p>
+                    <p>Service Worker v16 &middot; Pre-cache HTML+CSS (7 assets) &middot; Runtime cache JS/fonts &middot; API never cached &middot; Max 100 cache entries &middot; Internal URL blocking &middot; Cache-bust via run.sh</p>
                 </div>
                 <div class="spec-item">
                     <h4>Git Integration</h4>
-                    <p>subprocess git CLI · 16 endpoints · 30s timeout · Diff viewer · Upstream auto-detection</p>
+                    <p>subprocess git CLI &middot; 16 endpoints &middot; 30s timeout &middot; Diff viewer &middot; Upstream auto-detection &middot; Token-masked remote display &middot; Branch/remote name validation</p>
+                </div>
+                <div class="spec-item">
+                    <h4>CLI Tools</h4>
+                    <p>run.sh (server manager: start/stop/restart/status/log/cache-bust/token) &middot; edit.sh (file wizard: edit/delete/empty/clipboard with fzf support)</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- SECURITY -->
-    <section class="docs-section" aria-labelledby="security-heading">
+    <section class="docs-section" id="security" aria-labelledby="security-heading">
         <div class="docs-header"><h2 id="security-heading">Security Model</h2></div>
         <div class="docs-body">
             <p style="color:var(--text2);font-size:0.75rem;line-height:1.65;margin:0 0 1rem">
-                Yuyutermux is designed for single-user Termux environments. Authentication uses a Bearer token generated fresh in-memory on every server start (or set via <code>YUYUTERMUX_TOKEN</code> env var). The token is printed once to the server log on startup. On first visit the browser redirects to <code>/login</code> where the token is entered manually; on success a <code>yuyu_token</code> cookie is set (valid 30 days). Logout clears the cookie — the server keeps running. All API routes require authentication except <code>/api/health</code>. The server binds to <code>127.0.0.1</code> by default and runs with debug mode off. Security headers are applied to every response.
+                Yuyutermux is designed for single-user Termux environments. The security model operates on multiple layers: authentication, input validation, output sanitization, and process isolation. The server binds to <code>0.0.0.0</code> via Waitress (configured in run.sh) but Flask defaults to <code>127.0.0.1</code> for direct launches. Debug mode is off by default. All error messages sanitize real filesystem paths, replacing <code>$HOME</code> with <code>~</code> and <code>~/Yuyutermux</code> for the project directory.
             </p>
             <ul class="sub-list">
-                <li><strong>Token Auth</strong> — Bearer token pada semua <code>/api/*</code> routes. In-memory, fresh tiap server start. Constant-time comparison untuk mencegah timing attacks. Cookie fallback untuk browser access.</li>
-                <li><strong>Login Page</strong> — <code>/login</code> redirect otomatis jika belum auth. Token diinput manual sekali, cookie disimpan 30 hari. Logout = clear cookie, server tetap jalan.</li>
-                <li><strong>Security Headers</strong> — <code>X-Content-Type-Options</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy</code>, <code>Cache-Control: no-store</code></li>
-                <li><strong>CSP + SRI</strong> — Content Security Policy in <code>index.html</code>. Subresource Integrity hashes on all CDN assets (highlight.js, fonts).</li>
-                <li><strong>Rate Limiting</strong> — 30 req/60s default on all API routes; stricter 10 req/60s on command execution endpoints</li>
-                <li><strong>Blocked Commands</strong> — Hardcoded denylist: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>chmod</code>, and other destructive/exfil commands</li>
-                <li><strong>Path Traversal Guard</strong> — All file operations use <code>validate_path()</code> which resolves symlinks and checks against <code>PROJECT_DIR</code></li>
-                <li><strong>Command Injection Prevention</strong> — Commands parsed via <code>shlex.split()</code>; <code>cd</code> handled in Python; no <code>shell=True</code> in file routes</li>
-                <li><strong>Process Group Kill</strong> — Terminal processes killed as a process group to prevent orphan children</li>
-                <li><strong>CSRF Mitigation</strong> — POST/PUT/DELETE require <code>application/json</code> or <code>multipart/form-data</code> Content-Type</li>
-                <li><strong>XSS Sanitization</strong> — Terminal output sanitized before localStorage write in <code>storage.js</code></li>
-                <li><strong>File Size Limit</strong> — Read operations capped at 1MB; upload limit 50MB</li>
-                <li><strong>Localhost Bind</strong> — Server binds to <code>127.0.0.1</code> by default. Override with <code>YUYUTERMUX_HOST</code> env var.</li>
-                <li><strong>Error Sanitization</strong> — Server errors strip real paths before sending to client; 5xx errors return generic message</li>
+                <li><strong>Token Auth</strong> &mdash; In-memory token via <code>secrets.token_urlsafe(32)</code>, fresh each server start. Or set via <code>YUYUTERMUX_TOKEN</code> env var. Constant-time comparison via <code>secrets.compare_digest()</code>. HttpOnly + SameSite=Strict cookie fallback for browsers.</li>
+                <li><strong>Login Page</strong> &mdash; <code>/login</code> auto-redirect if unauthenticated. Uniform error messages (never reveals if token is empty vs wrong). Spinner state during login attempt.</li>
+                <li><strong>Security Headers</strong> &mdash; <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection: 1; mode=block</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy: camera=(), microphone=(), geolocation=()</code>, <code>Cache-Control: no-store, no-cache</code>, <code>Pragma: no-cache</code></li>
+                <li><strong>CSP + SRI</strong> &mdash; Content Security Policy in <code>index.html</code> (also in login.html). Subresource Integrity hashes on all CDN assets (highlight.js JS + CSS, Google Fonts).</li>
+                <li><strong>Rate Limiting</strong> &mdash; In-memory per-IP with periodic cleanup (every 2 min). Default 30 req/60s. Stricter 15 req/60s on command execution. 10 req/60s on file upload.</li>
+                <li><strong>Blocked Commands</strong> &mdash; 30+ commands blocked: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>node</code>, <code>chmod</code>, <code>env</code>, <code>exec</code>, <code>eval</code>, <code>source</code>, <code>busybox</code>, <code>xargs</code>, <code>nohup</code>, <code>find</code>, <code>awk</code>, <code>sed</code>, and more. Includes indirection vectors.</li>
+                <li><strong>Path Traversal Guard</strong> &mdash; All file operations use <code>validate_path()</code> which rejects <code>..</code>, resolves symlinks via <code>os.path.realpath()</code>, and checks against <code>PROJECT_DIR</code>. Separate <code>validate_path_terminal()</code> for cd (restricted to home dir).</li>
+                <li><strong>Command Injection Prevention</strong> &mdash; Commands parsed via <code>shlex.split()</code>; <code>cd</code> handled natively in Python; no <code>shell=True</code> in file routes; search uses list args for grep.</li>
+                <li><strong>Process Isolation</strong> &mdash; Terminal processes created with <code>os.setsid()</code> for process group isolation. Killed via <code>os.killpg()</code> to prevent orphans. 5-minute max timeout per process.</li>
+                <li><strong>CSRF Mitigation</strong> &mdash; POST/PUT/DELETE require <code>application/json</code> or <code>multipart/form-data</code> Content-Type (415 rejected otherwise). Login/logout exempted.</li>
+                <li><strong>Protected Files</strong> &mdash; Write blocks: <code>.auth_token</code>, <code>.env</code>, <code>.htaccess</code>, <code>.bashrc</code>, <code>.bash_history</code>, <code>passwd</code>, <code>shadow</code>. Delete protects: <code>app.py</code>, <code>utils.py</code>, <code>run.sh</code>.</li>
+                <li><strong>Output Sanitization</strong> &mdash; All API error messages sanitize filesystem paths. Git remote URLs mask tokens. Git commit messages/authors sanitized. Rate limit store auto-cleaned.</li>
+                <li><strong>Stored XSS Prevention</strong> &mdash; localStorage history sanitized on load: removes <code>&lt;script&gt;</code>, inline event handlers (<code>onclick</code>, etc.), and <code>javascript:</code> URLs. Version-based invalidation discards old data.</li>
             </ul>
         </div>
     </section>
 
-    <!-- JAVASCRIPT MODULES -->
-    <section class="docs-section" aria-labelledby="modules-heading">
-        <div class="docs-header"><h2 id="modules-heading">JavaScript Modules</h2></div>
+    <!-- FRONTEND ARCHITECTURE -->
+    <section class="docs-section" id="architecture" aria-labelledby="arch-heading">
+        <div class="docs-header"><h2 id="arch-heading">Frontend Architecture</h2></div>
         <div class="docs-body">
-            <p style="color:var(--text2);font-size:0.75rem;line-height:1.65;margin:0 0 1rem">
-                The frontend uses vanilla ES modules with zero build tools. Each module exports a single object or function. The entry point is <code>app.js</code> which imports and initializes all modules on DOMContentLoaded.
-            </p>
-            <div class="api-grid">
-                <div class="api-card">
-                    <span class="api-endpoint">app.js</span>
-                    <div class="api-desc">Entry point. Initializes splash screen, input, terminal, file manager, Git, PWA, auth logout button handler, and all utility modules.</div>
+            <div class="spec-grid">
+                <div class="spec-item">
+                    <h4>app.js</h4>
+                    <p>Entry point. Initializes all modules with try-catch isolation (one failure doesn't kill others). Manages interval cleanup on page unload. Binds global keyboard shortcuts (Ctrl+K, Ctrl+L, Ctrl+F, Ctrl+G, Ctrl+/). Controls splash screen animation sequence.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">terminal.js</span>
-                    <div class="api-desc">Core: Terminal (streaming exec, history, kill), Toast (notifications), StatusBar (connection, cwd, timer), Suggestions (autocomplete dropdown).</div>
+                <div class="spec-item">
+                    <h4>terminal.js</h4>
+                    <p>Terminal core (Terminal), toast notifications (Toast), status bar (StatusBar), command suggestions (Suggestions). Handles streaming output, entry animations, virtual scroll collapse, command history (50 entries), and process kill. Lazy DOM reference to avoid null crashes.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">file-manager.js</span>
-                    <div class="api-desc">File browser, editor integration, upload/download, rename, create, preview with highlight.js, open-file-at-line for search results.</div>
+                <div class="spec-item">
+                    <h4>editor.js</h4>
+                    <p>Code editor module (Editor). Dual-layer syntax highlighting with highlight.js overlay. Auto-indent for Python/JS/CSS/JSON/HTML. Line numbers with optimized rendering for large files. Viewport-aware with virtualKeyboard API. Memory-safe with destroy() cleanup.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">editor.js</span>
-                    <div class="api-desc">Code editor: line numbers, scroll sync, Tab-to-spaces, auto-indent (Python <code>:</code> aware), Ctrl+S save, cursor insertion.</div>
+                <div class="spec-item">
+                    <h4>file-manager.js</h4>
+                    <p>File browser and operations (FileManager). Directory listing, file open/read/save/delete/rename/create. Upload with label-based file picker for mobile compatibility. openFileWithLine() for global search integration with line highlight flash.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">github.js</span>
-                    <div class="api-desc">Full Git client: 6 tabs (status, commit, sync, log, branches, config), delegated event handling, upstream auto-set on push failure.</div>
+                <div class="spec-item">
+                    <h4>github.js</h4>
+                    <p>Git panel (GitHub). 6-tab interface: Status, Commit, Sync, Log, Branches, Config. Delegated event binding for dynamic content. Auto-upstream detection on push failure. Token-masked remote display.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">global-search.js</span>
-                    <div class="api-desc">Find-in-files dialog with case toggle, file-grouped results, click-to-open at line, match highlighting via search-utils.js.</div>
+                <div class="spec-item">
+                    <h4>api.js</h4>
+                    <p>HTTP client (api), auth management (Auth), HTML escaping (esc), ANSI color parser, file type icons. Auto-redirect to /login on 401. Cookie-based token storage with Bearer header fallback.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">api.js</span>
-                    <div class="api-desc">Auth module (Bearer token, auto-prompt on 401, cookie storage). Secure fetch wrapper. HTML entity escaper, ANSI color parser, file type icon mapping for 18 extensions.</div>
+                <div class="spec-item">
+                    <h4>storage.js</h4>
+                    <p>Terminal history persistence (Storage). Saves last 30 entries to localStorage. Version-based invalidation (v2). XSS sanitization strips scripts, event handlers, and javascript: URLs on restore. Rebinds event handlers after DOM restore.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">extra-keys.js</span>
-                    <div class="api-desc">Configurable symbol/action bar. 12 default keys: 9 insert characters + 3 actions (kill, clear, history nav).</div>
+                <div class="spec-item">
+                    <h4>global-search.js</h4>
+                    <p>Find-in-files dialog (GlobalSearch). Dynamic dialog creation. Server-side grep search with case toggle. Click-to-open with line scroll and selection. Expandable/collapsible file groups with match counts.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">storage.js</span>
-                    <div class="api-desc">Persists terminal entries to localStorage with XSS sanitization. Storage versioning for schema migrations. Saves last 30 entries, rebinds copy/delete events on load.</div>
+                <div class="spec-item">
+                    <h4>extra-keys.js</h4>
+                    <p>Symbol bar (ExtraKeys). 12 keys: 9 character inserts + 3 actions (kill, clear, history nav). Ripple animation on press. Inserts at cursor position.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">modal-keyboard.js</span>
-                    <div class="api-desc">Detects Android soft keyboard open/close on editor textarea, adds CSS class for layout adjustment.</div>
+                <div class="spec-item">
+                    <h4>modal-keyboard.js</h4>
+                    <p>Virtual keyboard detection (ModalKeyboard). Adds CSS class to modal when editor is focused, collapsing the file list to give more space to the textarea on mobile.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">viewport-fix.js</span>
-                    <div class="api-desc">Sets <code>--vvh</code> CSS variable from visualViewport height. Handles resize and virtual keyboard changes.</div>
+                <div class="spec-item">
+                    <h4>search-utils.js</h4>
+                    <p>Search utilities. Provides highlightMatch() for keyword highlighting in search results and escapeHtml() for safe HTML rendering. Regex pattern builder with escaping.</p>
                 </div>
-                <div class="api-card">
-                    <span class="api-endpoint">search-utils.js</span>
-                    <div class="api-desc">Regex-safe highlight pattern builder and HTML-safe match highlighting with <code>&lt;mark&gt;</code> tags.</div>
-                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CHANGELOG -->
+    <section class="docs-section" id="changelog" aria-labelledby="changelog-heading">
+        <div class="docs-header"><h2 id="changelog-heading">Changelog</h2></div>
+        <div class="docs-body">
+            <div class="guide-list">
+                <article class="guide-item">
+                    <h3>Recent Updates</h3>
+                    <ul class="sub-list">
+                        <li><strong>Editor Highlight Layer</strong> &mdash; New dual-layer syntax highlighting using a &lt;pre&gt; overlay behind the textarea. Text becomes transparent with visible caret. Activated automatically when hljs is loaded.</li>
+                        <li><strong>Auto-indent Expansion</strong> &mdash; Auto-indent now works for <code>{</code>, <code>(</code>, <code>[</code> in addition to Python's <code>:</code></li>
+                        <li><strong>Undo/Redo Preservation</strong> &mdash; Tab and Enter key handling now uses document.execCommand('insertText') instead of .value assignment, preserving browser undo history</li>
+                        <li><strong>Memory Leak Prevention</strong> &mdash; Added destroy() method to Editor with proper event listener cleanup. Interval references tracked and cleared on beforeunload</li>
+                        <li><strong>Null Safety</strong> &mdash; All module init() calls wrapped in try-catch. Lazy DOM references in Terminal. Null guards in Editor.onLoad()</li>
+                        <li><strong>Theme-Aware Animations</strong> &mdash; Replaced hardcoded rgba colors in animation.css with color-mix(in srgb, var(--accent), ...) so animations follow the theme accent color</li>
+                        <li><strong>env() Fallback</strong> &mdash; Added @supports / @supports not blocks for env(keyboard-inset-height) to prevent layout breakage on older browsers</li>
+                        <li><strong>Mobile File Upload Fix</strong> &mdash; Changed from hidden file input + .click() to &lt;label for&gt; pattern, which works reliably across all mobile browsers</li>
+                        <li><strong>Global Search Highlight</strong> &mdash; openFileWithLine() now activates syntax highlighting via Editor.onLoad(lang) and shows orange flash on editorWrapper</li>
+                        <li><strong>File Rename</strong> &mdash; Fixed rename to work correctly with proper path handling</li>
+                        <li><strong>Auth System</strong> &mdash; Added /api/auth/login and /api/auth/logout routes. Cookie now HttpOnly + SameSite=Strict. Uniform error messages. Rate limiting with periodic cleanup</li>
+                        <li><strong>Git Config Injection Prevention</strong> &mdash; Git config values now reject control characters (newline, null, etc.) to prevent config injection attacks</li>
+                        <li><strong>Service Worker Hardening</strong> &mdash; Blocks file:// and data:text/html URLs. Cache entry limit (100). Current version: v16</li>
+                        <li><strong>Storage XSS Prevention</strong> &mdash; Version-based invalidation + HTML sanitization on localStorage restore</li>
+                        <li><strong>401 Redirect</strong> &mdash; All fetch calls (api.request, Terminal.run, upload) now redirect to /login on 401</li>
+                        <li><strong>Additional Shortcuts</strong> &mdash; Ctrl+K (clear input), Ctrl+L (clear terminal), Ctrl+F (open files), Ctrl+G (open git), Ctrl+/ (toggle extra keys)</li>
+                        <li><strong>Large File Optimization</strong> &mdash; Line number rendering optimized with chunked approach for 1000+ line files</li>
+                        <li><strong>Upload Collision Handling</strong> &mdash; Duplicate filenames get timestamp-based unique suffix instead of overwriting</li>
+                        <li><strong>Protected File Patterns</strong> &mdash; Write blocked for .auth_token, .env, .bashrc, etc. Delete protected for app.py, utils.py, run.sh</li>
+                    </ul>
+                </article>
             </div>
         </div>
     </section>
 
 </div>
 
-<script type="module">
-    function getToken() {
-        const match = document.cookie.match(/(?:^|;\s*)yuyu_token=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : '';
-    }
-
-    const API = {
-        async fetchTree() {
-            try {
-                const token = getToken();
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const res = await fetch('/api/project/info', { cache: 'no-store', headers });
-                if (res.status === 401) throw new Error('Unauthorized — open the main app first to set your auth token');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                return await res.json();
-            } catch (err) {
-                throw new Error(err.message || 'Failed to connect to server');
-            }
-        }
-    };
-
-    const UI = {
-        elements: {
-            tree: document.getElementById('treeOutput'),
-            folders: document.getElementById('folderCount'),
-            files: document.getElementById('fileCount')
-        },
-
-        updateStats(folders, files) {
-            if (this.elements.folders) this.elements.folders.textContent = folders;
-            if (this.elements.files) this.elements.files.textContent = files;
-        },
-
-        renderTree(tree) {
-            if (!this.elements.tree) return;
-            this.elements.tree.textContent = tree || 'No tree data available';
-        },
-
-        showError(message) {
-            if (!this.elements.tree) return;
-            this.elements.tree.textContent = `Error: ${message}`;
-        }
-    };
-
-    async function init() {
+<script>
+    // Fetch project info and populate stats
+    (async function() {
         try {
-            const data = await API.fetchTree();
-
+            const res = await fetch('/api/project/info');
+            if (!res.ok) return;
+            const data = await res.json();
             if (data.success) {
-                UI.renderTree(data.tree);
-                UI.updateStats(data.folders, data.files);
-            } else {
-                UI.showError(data.error || 'Unknown error');
+                document.getElementById('treeOutput').textContent = data.tree || 'Error loading tree';
+                document.getElementById('folderCount').textContent = data.folders || 0;
+                document.getElementById('fileCount').textContent = data.files || 0;
             }
-        } catch (err) {
-            UI.showError(err.message);
+        } catch (e) {
+            document.getElementById('treeOutput').textContent = 'Unable to load project info. Is the server running?';
         }
-    }
-
-    init();
+    })();
 </script>
 
 </body>
