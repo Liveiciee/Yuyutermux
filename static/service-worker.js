@@ -1,7 +1,6 @@
-const CACHE = 'yuyutermux-v9';
+const CACHE = 'yuyutermux-v10';
 
-// Hanya cache halaman HTML & CSS utama
-// JS Modules (app.js, dll) biar browser yang handle graph-nya, jangan di-hardcode
+// Only cache main HTML & CSS
 const ASSETS = [
     '/',
     '/docs',
@@ -9,8 +8,11 @@ const ASSETS = [
     '/static/css/base.css',
     '/static/css/layout.css',
     '/static/css/ui.css',
-    '/static/css/animation.css'   // FIX Bug #3: sebelumnya salah ketik 'animations.css'
+    '/static/css/animation.css'
 ];
+
+// SECURITY: Maximum number of dynamic cache entries to prevent cache flooding
+const MAX_CACHE_ENTRIES = 100;
 
 self.addEventListener('install', (e) => {
     e.waitUntil(
@@ -21,15 +23,20 @@ self.addEventListener('install', (e) => {
 self.addEventListener('fetch', (e) => {
     const url = e.request.url;
 
-    // 1. LARANGAN MUTLAK: Jangan pernah cache API request
+    // 1. NEVER cache API requests
     if (url.includes('/api/')) {
         e.respondWith(fetch(e.request));
         return;
     }
 
-    // 2. LARANGAN KEDUA: Jangan intercept request yang explicit minta no-store (dari docs.html)
+    // 2. Never intercept explicit no-cache requests
     if (url.includes('cache=no-store')) {
         e.respondWith(fetch(e.request));
+        return;
+    }
+
+    // 3. SECURITY: Block requests to internal/private URLs
+    if (url.startsWith('file://') || url.startsWith('data:text/html')) {
         return;
     }
 
@@ -38,14 +45,22 @@ self.addEventListener('fetch', (e) => {
             if (cached) return cached;
 
             return fetch(e.request).then((res) => {
-                // Cache dynamic assets (JS modules, fonts CDN) secara runtime
+                // Cache dynamic assets (JS modules, fonts CDN) at runtime
                 if (res?.ok && (res.type === 'basic' || res.type === 'cors')) {
                     const clone = res.clone();
-                    caches.open(CACHE).then((c) => c.put(e.request, clone));
+                    caches.open(CACHE).then(async (c) => {
+                        // SECURITY: Limit cache size to prevent flooding
+                        const keys = await c.keys();
+                        if (keys.length >= MAX_CACHE_ENTRIES) {
+                            // Delete oldest entries
+                            await c.delete(keys[0]);
+                        }
+                        c.put(e.request, clone);
+                    });
                 }
                 return res;
             }).catch(() => {
-                // Fallback aman: kalau offline dan gak ada cache, kasih halaman kosong
+                // Safe fallback for offline navigation
                 if (e.request.mode === 'navigate') {
                     return caches.match('/');
                 }

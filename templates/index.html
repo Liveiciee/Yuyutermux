@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
     <meta name="theme-color" content="#0D0D0D">
+    <!-- SECURITY: Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none';">
+    <meta name="referrer" content="no-referrer">
     <title>Yuyutermux</title>
     <link rel="icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
@@ -17,8 +20,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Syntax Highlighter -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <!-- Syntax Highlighter (with SRI) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" integrity="sha384-1i2n4fDlqY8uouW8yH9r9Kq6si7voHRNqWKKmdsVQPnZH6MzO3wIJvWHBpdOqpX0" crossorigin="anonymous">
 </head>
 <body>
 
@@ -55,6 +58,7 @@
                 <a href="/docs" class="paper-btn">[ DOCS ]</a>
                 <button id="gitBtn" class="paper-btn git-header-btn" title="Git / GitHub">[ GIT ]</button>
                 <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
+                <button id="logoutBtn" class="paper-btn ghost" title="Logout" style="display:none">[ LOGOUT ]</button>
             </div>
         </div>
         <div id="outputArea" class="terminal-paper">
@@ -287,10 +291,10 @@
     </div>
 </div>
 
-<!-- Scripts di bawah body, defer untuk non-blocking -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<!-- Scripts di bawah body, defer untuk non-blocking (with SRI) -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha384-1kN8cZ8qo0S26r21w1Urh09x9w3SJ4TLH2tic7cw3a7Gwk0WxNJFuU45CbP7S1m4" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js" integrity="sha384-VmpM1z6TlER2c9WHBpZSP5N8pW6tT7YK1pN3CLMEK1C3f3/f4Mp4hMxszmF2tGEM" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js" integrity="sha384-wL4oBv3w0mjfKBGwTHZ8YzdqStoy5LvE3YLCP8VMEj/ZG3i5Gb7GB8q6Ap6ehQiK" crossorigin="anonymous"></script>
 <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>

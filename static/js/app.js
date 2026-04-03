@@ -7,6 +7,7 @@ import { ViewportFix } from './viewport-fix.js'
 import { Editor } from './editor.js'
 import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
+import { Auth } from './api.js'
 
 document.addEventListener('DOMContentLoaded', () => {
   initSplash()
@@ -16,7 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initGitHub()
   initPWA()
   initModules()
+  initAuth()
 })
+
+function initAuth() {
+  // Show logout button if authenticated
+  const logoutBtn = document.getElementById('logoutBtn')
+  if (logoutBtn && Auth.isAuthenticated()) {
+    logoutBtn.style.display = ''
+    logoutBtn.onclick = () => {
+      if (confirm('Logout? Token will be cleared.')) {
+        Auth.logout()
+      }
+    }
+  }
+}
 
 function initSplash() {
   const splash = document.getElementById('splashScreen')

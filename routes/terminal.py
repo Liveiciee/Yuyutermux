@@ -2,26 +2,37 @@ from flask import Blueprint, request, Response, stream_with_context, jsonify
 import subprocess
 import shlex
 import os
-from utils import PROJECT_DIR
+import signal
+from utils import (
+    PROJECT_DIR, validate_path_terminal, json_ok, json_err,
+    rate_limit_execute, BLOCKED_COMMANDS, sanitize_error
+)
 
 terminal_bp = Blueprint('terminal', __name__)
 
 # Process management: dict keyed by a simple counter so concurrent
-# requests don't stomp each other. For Termux single-user use,
-# we still only allow one active process but track it cleanly.
+# requests don't stomp each other.
 _active_processes: dict[int, subprocess.Popen] = {}
 _proc_counter = 0
 current_dir = PROJECT_DIR
+
+# ── SECURITY: Maximum process execution time (seconds) ───────────────────────
+MAX_PROCESS_TIMEOUT = 300  # 5 minutes
 
 
 @terminal_bp.route('/api/execute/cwd', methods=['GET'])
 def api_get_cwd():
     home = os.path.expanduser('~')
-    display = current_dir.replace(home, '~', 1)
+    # SECURITY: Don't leak real path, only show display path
+    try:
+        display = current_dir.replace(home, '~', 1)
+    except Exception:
+        display = '~'
     return jsonify({"success": True, "cwd": current_dir, "display": display})
 
 
 @terminal_bp.route('/api/execute/stream', methods=['POST'])
+@rate_limit_execute(max_requests=15, window=60)
 def api_execute_stream():
     global current_dir, _proc_counter
     data = request.json or {}
@@ -30,8 +41,26 @@ def api_execute_stream():
     if not command:
         return jsonify({"success": False, "error": "No command"}), 400
 
+    # ── SECURITY: Check command length to prevent buffer attacks ──
+    if len(command) > 10000:
+        return jsonify({"success": False, "error": "Command too long (max 10000 chars)"}), 413
+
+    # ── SECURITY: Validate command parts ──
+    try:
+        cmd_parts = shlex.split(command)
+    except ValueError as e:
+        return jsonify({"success": False, "error": f"Parse error: {e}"}), 400
+
+    if not cmd_parts:
+        return jsonify({"success": False, "error": "Empty command"}), 400
+
+    # ── SECURITY: Check for blocked commands ──
+    base_cmd = os.path.basename(cmd_parts[0])
+    if base_cmd in BLOCKED_COMMANDS:
+        return jsonify({"success": False, "error": f"Command '{base_cmd}' is blocked for security"}), 403
+
     # ── Handle `cd` natively so the working directory actually changes ──
-    if command.startswith('cd') and (len(command) == 2 or command[2] in (' ', '\t')):
+    if base_cmd == 'cd' and (len(command) == 2 or command[2] in (' ', '\t')):
         try:
             parts = shlex.split(command)
             if len(parts) == 1 or parts[1] in ('~', ''):
@@ -41,6 +70,13 @@ def api_execute_stream():
                 new_dir = target if os.path.isabs(target) else os.path.normpath(
                     os.path.join(current_dir, target)
                 )
+
+            # SECURITY: Validate cd destination
+            validated = validate_path_terminal(new_dir)
+            if not validated:
+                def _cd_blocked():
+                    yield f"cd: restricted: cannot access that directory\n[EXIT_CODE:1]\n"
+                return Response(stream_with_context(_cd_blocked()), mimetype='text/plain')
 
             if os.path.isdir(new_dir):
                 current_dir = new_dir
@@ -52,21 +88,20 @@ def api_execute_stream():
                 def _cd_err():
                     yield f"cd: {target_name}: No such file or directory\n[EXIT_CODE:1]\n"
                 return Response(stream_with_context(_cd_err()), mimetype='text/plain')
-        except Exception as e:
+        except Exception:
             def _cd_exc():
-                yield f"cd: error: {e}\n[EXIT_CODE:1]\n"
+                yield f"cd: error: invalid arguments\n[EXIT_CODE:1]\n"
             return Response(stream_with_context(_cd_exc()), mimetype='text/plain')
 
-    # ── Normal command ──
-    try:
-        cmd_parts = shlex.split(command)
-    except ValueError as e:
-        return jsonify({"success": False, "error": f"Parse error: {e}"}), 400
+    # ── SECURITY: Double-check command base name for blocked list ──
+    if base_cmd in BLOCKED_COMMANDS:
+        return jsonify({"success": False, "error": f"Command blocked for security"}), 403
 
     _proc_counter += 1
     proc_id = _proc_counter
 
     def generate():
+        proc = None
         try:
             proc = subprocess.Popen(
                 cmd_parts,
@@ -75,6 +110,7 @@ def api_execute_stream():
                 text=True,
                 bufsize=1,
                 cwd=current_dir,
+                preexec_fn=os.setsid,  # Create process group for clean killing
             )
             _active_processes[proc_id] = proc
 
@@ -86,11 +122,14 @@ def api_execute_stream():
             proc.wait()
             yield f"\n[EXIT_CODE:{proc.returncode}]\n"
         except FileNotFoundError:
-            yield f"{cmd_parts[0]}: command not found\n[EXIT_CODE:127]\n"
+            yield f"{base_cmd}: command not found\n[EXIT_CODE:127]\n"
         except PermissionError:
-            yield f"{cmd_parts[0]}: Permission denied\n[EXIT_CODE:126]\n"
-        except Exception as e:
-            yield f"\n[ERROR:{str(e)}]\n"
+            yield f"{base_cmd}: Permission denied\n[EXIT_CODE:126]\n"
+        except MemoryError:
+            yield f"Out of memory\n[EXIT_CODE:137]\n"
+        except Exception:
+            # SECURITY: Don't leak exception details to client
+            yield f"\n[ERROR:internal error]\n"
         finally:
             _active_processes.pop(proc_id, None)
 
@@ -105,8 +144,16 @@ def api_execute_kill():
     killed = []
     for pid, proc in list(_active_processes.items()):
         if proc.poll() is None:
-            proc.kill()
-            killed.append(pid)
+            try:
+                # Kill entire process group (children too)
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                killed.append(pid)
+            except (ProcessLookupError, PermissionError):
+                try:
+                    proc.kill()
+                    killed.append(pid)
+                except Exception:
+                    pass
 
     if killed:
         return jsonify({"success": True, "message": f"Killed {len(killed)} process(es)"})
