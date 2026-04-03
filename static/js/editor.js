@@ -12,6 +12,21 @@ export const Editor = {
     this.ta.addEventListener('keydown', (e) => this.handleKeys(e))
 
     this.updateGutter()
+    this._initViewport()
+  },
+
+  // ── Viewport / virtual keyboard fix ────────────────────────────────────────
+  _initViewport() {
+    if ('virtualKeyboard' in navigator) {
+      navigator.virtualKeyboard.overlaysContent = false
+    }
+    const update = () => {
+      const h = window.visualViewport?.height ?? window.innerHeight
+      document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`)
+    }
+    update()
+    window.visualViewport?.addEventListener('resize', update)
+    window.addEventListener('resize', update)
   },
 
   updateGutter() {

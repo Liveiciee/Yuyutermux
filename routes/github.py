@@ -13,7 +13,7 @@ BRANCH_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9._\-/]*$')
 REMOTE_NAME_RE = re.compile(r'^[a-zA-Z0-9._\-]+$')
 
 
-def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple[bool, str, str]:
+def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple:
     """Run git command, return (success, stdout, stderr)."""
     try:
         result = subprocess.run(
@@ -274,14 +274,17 @@ def git_push():
     if branch and not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name"})
 
-    # SECURITY: Warn about force push but still allow (user's choice)
-    args = ['push', remote]
-    if branch:
-        args.append(branch)
+    # FIX: Build push args correctly — avoid duplicate remote/branch when set_upstream is true
+    args = ['push']
     if force:
         args.append('--force')
     if data.get('set_upstream'):
-        args.extend(['-u', remote, branch or 'HEAD'])
+        args.append('-u')
+    args.append(remote)
+    if branch:
+        args.append(branch)
+    else:
+        args.append('HEAD')
 
     ok, out, err = git_run(args)
     msg = out or err or 'Push successful'
@@ -398,8 +401,8 @@ def git_config():
             # SECURITY: Validate config values
             if len(val) > 200:
                 return jsonify({"success": False, "error": f"{key.split('.')[1].title()} too long"})
-            # Reject control characters
-            if re.search(r'[\x00-\x1f\x7f]', val):
+            # FIX: Reject control characters AND newline characters (prevents git config injection)
+            if re.search(r'[\x00-\x1f\x7f\n\r]', val):
                 return jsonify({"success": False, "error": f"Invalid {key.split('.')[1].title()}"})
             ok, _, err = git_run(['config', '--global', key, val])
             if not ok:

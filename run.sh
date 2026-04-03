@@ -22,11 +22,24 @@ is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
 get_pid()    { cat "$PIDFILE" 2>/dev/null; }
 
 port_busy() {
-    netstat -tun 2>/dev/null | grep -q ":$PORT "
+    # FIX: Prefer 'ss' over deprecated 'netstat' — both may not be available on all Termux setups
+    if command -v ss &>/dev/null; then
+        ss -tln 2>/dev/null | grep -q ":${PORT} "
+    elif command -v netstat &>/dev/null; then
+        netstat -tun 2>/dev/null | grep -q ":${PORT} "
+    else
+        # Fallback: try to connect to the port
+        (echo > "/dev/tcp/127.0.0.1/${PORT}") &>/dev/null
+    fi
 }
 
 port_pid() {
-    netstat -tunp 2>/dev/null | grep ":$PORT " | awk '{print $NF}' | grep -oP '^\d+' | head -1
+    # FIX: Use ss first, then fall back to netstat
+    if command -v ss &>/dev/null; then
+        ss -tlnp 2>/dev/null | grep ":${PORT} " | grep -oP 'pid=\K\d+' | head -1
+    elif command -v netstat &>/dev/null; then
+        netstat -tunp 2>/dev/null | grep ":${PORT} " | awk '{print $NF}' | grep -oP '^\d+' | head -1
+    fi
 }
 
 free_port() {
@@ -102,6 +115,8 @@ do_start() {
     fi
 
     echo -e "${B}[*] Starting Waitress...${N}"
+    # FIX: Warn about 0.0.0.0 binding — exposes to network
+    echo -e "${Y}⚠️  Binding ke 0.0.0.0 (semua interface). Hanya untuk akses dari device lain.${N}"
     nohup waitress-serve --host=0.0.0.0 --port="$PORT" app:app > "$LOGFILE" 2>&1 &
     echo $! > "$PIDFILE"
     sleep 3

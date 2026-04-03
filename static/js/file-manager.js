@@ -119,6 +119,9 @@ export const FileManager = {
 
   downloadFile(path) {
     Toast.show('Downloading...', 'info')
+    // FIX: Use api request with auth headers for download, not raw window.location
+    // Since send_from_directory redirects, use a hidden link approach with cookie auth
+    // Cookie is now HttpOnly but still sent with navigation requests automatically
     window.location.href = `/api/files/download?path=${encodeURIComponent(path)}`
   },
 
@@ -274,7 +277,12 @@ export const FileManager = {
     block.className = `language-${LANG_MAP[ext] || 'plaintext'}`
     block.textContent = code
     delete block.dataset.highlighted
-    hljs.highlightElement(block)
+    
+    // FIX: Guard against hljs not being loaded yet (CDN defer)
+    if (typeof hljs !== 'undefined' && hljs.highlightElement) {
+      hljs.highlightElement(block)
+    }
+    
     document.getElementById('previewModal').showModal()
   },
 

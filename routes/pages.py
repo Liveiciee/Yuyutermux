@@ -34,6 +34,7 @@ def docs():
 def login():
     if check_auth():
         return redirect('/')
+    # FIX: Use generic error to prevent token enumeration
     error = request.args.get('error', '')
     return render_template('login.html', error=error)
 
@@ -44,17 +45,20 @@ def auth_login():
     token = (data.get('token') or '').strip()
 
     if not token:
-        return redirect('/login?error=Token+tidak+boleh+kosong')
+        # FIX: Uniform error message — don't reveal if token is empty vs wrong
+        return redirect('/login?error=Authentication+failed')
 
     if not AUTH_TOKEN or not secrets.compare_digest(token, AUTH_TOKEN):
-        return redirect('/login?error=Token+salah+%E2%80%94+cek+terminal+Termux')
+        # FIX: Uniform error message
+        return redirect('/login?error=Authentication+failed')
 
     resp = make_response(redirect('/'))
     resp.set_cookie(
         _COOKIE_NAME,
         token,
         max_age=_COOKIE_MAX_AGE,
-        httponly=False,
+        # FIX: Set httponly=True to prevent XSS token theft
+        httponly=True,
         samesite='Strict',
         path='/'
     )

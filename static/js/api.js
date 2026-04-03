@@ -59,6 +59,26 @@ export const api = {
   post: (url, body) => api.request(url, { method: 'POST', body: JSON.stringify(body) })
 }
 
+// ANSI COLOR PARSER
+const ANSI_CODES = {
+  '0': '', '1': 'ansi-bold', '2': 'ansi-dim', '3': 'ansi-italic',
+  '4': 'ansi-underline', '30': 'ansi-black', '31': 'ansi-red',
+  '32': 'ansi-green', '33': 'ansi-yellow', '34': 'ansi-blue',
+  '35': 'ansi-magenta', '36': 'ansi-cyan', '37': 'ansi-white',
+  '90': 'ansi-black', '91': 'ansi-red', '92': 'ansi-green',
+  '93': 'ansi-yellow', '94': 'ansi-blue', '95': 'ansi-magenta',
+  '96': 'ansi-cyan', '97': 'ansi-white'
+}
+
+export function parseAnsi(text) {
+  if (!text) return ''
+  return text.replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
+    // SECURITY: Sanitize ANSI codes — only allow known codes
+    const safeCodes = codes.split(';').filter(c => c in ANSI_CODES || c === '').join(';')
+    return '</span>' + (safeCodes ? `<span class="${safeCodes.split(';').map(c => ANSI_CODES[c] || '').filter(Boolean).join(' ')}">` : '')
+  })
+}
+
 // FILE TYPE ICONS
 const FILE_ICONS = {
   py: { icon: '\u{1F40D}', cls: 'py' },

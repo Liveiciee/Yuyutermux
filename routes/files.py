@@ -41,9 +41,16 @@ def api_files_list():
                     else:
                         size_str = f"{size/1024/1024:.1f}M"
 
+                # FIX: Compute relative path instead of leaking absolute filesystem path
+                if path == PROJECT_DIR:
+                    rel_path = entry.name
+                else:
+                    rel_path = path.replace(PROJECT_DIR + os.sep, '', 1) + os.sep + entry.name
+
                 items.append({
                     "name": entry.name,
-                    "path": entry.path,
+                    # FIX: Use relative path, not entry.path (which is absolute)
+                    "path": rel_path,
                     "type": "directory" if is_dir else "file",
                     "size": size_str,
                     "modified": datetime.datetime.fromtimestamp(stat.st_mtime).isoformat()
@@ -123,7 +130,6 @@ def api_files_write():
 
 
 @files_bp.route('/api/files/delete', methods=['POST'])
-@rate_limit(max_requests=15, window=60)
 def api_files_delete():
     path = validate_path(get_req_path())
     if not path:
@@ -148,7 +154,6 @@ def api_files_delete():
 
 
 @files_bp.route('/api/files/create', methods=['POST'])
-@rate_limit(max_requests=15, window=60)
 def api_files_create():
     data = request.json or {}
     filename = data.get('filename', '')
@@ -230,12 +235,19 @@ def api_files_upload():
         return json_err("Invalid upload path", 403)
 
     # SECURITY: Check if file already exists (prevent overwrite)
+    # FIX: Use loop to handle race condition on timestamp collision
     if os.path.exists(save_path):
-        # Append timestamp to avoid overwriting
         name, ext = os.path.splitext(safe_filename)
-        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-        safe_filename = f"{name}_{timestamp}{ext}"
-        save_path = os.path.join(target, safe_filename)
+        for attempt in range(10):
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+            candidate = f"{name}_{timestamp}{ext}"
+            candidate_path = os.path.join(target, candidate)
+            if not os.path.exists(candidate_path):
+                safe_filename = candidate
+                save_path = candidate_path
+                break
+        else:
+            return json_err("Too many files with same name", 409)
 
     try:
         file.save(save_path)

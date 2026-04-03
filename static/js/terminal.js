@@ -44,11 +44,16 @@ export const StatusBar = {
   cmdCount: 0,
   timer: null,
 
-  init() {
+  init(intervalRef) {
     this.timer = setInterval(() => this.updateTime(), 1000)
     this.updateTime()
     this.checkConnection()
-    setInterval(() => this.checkConnection(), 15000)
+    // FIX: Store interval reference for cleanup in app.js
+    const id = setInterval(() => this.checkConnection(), 15000)
+    if (typeof intervalRef === 'object') {
+      // Export the reference back to the caller
+      intervalRef.interval = id
+    }
   },
 
   updateTime() {
@@ -313,7 +318,9 @@ export const Terminal = {
     setTimeout(() => {
       this.area.innerHTML = `
         <div class="placeholder">
-          <div class="placeholder-icon"><span class="placeholder-cursor">&gt;_</span></div>
+          <div class="placeholder-icon">
+            <span class="placeholder-cursor">&gt;_</span>
+          </div>
           <div class="placeholder-text">READY FOR COMMANDS</div>
           <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
         </div>`

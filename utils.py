@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import os
 import secrets
 import time
+import threading
 import functools
-from flask import request, jsonify, Response
+from typing import Union, Optional, Dict, List, Tuple
+from flask import request, jsonify, Response, g
+from werkzeug.exceptions import TooManyRequests
 
 HOME_DIR = os.path.expanduser('~')
 PROJECT_DIR = os.path.join(HOME_DIR, 'Yuyutermux')
@@ -18,7 +23,7 @@ if not AUTH_TOKEN:
 print(f"[YUYU-TOKEN] {AUTH_TOKEN}", flush=True)
 
 
-def check_auth():
+def check_auth() -> bool:
     """Check Bearer token authentication. Returns True if valid."""
     if not AUTH_TOKEN:
         return True  # No token configured = skip auth (dangerous but backward compat)
@@ -39,8 +44,35 @@ def check_auth():
     return secrets.compare_digest(token, AUTH_TOKEN)
 
 
-# ── SECURITY: Rate limiting ───────────────────────────────────────────────────
-_rate_limit_store: dict[str, list[float]] = {}
+def require_auth(f):
+    """Decorator: require valid auth token for endpoint."""
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if not check_auth():
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── SECURITY: Rate limiting (with periodic cleanup) ──────────────────────────
+_rate_limit_store: Dict[str, List[float]] = {}
+_rate_limit_lock = threading.Lock()
+_RATE_CLEANUP_INTERVAL = 120  # Clean stale entries every 2 minutes
+_last_cleanup = 0.0
+
+
+def _cleanup_rate_limits(now: float) -> None:
+    """Remove expired entries from rate limit store to prevent memory leak."""
+    global _last_cleanup
+    if now - _last_cleanup < _RATE_CLEANUP_INTERVAL:
+        return
+    _last_cleanup = now
+    expired_keys = [
+        key for key, timestamps in _rate_limit_store.items()
+        if not timestamps or now - timestamps[-1] > 300  # Remove if last request was >5min ago
+    ]
+    for key in expired_keys:
+        del _rate_limit_store[key]
 
 
 def rate_limit(max_requests: int = 30, window: int = 60):
@@ -52,21 +84,24 @@ def rate_limit(max_requests: int = 30, window: int = 60):
             now = time.time()
             key = f"{client_ip}:{f.__name__}"
 
-            if key not in _rate_limit_store:
-                _rate_limit_store[key] = []
+            with _rate_limit_lock:
+                _cleanup_rate_limits(now)
 
-            # Clean old entries
-            _rate_limit_store[key] = [
-                t for t in _rate_limit_store[key] if now - t < window
-            ]
+                if key not in _rate_limit_store:
+                    _rate_limit_store[key] = []
 
-            if len(_rate_limit_store[key]) >= max_requests:
-                return jsonify({
-                    "success": False,
-                    "error": f"Rate limit exceeded ({max_requests}/{window}s)"
-                }), 429
+                # Clean old entries within window
+                _rate_limit_store[key] = [
+                    t for t in _rate_limit_store[key] if now - t < window
+                ]
 
-            _rate_limit_store[key].append(now)
+                if len(_rate_limit_store[key]) >= max_requests:
+                    return jsonify({
+                        "success": False,
+                        "error": f"Rate limit exceeded ({max_requests}/{window}s)"
+                    }), 429
+
+                _rate_limit_store[key].append(now)
             return f(*args, **kwargs)
         return decorated
     return decorator
@@ -88,10 +123,41 @@ BLOCKED_COMMANDS = {
     'iptables', 'nft', 'ufw', 'firewalld',
     'curl', 'wget', 'nc', 'ncat', 'netcat',  # network exfil prevention
     'python3', 'python', 'node', 'ruby', 'perl', 'php',  # code exec prevention
+    # FIX: Block indirection vectors that can bypass command blocklist
+    'env', 'exec', 'eval', 'source', 'busybox', 'xargs',
+    'nohup', 'setsid', 'unshare', 'nsenter',
+    'find', 'awk', 'sed', 'perl',  # can execute commands
+}
+
+# Commands that are allowed but only with strict validation
+ALLOWED_GNU_COREUTILS = {
+    'ls', 'cat', 'head', 'tail', 'less', 'more', 'wc', 'sort',
+    'uniq', 'grep', 'diff', 'file', 'stat', 'which', 'whoami',
+    'date', 'cal', 'uptime', 'df', 'du', 'free', 'ps', 'top',
+    'echo', 'printf', 'pwd', 'cd', 'mkdir', 'touch', 'cp', 'mv',
+    'ln', 'chmod', 'chown', 'tree', 'clear', 'reset',
+    'git', 'pip', 'pip3', 'npm', 'yarn', 'cargo', 'go',
+    'make', 'cmake', 'gcc', 'g++', 'cc',
+    'vim', 'nano', 'vi', 'ed',
+    'tar', 'gzip', 'gunzip', 'bzip2', 'bunzip2', 'zip', 'unzip',
+    'xz', '7z', '7za',
+    'base64', 'md5sum', 'sha256sum', 'sha512sum',
+    'cut', 'tr', 'paste', 'tee', 'split', 'join',
+    'basename', 'dirname', 'realpath', 'readlink',
+    'id', 'hostname', 'uname', 'arch', 'nproc',
+    'env', 'printenv', 'export', 'set', 'unset', 'alias',
+    'history', 'type', 'command', 'builtin',
+    'true', 'false', 'test', '[',
+    'sleep', 'wait', 'exit', 'logout',
+    'man', 'help', 'info',
+    'ssh', 'scp', 'rsync', 'sftp',
+    'ping', 'ifconfig', 'ip', 'ss', 'netstat',
+    'dig', 'nslookup', 'host',
+    'apt', 'apt-get', 'pkg', 'termux-setup-storage',
 }
 
 
-def validate_path(user_path: str) -> str | None:
+def validate_path(user_path: str) -> Optional[str]:
     """Validate and resolve path, ensuring it stays within PROJECT_DIR.
     Prevents directory traversal via symlinks, '..' sequences, etc."""
     if not user_path:
@@ -111,7 +177,7 @@ def validate_path(user_path: str) -> str | None:
     return resolved
 
 
-def validate_path_terminal(user_path: str) -> str | None:
+def validate_path_terminal(user_path: str) -> Optional[str]:
     """Path validation for terminal cd — restricts to within home directory."""
     if not user_path:
         return PROJECT_DIR
@@ -132,11 +198,11 @@ def validate_path_terminal(user_path: str) -> str | None:
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 
-def json_ok(**kwargs) -> tuple[Response, int]:
+def json_ok(**kwargs) -> Tuple[Response, int]:
     return jsonify({"success": True, **kwargs}), 200
 
 
-def json_err(msg: str, code: int = 500, **kwargs) -> tuple[Response, int]:
+def json_err(msg: str, code: int = 500, **kwargs) -> Tuple[Response, int]:
     # Sanitize error messages — never leak full paths or exception details
     safe_msg = msg
     if code >= 500:

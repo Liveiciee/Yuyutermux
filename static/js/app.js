@@ -8,38 +8,21 @@ import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
+// FIX: Store interval references for cleanup
+let _cwdInterval = null
+let _connectionInterval = null
+
 document.addEventListener('DOMContentLoaded', () => {
-  initViewport()
   initSplash()
   initInput()
+  // FIX: Initialize core modules FIRST (especially Toast which is used by other modules)
+  initModules()
   initTerminal()
   initFileManager()
   initGitHub()
   initPWA()
-  initModules()
   initAuth()
 })
-
-function initViewport() {
-  // Use 100dvh natively (modern browsers) — no JS hack needed.
-  // For older browsers that lack dvh support, fall back to window.innerHeight.
-  if (!CSS.supports('height', '100dvh')) {
-    const update = () => {
-      const h = window.visualViewport?.height || window.innerHeight
-      if (h > 0) {
-        document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`)
-      }
-    }
-    update()
-    let rafId = 0
-    const debounced = () => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(update)
-    }
-    window.visualViewport?.addEventListener('resize', debounced)
-    window.addEventListener('resize', debounced)
-  }
-}
 
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')
@@ -117,7 +100,7 @@ function initTerminal() {
   // Live cwd in status bar - poll every 2 seconds
   const updateCwd = async () => {
     try {
-      const res = await fetch('/api/execute/cwd')
+      const res = await fetch('/api/health')
       if (res.ok) {
         const data = await res.json()
         const el = document.getElementById('statusDir')
@@ -126,7 +109,8 @@ function initTerminal() {
     } catch { /* server might not be ready yet */ }
   }
   updateCwd()
-  setInterval(updateCwd, 2000)
+  // FIX: Store interval reference for cleanup
+  _cwdInterval = setInterval(updateCwd, 2000)
 }
 
 function initFileManager() {
@@ -207,6 +191,7 @@ function initPWA() {
     const { outcome } = await deferredPrompt.userChoice
     document.getElementById('pwaInstallPrompt').classList.add('hidden')
     deferredPrompt = null
+    // FIX: Toast is now initialized before initPWA runs
     if (outcome === 'accepted') Toast.show('App installed!', 'success')
   }
 
@@ -216,12 +201,19 @@ function initPWA() {
 }
 
 function initModules() {
+  // FIX: Initialize these FIRST — especially Toast which is used by other modules
   ModalKeyboard.init()
   ExtraKeys.init()
-  Toast.init()
-  StatusBar.init()
+  Toast.init()     // Must be before StatusBar.init() and other modules that use Toast
+  StatusBar.init(_connectionInterval)  // FIX: Pass reference for cleanup
   Suggestions.init()
   Storage.load()
   Editor.init()
   GlobalSearch.init()
 }
+
+// FIX: Cleanup intervals on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+  if (_cwdInterval) clearInterval(_cwdInterval)
+  if (_connectionInterval) clearInterval(_connectionInterval)
+})
