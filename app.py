@@ -25,10 +25,12 @@ APP_HOST = os.environ.get('YUYUTERMUX_HOST', '127.0.0.1')
 APP_PORT = int(os.environ.get('YUYUTERMUX_PORT', '5000'))
 
 # ── SECURITY: Global auth check for all /api/ routes ─────────────────────────
+_AUTH_EXEMPT = {'/api/health', '/api/auth/login', '/api/auth/logout'}
+
 @app.before_request
 def global_auth_check():
-    """Require authentication for all API endpoints except health."""
-    if request.path.startswith('/api/') and request.path != '/api/health':
+    """Require authentication for all API endpoints except exempted ones."""
+    if request.path.startswith('/api/') and request.path not in _AUTH_EXEMPT:
         if not check_auth():
             return jsonify({"success": False, "error": "Unauthorized"}), 401
 
@@ -50,8 +52,9 @@ def health_check():
 def enforce_json_content_type():
     """Reject POST requests without proper Content-Type to prevent CSRF."""
     if request.method in ('POST', 'PUT', 'DELETE'):
+        if request.path in _AUTH_EXEMPT:
+            return  # login/logout handle their own content-type
         ct = request.content_type or ''
-        # Allow multipart (file upload) and JSON
         if not (ct.startswith('application/json') or
                 ct.startswith('multipart/form-data')):
             return jsonify({"success": False, "error": "Invalid Content-Type"}), 415
@@ -73,7 +76,7 @@ if __name__ == '__main__':
     print(f"  Port:   {APP_PORT}")
     print(f"  Debug:  {DEBUG_MODE}")
     if AUTH_TOKEN:
-        print(f"  Auth:   ENABLED (token: .auth_token)")
+        print(f"  Auth:   ENABLED (in-memory, new token each run)")
     else:
         print(f"  Auth:   DISABLED (set YUYUTERMUX_TOKEN env)")
     print("=" * 50)

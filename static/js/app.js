@@ -21,12 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 function initAuth() {
-  // Show logout button if authenticated
   const logoutBtn = document.getElementById('logoutBtn')
-  if (logoutBtn && Auth.isAuthenticated()) {
+  if (logoutBtn) {
     logoutBtn.style.display = ''
     logoutBtn.onclick = () => {
-      if (confirm('Logout? Token will be cleared.')) {
+      if (confirm('Logout? Session akan berakhir.')) {
         Auth.logout()
       }
     }

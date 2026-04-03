@@ -56,15 +56,16 @@ show_ip() {
 pause() { echo -e "\n${Y}Tekan Enter...${N}"; read -r; }
 
 show_token() {
-    local token_file="$APP_DIR/.auth_token"
-    if [ -f "$token_file" ]; then
-        local tok
-        tok=$(cat "$token_file")
-        echo -e "${Y}🔑 Auth Token: ${G}${tok}${N}"
-    elif [ -n "$YUYUTERMUX_TOKEN" ]; then
+    if [ -n "$YUYUTERMUX_TOKEN" ]; then
         echo -e "${Y}🔑 Auth Token (env): ${G}${YUYUTERMUX_TOKEN}${N}"
+        return
+    fi
+    local tok
+    tok=$(grep -m1 '\[YUYU-TOKEN\]' "$LOGFILE" 2>/dev/null | sed 's/.*\[YUYU-TOKEN\] //')
+    if [ -n "$tok" ]; then
+        echo -e "${Y}🔑 Auth Token: ${G}${tok}${N}"
     else
-        echo -e "${R}⚠️  Token belum ada (server belum pernah jalan?)${N}"
+        echo -e "${R}⚠️  Token belum ada — start server dulu${N}"
     fi
 }
 

@@ -10,23 +10,13 @@ PROJECT_DIR = os.path.join(HOME_DIR, 'Yuyutermux')
 MAX_FILE_SIZE = 1024 * 1024  # 1MB
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB upload limit
 
-# ── SECURITY: Simple token-based auth ─────────────────────────────────────────
+# ── SECURITY: In-memory token auth (fresh every run) ──────────────────────────
 AUTH_TOKEN = os.environ.get('YUYUTERMUX_TOKEN', '')
 if not AUTH_TOKEN:
-    _token_file = os.path.join(PROJECT_DIR, '.auth_token')
-    if os.path.isfile(_token_file):
-        with open(_token_file, 'r') as f:
-            AUTH_TOKEN = f.read().strip()
-    else:
-        AUTH_TOKEN = secrets.token_urlsafe(32)
-        os.makedirs(PROJECT_DIR, exist_ok=True)
-        with open(_token_file, 'w') as f:
-            f.write(AUTH_TOKEN)
-        # Set file permissions: owner read/write only
-        os.chmod(_token_file, 0o600)
-        print(f"[SECURITY] Auth token generated: {AUTH_TOKEN}")
-        print(f"[SECURITY] Token saved to: {_token_file}")
-        print(f"[SECURITY] Use: curl -H 'Authorization: Bearer {AUTH_TOKEN}' http://localhost:5000/api/health")
+    AUTH_TOKEN = secrets.token_urlsafe(32)
+
+# Always print token on startup — run.sh will grep this line
+print(f"[YUYU-TOKEN] {AUTH_TOKEN}", flush=True)
 
 
 def check_auth():

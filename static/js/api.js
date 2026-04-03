@@ -5,29 +5,16 @@ export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal &#x1F60D
 
 export const esc = (s) => s ? s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) : ''
 
-// ── SECURITY: Auth token management ──────────────────────────────────────────
-const AUTH_TOKEN_KEY = 'yuyu_auth_token'
-
+// ── SECURITY: Auth token management (cookie-based) ───────────────────────────
 export const Auth = {
   getToken() {
-    return localStorage.getItem(AUTH_TOKEN_KEY) || ''
-  },
-
-  setToken(token) {
-    if (token) {
-      localStorage.setItem(AUTH_TOKEN_KEY, token)
-    } else {
-      localStorage.removeItem(AUTH_TOKEN_KEY)
-    }
+    const match = document.cookie.match(/(?:^|;\s*)yuyu_token=([^;]+)/)
+    return match ? decodeURIComponent(match[1]) : ''
   },
 
   getHeaders() {
-    const headers = {}
     const token = this.getToken()
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-    return headers
+    return token ? { 'Authorization': `Bearer ${token}` } : {}
   },
 
   isAuthenticated() {
@@ -35,10 +22,12 @@ export const Auth = {
   },
 
   logout() {
-    this.setToken('')
-    // Clear auth cookie too
-    document.cookie = 'yuyu_token=; Path=/; Max-Age=0; SameSite=Strict'
-    window.location.reload()
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }).finally(() => {
+      window.location.href = '/login'
+    })
   }
 }
 
@@ -55,23 +44,10 @@ export const api = {
         }
       })
 
-      // SECURITY: Handle 401 Unauthorized — prompt for token
+      // SECURITY: Handle 401 — redirect to login page
       if (res.status === 401) {
-        const token = Auth.getToken()
-        if (!token) {
-          // No token stored — prompt user
-          const newToken = prompt('🔐 Authentication required.\n\nEnter your auth token (check server terminal for the token):')
-          if (newToken && newToken.trim()) {
-            Auth.setToken(newToken.trim())
-            // Retry request with new token
-            return api.request(url, options)
-          }
-          return { ok: false, status: 401, data: { success: false, error: 'Authentication required' }, needsAuth: true }
-        } else {
-          // Token is wrong — clear it
-          Auth.setToken('')
-          return { ok: false, status: 401, data: { success: false, error: 'Invalid token — cleared' }, needsAuth: true }
-        }
+        window.location.href = '/login'
+        return { ok: false, status: 401, data: { success: false, error: 'Unauthorized' }, needsAuth: true }
       }
 
       return { ok: res.ok, status: res.status, data: await res.json() }

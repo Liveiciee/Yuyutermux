@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d0d0d">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none';">
+    <meta name="referrer" content="no-referrer">
+    <title>Yuyutermux · Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.25rem;
+            background: var(--bg);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 380px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header {
+            padding: 0.875rem 1.25rem;
+            background: var(--dark);
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .login-header::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .login-title {
+            font: 700 0.8rem/1 var(--sans);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin: 0;
+        }
+
+        .login-body {
+            padding: 1.5rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .login-logo {
+            font: 700 1.5rem/1 var(--mono);
+            color: var(--text);
+            letter-spacing: -0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-logo span {
+            color: var(--accent);
+        }
+
+        .login-desc {
+            font-size: 0.72rem;
+            color: var(--cement);
+            line-height: 1.6;
+        }
+
+        .login-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .login-label {
+            font: 700 0.65rem/1 var(--sans);
+            color: var(--cement);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .login-input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font: 0.8rem/1 var(--mono);
+            padding: 0.75rem 0.875rem;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s;
+            -webkit-appearance: none;
+        }
+
+        .login-input:focus {
+            border-color: var(--accent);
+        }
+
+        .login-input::placeholder {
+            color: var(--cement);
+            opacity: 0.6;
+        }
+
+        .login-btn {
+            background: var(--accent);
+            color: #0d0d0d;
+            border: none;
+            font: 700 0.8rem/1 var(--sans);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0.875rem;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.15s, opacity 0.15s;
+        }
+
+        .login-btn:hover { background: var(--accent-dim); }
+        .login-btn:active { opacity: 0.8; }
+        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .login-error {
+            background: var(--danger-dim);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            font: 0.72rem/1.5 var(--mono);
+            padding: 0.6rem 0.875rem;
+            display: none;
+        }
+
+        .login-error.visible { display: block; }
+
+        .login-hint {
+            font-size: 0.68rem;
+            color: var(--cement);
+            line-height: 1.6;
+            border-top: 1px dotted var(--border);
+            padding-top: 0.875rem;
+        }
+
+        .login-hint code {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.1rem 0.35rem;
+            font-size: 0.65rem;
+        }
+
+        .spinner {
+            display: none;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #0d0d0d;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <div class="login-header">
+        <h1 class="login-title">⌕ Authentication</h1>
+    </div>
+    <div class="login-body">
+        <div>
+            <div class="login-logo">yuyu<span>termux</span></div>
+            <p class="login-desc">Masukkan auth token untuk akses terminal.</p>
+        </div>
+
+        <div id="errorBox" class="login-error{% if error %} visible{% endif %}">
+            {{ error if error else '' }}
+        </div>
+
+        <div class="login-field">
+            <label class="login-label" for="tokenInput">Auth Token</label>
+            <input
+                id="tokenInput"
+                class="login-input"
+                type="password"
+                placeholder="Paste token dari Termux..."
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+            >
+        </div>
+
+        <button id="loginBtn" class="login-btn">
+            <span class="spinner" id="spinner"></span>
+            [ MASUK ]
+        </button>
+
+        <p class="login-hint">
+            Token ditampilkan di Termux saat server start.<br>
+            Atau jalankan: <code>run.sh</code> → pilih <code>[6] Show Token</code>
+        </p>
+    </div>
+</div>
+
+<script>
+    const input = document.getElementById('tokenInput')
+    const btn = document.getElementById('loginBtn')
+    const errorBox = document.getElementById('errorBox')
+    const spinner = document.getElementById('spinner')
+
+    input.focus()
+
+    async function doLogin() {
+        const token = input.value.trim()
+        if (!token) {
+            showError('Token tidak boleh kosong')
+            return
+        }
+
+        btn.disabled = true
+        spinner.style.display = 'inline-block'
+        errorBox.classList.remove('visible')
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+                redirect: 'follow'
+            })
+            // Successful login redirects to /
+            if (res.url && !res.url.includes('/login')) {
+                window.location.href = res.url
+                return
+            }
+            // Check for error in redirect URL
+            const url = new URL(res.url)
+            const err = url.searchParams.get('error')
+            showError(err || 'Login gagal')
+        } catch (e) {
+            showError('Tidak bisa konek ke server')
+        } finally {
+            btn.disabled = false
+            spinner.style.display = 'none'
+        }
+    }
+
+    function showError(msg) {
+        errorBox.textContent = msg
+        errorBox.classList.add('visible')
+        input.focus()
+        input.select()
+    }
+
+    btn.addEventListener('click', doLogin)
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+</script>
+
+</body>
+</html>
