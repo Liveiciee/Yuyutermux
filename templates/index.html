@@ -157,12 +157,6 @@
                 <div class="line-numbers" id="lineNumbers">1</div>
                 <textarea id="modalContent" class="editor-paper" placeholder="Select a file to edit..." spellcheck="false"></textarea>
             </div>
-            <div class="editor-actions">
-                <button id="previewBtn" class="paper-btn small">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    PREVIEW
-                </button>
-            </div>
         </div>
         <footer class="modal-footer">
             <button id="modalNewFile" class="paper-btn secondary">+ NEW FILE</button>
@@ -171,17 +165,6 @@
                 <button id="modalSave" class="paper-btn primary">SAVE</button>
             </div>
         </footer>
-    </div>
-</dialog>
-
-<!-- ====== PREVIEW MODAL ====== -->
-<dialog id="previewModal" class="paper-modal preview-modal" aria-labelledby="previewModalTitle">
-    <div class="modal-box preview-box">
-        <header class="modal-header">
-            <h3 id="previewModalTitle">PREVIEW (HIGHLIGHTED)</h3>
-            <button id="previewClose" class="paper-btn ghost">&times;</button>
-        </header>
-        <pre><code id="previewCode" class="language-plaintext"></code></pre>
     </div>
 </dialog>
 

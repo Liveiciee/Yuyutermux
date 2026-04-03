@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try { initGitHub() } catch (e) { console.error('[initGitHub]', e) }
   try { initPWA() } catch (e) { console.error('[initPWA]', e) }
   try { initAuth() } catch (e) { console.error('[initAuth]', e) }
+  try { initShortcuts() } catch (e) { console.error('[initShortcuts]', e) }
 })
 
 function initAuth() {
@@ -167,8 +168,6 @@ function initFileManager() {
   document.getElementById('modalNewFile').onclick = () => FileManager.createNew()
   document.getElementById('modalRename').onclick = () => FileManager.renameFile()
   document.getElementById('refreshFileListBtn').onclick = () => FileManager.load(FileManager.dir)
-  document.getElementById('previewBtn').onclick = () => FileManager.showPreview()
-  document.getElementById('previewClose').onclick = () => document.getElementById('previewModal').close()
 
   // FIX: Upload uses <label for="uploadInput"> in HTML — no JS click handler needed.
   // The label's for="uploadInput" attribute natively triggers the file picker on all platforms,
@@ -230,6 +229,52 @@ function initModules() {
   Storage.load()
   Editor.init()
   GlobalSearch.init()
+}
+
+// ── Keyboard Shortcuts ────────────────────────────────────────────────────
+function initShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K → Clear terminal input (same as ESC extra key)
+    if (e.ctrlKey && e.key === 'k') {
+      e.preventDefault()
+      const input = document.getElementById('cmdInput')
+      if (input && document.activeElement !== input) input.focus()
+      input.value = ''
+      input.style.height = '22px'
+      document.getElementById('inputCharCount').textContent = '0 chars'
+      return
+    }
+
+    // Ctrl+L → Focus terminal and clear output (same as CLR button)
+    if (e.ctrlKey && e.key === 'l') {
+      e.preventDefault()
+      Terminal.clearAll()
+      document.getElementById('cmdInput')?.focus()
+      return
+    }
+
+    // Ctrl+F → Open FILES modal (same as FILES button)
+    if (e.ctrlKey && e.key === 'f') {
+      e.preventDefault()
+      document.getElementById('editFileBtn')?.click()
+      return
+    }
+
+    // Ctrl+G → Open GIT modal (same as GIT button)
+    if (e.ctrlKey && e.key === 'g') {
+      e.preventDefault()
+      document.getElementById('gitBtn')?.click()
+      return
+    }
+
+    // Ctrl+/ → Toggle extra keys panel visibility
+    if (e.ctrlKey && e.key === '/') {
+      e.preventDefault()
+      const panel = document.getElementById('extraKeysPaper')
+      if (panel) panel.classList.toggle('hidden')
+      return
+    }
+  })
 }
 
 // FIX: Cleanup intervals on page unload to prevent memory leaks

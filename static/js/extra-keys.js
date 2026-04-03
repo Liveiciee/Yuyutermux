@@ -28,7 +28,15 @@ export const ExtraKeys = {
       const btn = document.createElement('button')
       btn.className = 'extra-key' + (key.type === 'action' ? ' accent' : '')
       btn.textContent = key.label
-      btn.onclick = () => this.handle(key)
+      btn.onclick = (e) => {
+        // Ripple effect
+        btn.classList.remove('ripple')
+        // Force reflow so animation restarts if clicked rapidly
+        void btn.offsetWidth
+        btn.classList.add('ripple')
+        setTimeout(() => btn.classList.remove('ripple'), 400)
+        this.handle(key)
+      }
       row.appendChild(btn)
     })
   },

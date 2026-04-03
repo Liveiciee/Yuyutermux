@@ -113,7 +113,7 @@ export const FileManager = {
     
     this.content = data.content || ''
     this.el.editor.value = this.content
-    Editor.onLoad()
+    Editor.onLoad(LANG_MAP[ext] || ext || '')
     this.load(this.dir)
   },
 
@@ -275,36 +275,6 @@ export const FileManager = {
         btn.innerHTML = originalText
         btn.style.pointerEvents = ''
         btn.style.opacity = ''
-      }
-    }
-  },
-
-  showPreview() {
-    const code = this.el.editor.value
-    if (!code) {
-      Toast.show('No content to preview', 'warning')
-      return
-    }
-    
-    const ext = this.file?.split('.').pop()?.toLowerCase() || ''
-    const block = document.getElementById('previewCode')
-    
-    block.className = `language-${LANG_MAP[ext] || 'plaintext'}`
-    block.textContent = code
-    delete block.dataset.highlighted
-    
-    // FIX: Guard against hljs not being loaded yet (CDN defer)
-    if (typeof hljs !== 'undefined' && hljs.highlightElement) {
-      hljs.highlightElement(block)
-    }
-    
-    const previewModal = document.getElementById('previewModal')
-    if (previewModal) {
-      try {
-        previewModal.showModal()
-      } catch (err) {
-        console.warn('[previewModal] showModal failed:', err)
-        previewModal.hidden = false
       }
     }
   },

@@ -6,13 +6,23 @@ const CONFIG = {
   MAX_ENTRIES: 30,
   HISTORY_LIMIT: 50,
   HANG_TIMEOUT: 10000,
-  CONNECT_TIMEOUT: 3000
+  CONNECT_TIMEOUT: 3000,
+  VIRTUAL_SCROLL_THRESHOLD: 10,   // total entries before collapsing
+  VIRTUAL_SCROLL_KEEP: 5          // always show this many recent entries fully
 }
 
 // ICONS SVG
 const ICONS = {
   copy: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>`,
   delete: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>`
+}
+
+// ANIMATION CLASS NAMES (exported for animation.css)
+export const ANIM_CLASSES = {
+  entryPulse: 'entry-pulse',
+  entryDoneSuccess: 'entry-done-success',
+  entryDoneError: 'entry-done-error',
+  entryStagger: 'entry-stagger'
 }
 
 // TOAST SYSTEM
@@ -122,6 +132,29 @@ export function bindEntryActions(entry) {
   if (killBtn) {
     killBtn.onclick = () => Terminal.kill(killBtn)
   }
+
+  // Virtual scroll: click on collapsed entry to expand/collapse
+  entry.addEventListener('click', (e) => {
+    // Don't toggle if clicking on action buttons
+    if (e.target.closest('.output-actions') || e.target.closest('.hang-warning')) return
+    entry.classList.toggle('collapsed')
+  })
+}
+
+// ── Virtual scroll helper ─────────────────────────────────────────────────
+function applyVirtualScroll(area) {
+  const entries = area.querySelectorAll('.output-entry')
+  if (entries.length <= CONFIG.VIRTUAL_SCROLL_THRESHOLD) return
+
+  // Mark entries older than the N most recent as collapsed
+  const keepCount = CONFIG.VIRTUAL_SCROLL_KEEP
+  entries.forEach((entry, idx) => {
+    if (idx < entries.length - keepCount) {
+      entry.classList.add('collapsed')
+    } else {
+      entry.classList.remove('collapsed')
+    }
+  })
 }
 
 // TERMINAL CORE
@@ -161,6 +194,12 @@ export const Terminal = {
         <button class="paper-btn small act-del">${ICONS.delete} DELETE</button>
       </div>`
 
+    // ── Animation: entry pulse on creation ──
+    entry.classList.add(ANIM_CLASSES.entryPulse)
+    entry.addEventListener('animationend', () => {
+      entry.classList.remove(ANIM_CLASSES.entryPulse)
+    }, { once: true })
+
     const pre = entry.querySelector('.output-content')
     const warning = entry.querySelector('.hang-warning')
     const actions = entry.querySelector('.output-actions')
@@ -185,6 +224,13 @@ export const Terminal = {
       if (spinner) spinner.remove()
       entry.classList.remove('running')
       entry.classList.add(success ? 'success' : 'error')
+
+      // ── Animation: done state bump ──
+      entry.classList.add(success ? ANIM_CLASSES.entryDoneSuccess : ANIM_CLASSES.entryDoneError)
+      entry.addEventListener('animationend', () => {
+        entry.classList.remove(ANIM_CLASSES.entryDoneSuccess, ANIM_CLASSES.entryDoneError)
+      }, { once: true })
+
       actions.classList.remove('hidden')
 
       const badge = document.createElement('span')
@@ -198,6 +244,10 @@ export const Terminal = {
     this.area.appendChild(entry)
     const entries = this.area.querySelectorAll('.output-entry')
     if (entries.length > CONFIG.MAX_ENTRIES) entries[0].remove()
+
+    // ── Virtual scroll: collapse older entries ──
+    applyVirtualScroll(this.area)
+
     this.area.scrollTop = this.area.scrollHeight
 
     this.history.push(cmd)
@@ -309,11 +359,21 @@ export const Terminal = {
         <button class="paper-btn small act-del">${ICONS.delete} DELETE</button>
       </div>`
 
+    // ── Animation: entry pulse on creation ──
+    entry.classList.add(ANIM_CLASSES.entryPulse)
+    entry.addEventListener('animationend', () => {
+      entry.classList.remove(ANIM_CLASSES.entryPulse)
+    }, { once: true })
+
     bindEntryActions(entry)
     this.area.appendChild(entry)
 
     const entries = this.area.querySelectorAll('.output-entry')
     if (entries.length > CONFIG.MAX_ENTRIES) entries[0].remove()
+
+    // ── Virtual scroll: collapse older entries ──
+    applyVirtualScroll(this.area)
+
     this.area.scrollTop = this.area.scrollHeight
     Storage.save()
   },
@@ -322,10 +382,11 @@ export const Terminal = {
     const entries = this.area.querySelectorAll('.output-entry')
     if (entries.length === 0) return
 
-    entries.forEach(e => {
-      e.style.transition = 'opacity 0.2s, transform 0.2s'
-      e.style.opacity = '0'
-      e.style.transform = 'translateY(-4px)'
+    // ── Animation: staggered fade-out ──
+    entries.forEach((e, i) => {
+      e.classList.add(ANIM_CLASSES.entryStagger)
+      // Apply stagger delay via inline transition-delay
+      e.style.transitionDelay = `${i * 40}ms`
     })
 
     setTimeout(() => {
@@ -338,7 +399,7 @@ export const Terminal = {
           <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
         </div>`
       Toast.show('Terminal cleared', 'info')
-    }, 200)
+    }, entries.length * 40 + 250)
   },
 
   navUp() {
