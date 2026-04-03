@@ -192,7 +192,6 @@ def search_files():
     if not q:
         return json_ok(results=[])
 
-    # FIX Bug #2: validate_path can return None â€” handle it properly
     folder = validate_path(request.args.get('folder', ''))
     if not folder:
         return json_err("Invalid search folder", 403, results=[])

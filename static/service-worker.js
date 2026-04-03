@@ -1,4 +1,4 @@
-const CACHE = 'yuyutermux-v11';
+const CACHE = 'yuyutermux-v9';
 
 // Hanya cache halaman HTML & CSS utama
 // JS Modules (app.js, dll) biar browser yang handle graph-nya, jangan di-hardcode
@@ -9,7 +9,7 @@ const ASSETS = [
     '/static/css/base.css',
     '/static/css/layout.css',
     '/static/css/ui.css',
-    '/static/css/animations.css'
+    '/static/css/animation.css'   // FIX Bug #3: sebelumnya salah ketik 'animations.css'
 ];
 
 self.addEventListener('install', (e) => {
@@ -36,7 +36,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
         caches.match(e.request).then((cached) => {
             if (cached) return cached;
-            
+
             return fetch(e.request).then((res) => {
                 // Cache dynamic assets (JS modules, fonts CDN) secara runtime
                 if (res?.ok && (res.type === 'basic' || res.type === 'cors')) {

@@ -1,4 +1,4 @@
-"import { api, esc } from './api.js'
+import { api, esc } from './api.js'
 import { FileManager } from './file-manager.js'
 import { highlightMatch } from './search-utils.js'
 import { Toast } from './terminal.js'
@@ -6,7 +6,7 @@ import { Toast } from './terminal.js'
 const TEMPLATE = `
 <div class="modal-box" style="height:80vh;display:flex;flex-direction:column">
   <header class="modal-header">
-    <h3>âŒ• FIND IN FILES</h3>
+    <h3>⌕ FIND IN FILES</h3>
     <button id="gs-close" class="paper-btn ghost">&times;</button>
   </header>
   <div class="file-toolbar">
@@ -50,7 +50,7 @@ export const GlobalSearch = {
     this.setupCaseToggle()
     this.setupResultsHandler()
 
-    // FIX Bug #1: Bind the global search button to open the dialog
+    // FIX Bug #1: Bind tombol SEARCH di file manager toolbar
     document.getElementById('btn-global-search')?.addEventListener('click', () => this.show())
   },
 
@@ -77,7 +77,7 @@ export const GlobalSearch = {
         const matches = header.nextElementSibling
         if (matches) {
           matches.classList.toggle('hidden')
-          header.querySelector('.gs-arrow').textContent = matches.classList.contains('hidden') ? 'â–¸' : 'â–¾'
+          header.querySelector('.gs-arrow').textContent = matches.classList.contains('hidden') ? '▸' : '▾'
           header.style.borderLeftColor = matches.classList.contains('hidden') ? 'transparent' : 'var(--accent)'
         }
       }
@@ -102,7 +102,7 @@ export const GlobalSearch = {
     if (!q) return
 
     const btn = document.getElementById('gs-btn-search')
-    btn.innerHTML = 'Â·Â·Â·'
+    btn.innerHTML = '···'
     btn.disabled = true
     this.resultsEl.innerHTML = '<div style="padding:20px;color:var(--cement);text-align:center">Searching...</div>'
 
@@ -140,7 +140,7 @@ export const GlobalSearch = {
     return `
       <div>
         <div class="gs-file-header" data-file="${esc(file)}" style="display:flex;align-items:center;gap:6px;padding:4px 12px;cursor:pointer;border-left:2px solid ${isExpanded ? 'var(--accent)' : 'transparent'}">
-          <span style="color:var(--cement);font-size:10px" class="gs-arrow">${isExpanded ? 'â–¾' : 'â–¸'}</span>
+          <span style="color:var(--cement);font-size:10px" class="gs-arrow">${isExpanded ? '▾' : '▸'}</span>
           <span style="font-size:11px;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(file)}</span>
           <span style="font-size:9px;color:var(--cement);background:var(--dark);padding:1px 6px;border-radius:2px">${matches.length}</span>
         </div>
@@ -160,4 +160,4 @@ export const GlobalSearch = {
         <span style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${highlighted}</span>
       </div>`
   }
-}"
+}

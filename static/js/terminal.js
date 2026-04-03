@@ -18,7 +18,7 @@ const ICONS = {
 // TOAST SYSTEM
 export const Toast = {
   container: null,
-  icons: { success: '✓', error: '✗', info: 'ℹ', warning: '⚠' },
+  icons: { success: 'âœ“', error: 'âœ—', info: 'â„¹', warning: 'âš ' },
 
   init() {
     this.container = document.getElementById('toastContainer')
@@ -28,7 +28,7 @@ export const Toast = {
     if (!this.container) return
     const toast = document.createElement('div')
     toast.className = `toast ${type}`
-    toast.innerHTML = `<span class="toast-icon">${this.icons[type] || 'ℹ'}</span><span>${esc(message)}</span>`
+    toast.innerHTML = `<span class="toast-icon">${this.icons[type] || 'â„¹'}</span><span>${esc(message)}</span>`
     this.container.appendChild(toast)
 
     setTimeout(() => {
@@ -69,9 +69,10 @@ export const StatusBar = {
     const dot = document.getElementById('statusDot')
     const conn = document.getElementById('statusConnection')
     try {
-      const res = await fetch('/api/files/list?path=', { 
-        method: 'GET', 
-        signal: AbortSignal.timeout(CONFIG.CONNECT_TIMEOUT) 
+      // FIX Bug #5: Pake /api/health (ringan) bukan /api/files/list (scan seluruh direktori!)
+      const res = await fetch('/api/health', {
+        method: 'GET',
+        signal: AbortSignal.timeout(CONFIG.CONNECT_TIMEOUT)
       })
       if (res.ok) {
         dot.className = 'status-dot connected'
@@ -96,7 +97,7 @@ export function bindEntryActions(entry) {
     copyBtn.onclick = () => {
       if (!pre) return
       navigator.clipboard.writeText(pre.textContent).then(() => {
-        copyBtn.innerHTML = '<span style="color:var(--success)">✓</span> COPIED'
+        copyBtn.innerHTML = '<span style="color:var(--success)">âœ“</span> COPIED'
         setTimeout(() => copyBtn.innerHTML = `${ICONS.copy} COPY`, 1500)
       })
     }
@@ -109,6 +110,12 @@ export function bindEntryActions(entry) {
       entry.style.transform = 'translateX(20px)'
       setTimeout(() => entry.remove(), 200)
     }
+  }
+
+  // FIX Bug #7: Rebind KILL button â€” inline onclick gak bisa akses module scope
+  const killBtn = entry.querySelector('.hang-warning button')
+  if (killBtn) {
+    killBtn.onclick = () => Terminal.kill(killBtn)
   }
 }
 
@@ -137,7 +144,7 @@ export const Terminal = {
       <pre class="output-content"></pre>
       <div class="hang-warning hidden">
         No output for 10s. Hung process?
-        <button class="paper-btn small" style="border-color:var(--warning);color:var(--warning);" onclick="Terminal.kill(this)">KILL</button>
+        <button class="paper-btn small" style="border-color:var(--warning);color:var(--warning);">KILL</button>
       </div>
       <div class="output-actions hidden">
         <button class="paper-btn small act-copy">${ICONS.copy} COPY</button>
@@ -172,7 +179,7 @@ export const Terminal = {
 
       const badge = document.createElement('span')
       badge.className = `cmd-status-badge ${success ? 'success' : 'error'}`
-      badge.textContent = success ? `✓ EXIT 0` : `✗ EXIT ${exitCode}`
+      badge.textContent = success ? `âœ“ EXIT 0` : `âœ— EXIT ${exitCode}`
       entry.querySelector('.cmd-line > div').appendChild(badge)
     }
 
@@ -272,7 +279,7 @@ export const Terminal = {
   log(message, isError = false) {
     this.area.querySelector('.placeholder')?.remove()
     const entry = document.createElement('div')
-    entry.className = `output-entry${isError ? ' error' : ' success'}`
+    entry.className = `output-entry${isError ? ' error' : 'success'}`
     entry.innerHTML = `
       <div class="cmd-line">
         <div><strong>$</strong> ${esc(message)}</div>
@@ -283,10 +290,10 @@ export const Terminal = {
         <button class="paper-btn small act-copy">${ICONS.copy} COPY</button>
         <button class="paper-btn small act-del">${ICONS.delete} DELETE</button>
       </div>`
-    
+
     bindEntryActions(entry)
     this.area.appendChild(entry)
-    
+
     const entries = this.area.querySelectorAll('.output-entry')
     if (entries.length > CONFIG.MAX_ENTRIES) entries[0].remove()
     this.area.scrollTop = this.area.scrollHeight
@@ -296,19 +303,19 @@ export const Terminal = {
   clearAll() {
     const entries = this.area.querySelectorAll('.output-entry')
     if (entries.length === 0) return
-    
+
     entries.forEach(e => {
       e.style.transition = 'opacity 0.2s, transform 0.2s'
       e.style.opacity = '0'
       e.style.transform = 'translateY(-4px)'
     })
-    
+
     setTimeout(() => {
       this.area.innerHTML = `
         <div class="placeholder">
           <div class="placeholder-icon"><span class="placeholder-cursor">&gt;_</span></div>
           <div class="placeholder-text">READY FOR COMMANDS</div>
-          <div class="placeholder-hint">Ctrl+Enter to execute · Extra keys below</div>
+          <div class="placeholder-hint">Ctrl+Enter to execute Â· Extra keys below</div>
         </div>`
       Toast.show('Terminal cleared', 'info')
     }, 200)
@@ -375,7 +382,7 @@ export const Suggestions = {
     this.activeIndex = -1
     this.dropdown.innerHTML = matches.map((m, i) => `
       <div class="suggestion-item" data-index="${i}" data-value="${esc(m)}">
-        ${esc(m)}<span class="suggestion-hint">↑↓ enter</span>
+        ${esc(m)}<span class="suggestion-hint">â†‘â†“ enter</span>
       </div>
     `).join('')
 
