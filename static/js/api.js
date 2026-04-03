@@ -1,16 +1,22 @@
 export const API_BASE = ''
 
-export const SERVER_HINT_HTML = '<br><span style="opacity:0.7;font-size:11px">Server-nya nyalakan dulu di terminal 😍</span>'
-export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal 😍'
+export const SERVER_HINT_HTML = '<br><span style="opacity:0.7;font-size:11px">Server-nya nyalakan dulu di terminal ðŸ˜</span>'
+export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal ðŸ˜'
 
 export const esc = (s) => s ? s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) : ''
 
+// FIX Bug #3: Only send Content-Type header for requests with a body (POST/PUT)
 export const api = {
   async request(url, options = {}) {
     try {
+      const headers = {}
+      // Only set Content-Type for requests that have a body
+      if (options.body) {
+        headers['Content-Type'] = 'application/json'
+      }
       const res = await fetch(API_BASE + url, {
         ...options,
-        headers: { 'Content-Type': 'application/json', ...options.headers }
+        headers: { ...headers, ...options.headers }
       })
       return { ok: res.ok, status: res.status, data: await res.json() }
     } catch (err) {
@@ -41,30 +47,30 @@ export function parseAnsi(text) {
 
 // FILE TYPE ICONS
 const FILE_ICONS = {
-  py: { icon: '🐍', cls: 'py' },
-  js: { icon: '⚡', cls: 'js' },
-  ts: { icon: '🔷', cls: 'js' },
-  html: { icon: '🌐', cls: 'html' },
-  htm: { icon: '🌐', cls: 'html' },
-  css: { icon: '🎨', cls: 'css' },
-  json: { icon: '📋', cls: 'json' },
-  md: { icon: '📝', cls: 'md' },
-  txt: { icon: '📄', cls: 'default' },
-  sh: { icon: '⚙️', cls: 'sh' },
-  yaml: { icon: '⚙️', cls: 'sh' },
-  yml: { icon: '⚙️', cls: 'sh' },
-  toml: { icon: '⚙️', cls: 'sh' },
-  cfg: { icon: '⚙️', cls: 'sh' },
-  log: { icon: '📋', cls: 'default' },
-  zip: { icon: '📦', cls: 'default' },
-  png: { icon: '🖼️', cls: 'default' },
-  jpg: { icon: '🖼️', cls: 'default' },
-  gitignore: { icon: '🔀', cls: 'default' }
+  py: { icon: 'ðŸ', cls: 'py' },
+  js: { icon: 'âš¡', cls: 'js' },
+  ts: { icon: 'ðŸ”·', cls: 'js' },
+  html: { icon: 'ðŸŒ', cls: 'html' },
+  htm: { icon: 'ðŸŒ', cls: 'html' },
+  css: { icon: 'ðŸŽ¨', cls: 'css' },
+  json: { icon: 'ðŸ“‹', cls: 'json' },
+  md: { icon: 'ðŸ“', cls: 'md' },
+  txt: { icon: 'ðŸ“„', cls: 'default' },
+  sh: { icon: 'âš™ï¸', cls: 'sh' },
+  yaml: { icon: 'âš™ï¸', cls: 'sh' },
+  yml: { icon: 'âš™ï¸', cls: 'sh' },
+  toml: { icon: 'âš™ï¸', cls: 'sh' },
+  cfg: { icon: 'âš™ï¸', cls: 'sh' },
+  log: { icon: 'ðŸ“‹', cls: 'default' },
+  zip: { icon: 'ðŸ“¦', cls: 'default' },
+  png: { icon: 'ðŸ–¼ï¸', cls: 'default' },
+  jpg: { icon: 'ðŸ–¼ï¸', cls: 'default' },
+  gitignore: { icon: 'ðŸ”€', cls: 'default' }
 }
 
 export function getFileIcon(name, isDir) {
-  if (isDir) return { icon: '📁', cls: 'dir' }
+  if (isDir) return { icon: 'ðŸ“', cls: 'dir' }
   const ext = name.split('.').pop()?.toLowerCase() || ''
   const noExt = name.startsWith('.') ? name.slice(1) : null
-  return FILE_ICONS[noExt || ext] || FILE_ICONS[ext] || { icon: '📄', cls: 'default' }
+  return FILE_ICONS[noExt || ext] || FILE_ICONS[ext] || { icon: 'ðŸ“„', cls: 'default' }
 }

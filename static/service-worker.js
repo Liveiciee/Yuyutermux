@@ -1,4 +1,4 @@
-const CACHE = 'yuyutermux-v9';
+const CACHE = 'yuyutermux-v11';
 
 // Hanya cache halaman HTML & CSS utama
 // JS Modules (app.js, dll) biar browser yang handle graph-nya, jangan di-hardcode
