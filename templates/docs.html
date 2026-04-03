@@ -388,6 +388,7 @@
                 <div class="badge"><strong>Command History</strong> — Navigate with ↑↓, suggestions dropdown</div>
                 <div class="badge"><strong>Offline Support</strong> — Service Worker cache with smart invalidation</div>
                 <div class="badge"><strong>Terminal Persistence</strong> — History saved to localStorage</div>
+                <div class="badge"><strong>Auth &amp; Security</strong> — Bearer token auth, CSP, security headers, rate limiting</div>
                 <div class="badge"><strong>CLI Tools</strong> — run.sh server manager + edit.sh file wizard</div>
             </div>
         </div>
@@ -480,12 +481,13 @@
                     <h3>CLI: run.sh (Server Manager)</h3>
                     <p>The <code>run.sh</code> script is an interactive terminal menu for managing the Yuyutermux server. It uses Waitress as the production WSGI server (not Flask's built-in dev server). The script handles port conflict detection, PID file management, graceful shutdown with SIGTERM followed by SIGKILL fallback, and displays the server's local IP for cross-device access.</p>
                     <ul class="sub-list">
-                        <li><strong>Start</strong> — Launch Waitress on port 5000, auto-detect and free busy ports</li>
+                        <li><strong>Start</strong> — Launch Waitress on port 5000, auto-detect and free busy ports. Displays auth token on startup.</li>
                         <li><strong>Stop</strong> — Graceful shutdown with PID tracking</li>
                         <li><strong>Restart</strong> — Stop + Start in sequence</li>
-                        <li><strong>Status</strong> — Show PID, uptime, port status, log size, SW cache version</li>
+                        <li><strong>Status</strong> — Show PID, uptime, port status, log size, SW cache version, auth token</li>
                         <li><strong>Log</strong> — View last 20 lines of server log</li>
                         <li><strong>Bust Cache</strong> — Increment Service Worker cache version (no restart needed)</li>
+                        <li><strong>Show Token</strong> — Display current auth token from <code>.auth_token</code> file at any time</li>
                     </ul>
                 </article>
 
@@ -695,11 +697,11 @@
                 </div>
                 <div class="spec-item">
                     <h4>Security</h4>
-                    <p>Path traversal guard (validate_path) · Max file size 1MB · Command sanitization · CORS-restricted · No DB injection risk</p>
+                    <p>Bearer token auth (file or env) · Auto-token-prompt on 401 · Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) · SRI on CDN assets · Rate limiting · Blocked commands list · Path traversal guard · Max file size 1MB · Localhost bind by default · Debug off in production</p>
                 </div>
                 <div class="spec-item">
                     <h4>Caching</h4>
-                    <p>Service Worker v9 · Pre-cache HTML+CSS · Runtime cache JS/fonts · API requests never cached · Cache-bust via run.sh</p>
+                    <p>Service Worker v10 · Pre-cache HTML+CSS · Runtime cache JS/fonts · API requests never cached · Cache size limit · Cache-bust via run.sh</p>
                 </div>
                 <div class="spec-item">
                     <h4>Git Integration</h4>
@@ -714,15 +716,23 @@
         <div class="docs-header"><h2 id="security-heading">Security Model</h2></div>
         <div class="docs-body">
             <p style="color:var(--text2);font-size:0.75rem;line-height:1.65;margin:0 0 1rem">
-                Yuyutermux is designed for single-user Termux environments. All path access is validated through <code>validate_path()</code> which resolves the real path and ensures it stays within the project directory (<code>~/Yuyutermux</code>). This prevents directory traversal attacks even if symlinks are involved. Commands are parsed with <code>shlex.split()</code> to prevent shell injection, and file uploads are restricted to the project directory. The <code>cd</code> command is handled natively in Python rather than through a shell, further reducing attack surface.
+                Yuyutermux is designed for single-user Termux environments. Authentication uses a Bearer token stored in <code>~/.Yuyutermux/.auth_token</code> (auto-generated on first run, or set via <code>YUYUTERMUX_TOKEN</code> env var). The frontend auto-prompts for the token on first use and stores it as a <code>yuyu_token</code> cookie. All API routes require authentication except <code>/api/health</code>. The server binds to <code>127.0.0.1</code> by default and runs with debug mode off. Security headers are applied to every response.
             </p>
             <ul class="sub-list">
+                <li><strong>Token Auth</strong> — Bearer token on all <code>/api/*</code> routes. Constant-time comparison to prevent timing attacks. Cookie fallback for browser access.</li>
+                <li><strong>Auto-Prompt</strong> — Frontend detects 401 responses and prompts for token; stores in cookie via <code>api.js</code></li>
+                <li><strong>Security Headers</strong> — <code>X-Content-Type-Options</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy</code>, <code>Cache-Control: no-store</code></li>
+                <li><strong>CSP + SRI</strong> — Content Security Policy in <code>index.html</code>. Subresource Integrity hashes on all CDN assets (highlight.js, fonts).</li>
+                <li><strong>Rate Limiting</strong> — 30 req/60s default on all API routes; stricter 10 req/60s on command execution endpoints</li>
+                <li><strong>Blocked Commands</strong> — Hardcoded denylist: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>chmod</code>, and other destructive/exfil commands</li>
                 <li><strong>Path Traversal Guard</strong> — All file operations use <code>validate_path()</code> which resolves symlinks and checks against <code>PROJECT_DIR</code></li>
-                <li><strong>Command Injection Prevention</strong> — Commands parsed via <code>shlex.split()</code>, <code>cd</code> handled in Python</li>
-                <li><strong>File Size Limit</strong> — Read operations capped at 1MB to prevent memory exhaustion</li>
-                <li><strong>Upload Restriction</strong> — Upload paths validated against project directory</li>
-                <li><strong>Search Scope</strong> — Grep search limited to project directory with exclude patterns</li>
-                <li><strong>API Isolation</strong> — Each route is a Flask Blueprint with scoped URL prefixes</li>
+                <li><strong>Command Injection Prevention</strong> — Commands parsed via <code>shlex.split()</code>; <code>cd</code> handled in Python; no <code>shell=True</code> in file routes</li>
+                <li><strong>Process Group Kill</strong> — Terminal processes killed as a process group to prevent orphan children</li>
+                <li><strong>CSRF Mitigation</strong> — POST/PUT/DELETE require <code>application/json</code> or <code>multipart/form-data</code> Content-Type</li>
+                <li><strong>XSS Sanitization</strong> — Terminal output sanitized before localStorage write in <code>storage.js</code></li>
+                <li><strong>File Size Limit</strong> — Read operations capped at 1MB; upload limit 50MB</li>
+                <li><strong>Localhost Bind</strong> — Server binds to <code>127.0.0.1</code> by default. Override with <code>YUYUTERMUX_HOST</code> env var.</li>
+                <li><strong>Error Sanitization</strong> — Server errors strip real paths before sending to client; 5xx errors return generic message</li>
             </ul>
         </div>
     </section>
@@ -737,7 +747,7 @@
             <div class="api-grid">
                 <div class="api-card">
                     <span class="api-endpoint">app.js</span>
-                    <div class="api-desc">Entry point. Initializes splash screen, input, terminal, file manager, Git, PWA, and all utility modules.</div>
+                    <div class="api-desc">Entry point. Initializes splash screen, input, terminal, file manager, Git, PWA, auth logout button handler, and all utility modules.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-endpoint">terminal.js</span>
@@ -761,7 +771,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-endpoint">api.js</span>
-                    <div class="api-desc">HTTP helper (api.get/post), HTML entity escaper, ANSI color parser, file type icon mapping for 18 extensions.</div>
+                    <div class="api-desc">Auth module (Bearer token, auto-prompt on 401, cookie storage). Secure fetch wrapper. HTML entity escaper, ANSI color parser, file type icon mapping for 18 extensions.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-endpoint">extra-keys.js</span>
@@ -769,7 +779,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-endpoint">storage.js</span>
-                    <div class="api-desc">Persists terminal entries to localStorage. Saves last 30 entries, rebinds copy/delete events on load.</div>
+                    <div class="api-desc">Persists terminal entries to localStorage with XSS sanitization. Storage versioning for schema migrations. Saves last 30 entries, rebinds copy/delete events on load.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-endpoint">modal-keyboard.js</span>
