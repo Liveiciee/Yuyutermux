@@ -306,10 +306,9 @@ export const FileManager = {
     
     this.content = data.content || ''
     editor.value = this.content
-    // FIX: Was Editor.updateGutter() — this only updates line numbers, but does NOT
-    // activate syntax highlighting (setLanguage, _doHighlight, etc.).
-    // Editor.onLoad(lang) does: setLanguage → updateGutter → resetScroll → highlight.
-    // Without this, files opened via global search / click would show raw unhighlighted text.
+    // FIX: Was Editor.updateGutter() — only updates line numbers, does NOT activate
+    // syntax highlighting (setLanguage, _doHighlight, etc). Files opened via global
+    // search / click showed raw unhighlighted text.
     Editor.onLoad(LANG_MAP[ext] || ext || '')
     
     // Scroll to line (after highlight renders)
@@ -329,11 +328,10 @@ export const FileManager = {
       editor.focus()
       editor.setSelectionRange(startPos, endPos)
       
-      // FIX: Highlight effect — apply to editorWrapper, NOT editor directly.
-      // When syntax highlighting is active (.highlighting-on), the textarea has
-      // background: transparent !important, so setting editor.style.backgroundColor
-      // is invisible (the !important overrides it). Applying to the wrapper ensures
-      // the flash is visible regardless of highlighting state.
+      // FIX: Highlight flash — apply to editorWrapper, NOT editor directly.
+      // When .highlighting-on is active, textarea has background: transparent !important,
+      // so setting editor.style.backgroundColor is invisible (the !important overrides it).
+      // Applying to the wrapper ensures the flash is visible regardless of highlight state.
       const wrapper = document.getElementById('editorWrapper')
       if (wrapper) {
         wrapper.style.background = 'rgba(255,107,53,0.15)'

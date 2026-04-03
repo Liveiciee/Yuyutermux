@@ -18,10 +18,9 @@
 /* ── Mobile responsive ── */
 @media (max-width: 640px) {
   /* FIX: Added @supports fallback for env(keyboard-inset-height).
-     Without this, browsers that don't support env() (Firefox < 123, older Chrome)
-     would compute height as "calc(90vh - 0px)" = calc(90vh - 0px) which is fine,
-     BUT some browsers may ignore the entire declaration if env() is unrecognized.
-     The @supports block ensures a safe fallback without env(). */
+     Browsers that don't support env() may ignore the entire calc() expression,
+     leaving the modal without a valid height. The @supports blocks ensure
+     a safe fallback for Firefox < 123 and older WebKit versions. */
   @supports (height: env(keyboard-inset-height)) {
     .modal-box {
       height: calc(90vh - env(keyboard-inset-height, 0px));
@@ -84,10 +83,9 @@
    TERMINAL ENTRY ANIMATIONS
    ══════════════════════════════════════════════════════════════════ */
 
-/* FIX: Left border glow pulse — replaced hardcoded rgba(255,107,53,...)
-   with color-mix() so animations automatically follow --accent theme color.
-   Previously if you changed --accent to blue, these glow/shadow effects
-   would still be orange, creating visual inconsistency. */
+/* FIX: Replaced hardcoded rgba(255,107,53,...) with color-mix() so animations
+   automatically follow the --accent theme color. Previously if you changed
+   --accent to blue/purple, these glow/shadow effects stayed orange. */
 @keyframes entryPulse {
   0%   { border-left-color: var(--accent); box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 40%, transparent); }
   70%  { border-left-color: var(--accent); box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 15%, transparent); }
@@ -144,21 +142,12 @@
   bottom: 0;
   left: 0;
   right: 0;
-  /* FIX: Changed from hardcoded var(--surface) to inherit.
-     Previously, .output-entry.error (background: var(--danger-dim)) when collapsed
-     would show a gradient from transparent → var(--surface), but the entry's actual
-     background is var(--danger-dim), not var(--surface). This created a visible color
-     jump at the fade boundary. Using currentColor doesn't work here, but since the
-     content area inherits the entry background, we need to use a trick:
-     The gradient now uses the parent's computed background via inherit, which works
-     because .output-content has no explicit background set, so it inherits from
-     .output-entry. However, linear-gradient can't use inherit. The correct fix is
-     to NOT set a specific end-color in the gradient and instead use a pseudo-element
-     approach. For now, we use color-mix to blend the accent with a safe neutral. */
   background: linear-gradient(transparent, var(--bg));
 }
 
-/* FIX: Override collapsed gradient for error entries to match danger-dim background */
+/* FIX: Override collapsed gradient for error entries — .error has background
+   var(--danger-dim), but the gradient faded to var(--surface), creating a
+   visible color jump at the fade boundary. Now matches the parent background. */
 .output-entry.error.collapsed .output-content::after {
   background: linear-gradient(transparent, var(--danger-dim));
 }
@@ -187,7 +176,7 @@
   transition-duration: 0.08s;
 }
 
-/* Extra key press ripple — FIX: replaced hardcoded rgba(255,107,53,...) with color-mix */
+/* FIX: Replaced hardcoded rgba(255,107,53,...) with color-mix() */
 @keyframes keyRipple {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
   100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
@@ -220,9 +209,6 @@
   padding: 12px 12px 12px 10px;
   font: 12px/1.5 var(--mono);
   white-space: pre;
-  /* FIX: Changed from overflow:hidden to overflow:auto with hidden scrollbars.
-     overflow:hidden prevents scrollTop/scrollLeft from working reliably on mobile Safari.
-     The scrollbar is hidden via scrollbar-width:none and ::-webkit-scrollbar below. */
   overflow: auto;
   scrollbar-width: none;
   color: var(--text);
@@ -247,11 +233,6 @@
   caret-color: var(--text);
   z-index: 2;
   position: relative;
-  /* FIX: CRITICAL — without background:transparent, the textarea's opaque
-     background:var(--dark) completely covers the highlight layer behind it.
-     User saw "black" text because transparent text + opaque dark bg = invisible.
-     The highlight layer (z-index:1) with syntax colors was hidden behind
-     the textarea (z-index:2) with its opaque background. */
   background: transparent !important;
 }
 

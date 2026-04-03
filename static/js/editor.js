@@ -12,7 +12,7 @@ export const Editor = {
   highlightLayer: null,
   currentLang: 'plaintext',
   _highlightTimer: null,
-  // FIX: Store event listener references for proper cleanup — prevents memory leak
+  // FIX: Store handler references for cleanup — prevents memory leak
   _viewportHandler: null,
   _resizeHandler: null,
 
@@ -21,7 +21,6 @@ export const Editor = {
     this.gutter = document.getElementById('lineNumbers')
     if (!this.ta || !this.gutter) return
 
-    // Create the syntax highlight overlay
     this._createHighlightLayer()
 
     this.ta.addEventListener('input', () => {
@@ -35,7 +34,7 @@ export const Editor = {
     this._initViewport()
   },
 
-  // FIX: Proper cleanup method to prevent memory leaks on page unload / re-init
+  // FIX: Proper cleanup to prevent memory leaks
   destroy() {
     if (this._highlightTimer) {
       clearTimeout(this._highlightTimer)
@@ -51,7 +50,6 @@ export const Editor = {
     }
   },
 
-  // ── Highlight layer setup ──────────────────────────────────────────────
   _createHighlightLayer() {
     const wrapper = document.getElementById('editorWrapper')
     if (!wrapper) return
@@ -65,7 +63,6 @@ export const Editor = {
     wrapper.appendChild(this.highlightLayer)
   },
 
-  // ── Debounced highlighting ────────────────────────────────────────────
   _scheduleHighlight() {
     if (this._highlightTimer) clearTimeout(this._highlightTimer)
     this._highlightTimer = setTimeout(() => this._doHighlight(), 100)
@@ -79,54 +76,64 @@ export const Editor = {
 
     const value = this.ta.value
 
-    // Guard: if hljs is not loaded, just show plain text
     if (typeof hljs === 'undefined') {
       code.textContent = value
       this.ta.classList.remove('highlighting-on')
       return
     }
 
-    // FIX: Removed redundant esc(value) call. Previously the flow was:
-    //   1. esc(value) → HTML-escaped string
-    //   2. code.innerHTML = escaped → browser stores escaped entities
-    //   3. hljs.highlightElement(code) → reads code.textContent (browser un-escapes back to raw)
-    //   4. hljs internally escapes + wraps in spans → sets safe innerHTML
-    // The esc() on line 71 was completely redundant — hljs reads textContent (raw),
-    // does its own escaping, and produces safe highlighted HTML. Removing it avoids
-    // double-work and potential confusion about the escaping flow.
-
-    // Set content and highlight
-    code.textContent = value
-    code.className = `language-${this.currentLang}`
+    // FIX: ROOT CAUSE of "syntax highlight mati warna" — replaced hljs.highlightElement()
+    // with hljs.highlight(). The old code used highlightElement() which sets
+    // code.dataset.highlighted = "yes" after the first successful call. On ALL
+    // subsequent calls, hljs checks this attribute and SKIPS highlighting entirely
+    // (returns early). Setting code.innerHTML or code.className does NOT clear
+    // dataset attributes, so the highlight layer was permanently frozen after
+    // the first render. User would see: colors on file open, then NO COLORS
+    // when typing. Additionally, the frozen highlight layer showed OLD content
+    // while the textarea showed NEW content → "teks dobel" (doubled text overlay).
+    //
+    // hljs.highlight() is a pure function — it takes text + language, returns
+    // highlighted HTML. No internal state mutation, no dataset check, always fresh.
+    // We also removed the redundant esc() call: esc(value) + code.innerHTML
+    // was a wasted round-trip because hljs.highlight() reads raw text and does
+    // its own HTML escaping internally.
 
     try {
-      hljs.highlightElement(code)
+      const result = hljs.highlight(value, {
+        language: this.currentLang,
+        ignoreIllegals: true
+      })
+      code.innerHTML = result.value
+      code.className = `language-${this.currentLang} hljs`
     } catch {
-      // If highlighting fails for unsupported language, keep plain
-      code.textContent = value
+      // Language not registered — try auto-detect as fallback
+      try {
+        const result = hljs.highlightAuto(value)
+        code.innerHTML = result.value
+        code.className = `${result.language} hljs`
+      } catch {
+        // Both failed — show plain text
+        code.textContent = value
+        code.className = ''
+      }
     }
 
-    // Activate the transparent-text overlay
     this.ta.classList.add('highlighting-on')
   },
 
-  // ── Language management ────────────────────────────────────────────────
   setLanguage(lang) {
     this.currentLang = lang || 'plaintext'
     this._doHighlight()
   },
 
-  // ── Viewport / virtual keyboard fix ────────────────────────────────────
   _initViewport() {
-    // FIX: Cleanup previous listeners before adding new ones — prevents stacking
-    // if init() is called multiple times (memory leak)
+    // FIX: Cleanup previous listeners before adding new ones
     this.destroy()
 
     if ('virtualKeyboard' in navigator) {
       navigator.virtualKeyboard.overlaysContent = false
     }
 
-    // FIX: Store handler references so they can be removed later
     this._viewportHandler = () => {
       const h = window.visualViewport?.height ?? window.innerHeight
       document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`)
@@ -138,49 +145,17 @@ export const Editor = {
     window.addEventListener('resize', this._resizeHandler)
   },
 
-  // FIX: Optimized updateGutter for large files. Previously used
-  // Array.from({length: lines}, (_, i) => i + 1).join('\n') which creates
-  // an intermediate array of N elements then joins. For a 100k-line file this
-  // allocates ~800KB of temporary objects. The new approach builds the string
-  // incrementally with a pre-allocated buffer, reducing GC pressure by ~3x.
   updateGutter() {
     const lineCount = this.ta.value.split('\n').length
     if (lineCount <= 1) {
       this.gutter.textContent = '1'
       return
     }
-
-    // For small files, use simple Array.join (fast enough, readable)
-    if (lineCount < 1000) {
-      this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
-      return
-    }
-
-    // For large files, build string incrementally to avoid large array allocation
-    const parts = []
-    for (let i = 1; i <= lineCount; i++) {
-      parts.push(i)
-      if (parts.length > 5000) {
-        this.gutter.textContent = parts.join('\n')
-        // We can't incrementally append to textContent, so we need full build anyway.
-        // For truly large files, just do one join at the end.
-        break
-      }
-    }
-    if (parts.length <= 5000) {
-      this.gutter.textContent = parts.join('\n')
-      return
-    }
-
-    // Full build for very large files
-    const result = new Array(lineCount)
-    for (let i = 0; i < lineCount; i++) result[i] = i + 1
-    this.gutter.textContent = result.join('\n')
+    this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
   },
 
   syncScroll() {
     this.gutter.scrollTop = this.ta.scrollTop
-    // Sync the highlight layer scroll with the textarea
     if (this.highlightLayer) {
       this.highlightLayer.scrollTop = this.ta.scrollTop
       this.highlightLayer.scrollLeft = this.ta.scrollLeft
@@ -201,9 +176,7 @@ export const Editor = {
       const lineStart = val.lastIndexOf('\n', start - 1) + 1
       const currentLine = val.substring(lineStart, start)
       const indent = currentLine.match(/^\s*/)[0]
-      // FIX: Added support for common auto-indent pairs: { } ( ) [ ]
-      // Previously only handled Python ':' style. Now also handles JS/JSON/CSS
-      // opening braces by adding extra indentation after the opening character.
+      // FIX: Added auto-indent for common pairs: { } ( ) [ ] — not just Python ':'
       const extraIndent = currentLine.trimEnd().endsWith(':') ||
                           currentLine.trimEnd().endsWith('{') ||
                           currentLine.trimEnd().endsWith('(') ||
@@ -218,24 +191,20 @@ export const Editor = {
     }
   },
 
-  // FIX: CRITICAL — insertAtCursor was breaking undo/redo by using .value assignment.
-  // When you set textarea.value programmatically, browsers reset the undo history.
-  // So after pressing Tab or Enter, Ctrl+Z would NOT undo the inserted text — it would
-  // undo the last manual edit before that, which is very confusing.
-  // Fix: Use document.execCommand('insertText') which integrates with the browser's
-  // built-in undo stack. Falls back to .value assignment for browsers where
-  // execCommand is unsupported or the textarea isn't focused.
+  // FIX: insertAtCursor was breaking undo/redo — setting .value programmatically
+  // resets the browser's undo stack. After pressing Tab/Enter, Ctrl+Z would not
+  // undo the inserted text. Fix: use document.execCommand('insertText') which
+  // integrates with the browser's native undo history.
   insertAtCursor(text) {
     this.ta.focus()
 
-    // Try execCommand first — preserves undo/redo history
     if (document.execCommand?.('insertText', false, text)) {
       this.updateGutter()
       this._scheduleHighlight()
       return
     }
 
-    // Fallback: manual insertion (breaks undo, but works everywhere)
+    // Fallback for browsers where execCommand doesn't work in textarea
     const start = this.ta.selectionStart
     const end = this.ta.selectionEnd
     this.ta.value = this.ta.value.substring(0, start) + text + this.ta.value.substring(end)
@@ -244,22 +213,17 @@ export const Editor = {
     this._scheduleHighlight()
   },
 
-  // FIX: Added null guards for ta, gutter, and highlightLayer. Previously,
-  // if init() failed (elements missing), calling onLoad would crash with
-  // "Cannot set property 'scrollTop' of null".
+  // FIX: Added null guards — crashes if init() failed (elements missing)
+  // FIX: Removed duplicate _doHighlight() call — setLanguage() already calls it,
+  // so the old code was calling _doHighlight() TWICE per file load (wasteful).
   onLoad(lang) {
     if (!this.ta) return
 
-    // Set language and enable highlighting
-    if (lang) {
-      this.setLanguage(lang)
-    }
+    this.currentLang = lang || 'plaintext'
     this.updateGutter()
     this.ta.scrollTop = 0
     if (this.gutter) this.gutter.scrollTop = 0
-    if (this.highlightLayer) {
-      this.highlightLayer.scrollTop = 0
-    }
+    if (this.highlightLayer) this.highlightLayer.scrollTop = 0
     this._doHighlight()
   }
 }
