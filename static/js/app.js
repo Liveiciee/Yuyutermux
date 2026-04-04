@@ -29,13 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ===== AUTH ===== */
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')
-  if (logoutBtn) {
-    logoutBtn.onclick = () => {
-      if (confirm('Logout? Session akan berakhir.')) Auth.logout()
-    }
-    Auth.isAuthenticated().then(ok => {
-      logoutBtn.classList.toggle('hidden', !ok)
-    })
+  if (!logoutBtn) return
+  if (Auth.getToken()) {
+    logoutBtn.classList.remove('hidden')
+  }
+  logoutBtn.onclick = () => {
+    if (confirm('Logout? Session akan berakhir.')) Auth.logout()
   }
 }
 

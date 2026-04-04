@@ -67,7 +67,7 @@ function stopCacheCleanup() {
 
 function getCookieValue(name) {
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
-  return match ? match[2] : null
+  return match ? match[1] : null
 }
 
 function isRetryableError(err, status) {
