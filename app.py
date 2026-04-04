@@ -1,5 +1,4 @@
 import os
-import sys
 from flask import Flask, jsonify, request
 
 from utils import (
@@ -23,7 +22,7 @@ DEBUG_MODE = os.environ.get('YUYUTERMUX_DEBUG', '0') == '1'
 # Prevents exposure to the network. Override with YUYUTERMUX_HOST env var.
 APP_HOST = os.environ.get('YUYUTERMUX_HOST', '127.0.0.1')
 
-# BUG FIX #1: int() crash jika YUYUTERMUX_PORT non-numerik — tambah try/except
+# BUG FIX #1: int() crash if YUYUTERMUX_PORT non-numeric — add try/except
 try:
     APP_PORT = int(os.environ.get('YUYUTERMUX_PORT', '5000'))
 except (ValueError, TypeError):

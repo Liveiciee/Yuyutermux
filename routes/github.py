@@ -23,9 +23,6 @@ def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple:
             cwd=cwd or PROJECT_DIR,
             timeout=30,
             input=input_data,
-            # BUG FIX: Pass filtered env so YUYUTERMUX_TOKEN is not inherited.
-            # git can print env vars in error messages (e.g. GIT_TRACE output),
-            # and a compromised git hook could dump the full environment.
             env=_safe_env(),
         )
         ok = result.returncode == 0
@@ -50,6 +47,35 @@ def _validate_branch_name(name: str) -> bool:
     return bool(name and BRANCH_NAME_RE.match(name) and len(name) <= 255)
 
 
+def _mask_git_url(url: str) -> str:
+    """Mask credentials in git URLs (both HTTPS and SSH)."""
+    if not url:
+        return url
+    
+    # Handle HTTPS URLs: https://user:pass@host/path
+    if '://' in url and '@' in url:
+        try:
+            scheme, rest = url.split('://', 1)
+            if '@' in rest:
+                creds_host, path = rest.split('@', 1)
+                if ':' in creds_host:
+                    return f"{scheme}://***@{path}"
+        except Exception:
+            pass
+    
+    # Handle SSH URLs: git@github.com:path or ssh://git@host/path
+    if '@' in url and ':' in url and '://' not in url:
+        # Standard SSH format: user@host:path
+        try:
+            user_host, path = url.split(':', 1)
+            if '@' in user_host:
+                return f"***@{path}"
+        except Exception:
+            pass
+    
+    return url
+
+
 # ── STATUS ────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/status')
@@ -69,11 +95,6 @@ def git_status():
     for line in (porcelain or '').split('\n'):
         if not line:
             continue
-        # BUG FIX: Was `x, y, filepath = line[0], line[1], line[3:]` with no guard.
-        # git status --porcelain output is always ≥ 4 chars for modified/staged entries
-        # (XY + space + path), but an empty or malformed line (e.g. from a corrupt
-        # git index or a future git format change) would cause IndexError here.
-        # Guard: skip any line shorter than 4 characters.
         if len(line) < 4:
             continue
         x, y, filepath = line[0], line[1], line[3:]
@@ -93,20 +114,11 @@ def git_status():
         if line and '(fetch)' in line:
             parts = line.split()
             if len(parts) >= 2 and parts[0] not in seen:
-                url = parts[1]
-                if '@' in url:
-                    try:
-                        scheme_rest = url.split('://', 1)
-                        if len(scheme_rest) == 2:
-                            user_pass_host = scheme_rest[1].split('@', 1)
-                            if len(user_pass_host) == 2:
-                                url = f"{scheme_rest[0]}://***@{user_pass_host[1]}"
-                    except Exception:
-                        pass
+                url = _mask_git_url(parts[1])  # BUG FIX: Use masking function
                 remotes.append({'name': parts[0], 'url': url})
                 seen.add(parts[0])
 
-    # Ahead / behind (best effort — fails if no upstream)
+    # Ahead / behind
     ahead = behind = 0
     _, ab, _ = git_run(['rev-list', '--left-right', '--count', 'HEAD...@{u}'])
     if ab:

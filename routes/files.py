@@ -2,7 +2,7 @@ from flask import Blueprint, request, send_from_directory
 from utils import (
     validate_path, json_ok, json_err, get_req_path,
     PROJECT_DIR, MAX_FILE_SIZE, MAX_UPLOAD_SIZE,
-    rate_limit, sanitize_error
+    rate_limit, sanitize_error, _safe_env
 )
 import os
 import datetime
@@ -18,8 +18,6 @@ files_bp = Blueprint('files', __name__)
 def api_files_list():
     path = validate_path(get_req_path())
     if not path:
-        # BUG FIX: Was `files=[]` — inconsistent with json_ok which uses `items`.
-        # Consistent key name aids debugging even though !ok path in JS never reads it.
         return json_err("Invalid path", 403, items=[])
 
     if not os.path.exists(path):
@@ -192,10 +190,6 @@ def api_files_create():
         return json_err("File already exists", 409)
 
     try:
-        # BUG FIX: Was `open(new_path, 'w').close()` — file object not guaranteed
-        # to be closed if .close() itself raises (unlikely but possible under EINTR
-        # or if the OS fd table is exhausted). Using a context manager ensures
-        # the file descriptor is always released via __exit__.
         with open(new_path, 'w', encoding='utf-8') as f:
             pass
         return json_ok(message=f"Created: {os.path.basename(new_path)}")
@@ -269,9 +263,6 @@ def api_files_upload():
 
     try:
         file.save(save_path)
-        # BUG FIX: Was `path=save_path` which leaks the absolute filesystem path
-        # (e.g. "/data/data/com.termux/files/home/Yuyutermux/uploads/foo.txt").
-        # Return only the relative path from PROJECT_DIR root instead.
         rel_path = os.path.relpath(save_path, PROJECT_DIR)
         return json_ok(message=f"Uploaded: {safe_filename}", path=rel_path)
     except Exception:
@@ -314,7 +305,8 @@ def search_files():
         result = subprocess.run(
             ['grep'] + grep_flags,
             capture_output=True, text=True, timeout=10,
-            env={**os.environ, 'LC_ALL': 'C'}
+            # BUG FIX: Use _safe_env() to prevent leaking YUYUTERMUX_TOKEN
+            env={**_safe_env(), 'LC_ALL': 'C'}
         )
 
         # SECURITY: Limit output size

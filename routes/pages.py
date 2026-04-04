@@ -1,11 +1,11 @@
 import secrets
-from flask import Blueprint, render_template, redirect, request, make_response
-from utils import AUTH_TOKEN, check_auth
+from flask import Blueprint, render_template, redirect, request, make_response, jsonify
+from utils import AUTH_TOKEN, check_auth, rate_limit
 
 pages_bp = Blueprint('pages', __name__)
 
 _COOKIE_NAME = 'yuyu_token'
-_MARKER_COOKIE = 'yuyu_authed'   # Non-httponly auth presence marker for JS
+_MARKER_COOKIE = 'yuyu_authed'
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 
 
@@ -40,36 +40,31 @@ def login():
 
 
 @pages_bp.route('/api/auth/login', methods=['POST'])
+@rate_limit(max_requests=5, window=60)  # BUG FIX: Add rate limiting to prevent brute force
 def auth_login():
     data = request.get_json(silent=True) or {}
     token = (data.get('token') or '').strip()
 
     if not token:
-        return redirect('/login?error=Authentication+failed')
+        return jsonify({"success": False, "error": "Authentication failed"}), 401
 
     if not AUTH_TOKEN or not secrets.compare_digest(token, AUTH_TOKEN):
-        return redirect('/login?error=Authentication+failed')
+        return jsonify({"success": False, "error": "Authentication failed"}), 401
 
-    resp = make_response(redirect('/'))
+    resp = make_response(jsonify({"success": True, "redirect": "/"}))
     resp.set_cookie(
         _COOKIE_NAME,
         token,
         max_age=_COOKIE_MAX_AGE,
-        httponly=True,        # Protects token from XSS — JS cannot read it
+        httponly=True,
         samesite='Strict',
         path='/'
     )
-    # BUG FIX: Auth.getToken() in api.js reads document.cookie, which cannot
-    # see httponly cookies. This means Auth.isAuthenticated() always returned
-    # false even when the user was logged in, causing misleading UI state.
-    # Fix: set a companion non-httponly marker cookie `yuyu_authed=1` that
-    # carries NO sensitive data — only signals "you have a valid session".
-    # JS reads this for isAuthenticated(); the actual token stays httponly.
     resp.set_cookie(
         _MARKER_COOKIE,
         '1',
         max_age=_COOKIE_MAX_AGE,
-        httponly=False,       # Intentionally readable by JS (no token value)
+        httponly=False,
         samesite='Strict',
         path='/'
     )
@@ -78,7 +73,8 @@ def auth_login():
 
 @pages_bp.route('/api/auth/logout', methods=['POST'])
 def auth_logout():
-    resp = make_response(redirect('/login'))
+    # BUG FIX: Return JSON instead of redirect for API consistency
+    resp = make_response(jsonify({"success": True, "redirect": "/login"}))
     resp.delete_cookie(_COOKIE_NAME, path='/')
     resp.delete_cookie(_MARKER_COOKIE, path='/')
     return resp

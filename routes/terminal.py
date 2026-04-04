@@ -1,4 +1,4 @@
-from flask import Blueprint, request, Response, stream_with_context, jsonify
+from flask import Blueprint, request, Response, stream_with_context, jsonify, session
 import subprocess
 import shlex
 import os
@@ -19,20 +19,18 @@ _proc_counter = 0
 _proc_lock = threading.Lock()
 _proc_counter_lock = threading.Lock()
 
-# Thread-safe current directory with lock
-_cwd_lock = threading.Lock()
-_current_dir = PROJECT_DIR
+# Session-based current directory (key per user instead of global)
+_SESSION_CWD_KEY = 'terminal_cwd'
 
 
-def get_current_dir():
-    with _cwd_lock:
-        return _current_dir
+def get_session_cwd():
+    """Get current working directory from session, defaulting to PROJECT_DIR."""
+    return session.get(_SESSION_CWD_KEY, PROJECT_DIR)
 
 
-def set_current_dir(path):
-    global _current_dir
-    with _cwd_lock:
-        _current_dir = path
+def set_session_cwd(path):
+    """Set current working directory in session after validation."""
+    session[_SESSION_CWD_KEY] = path
 
 
 # ── SECURITY: Maximum process execution time (seconds) ───────────────────────
@@ -43,7 +41,7 @@ MAX_PROCESS_TIMEOUT = 300  # 5 minutes
 def api_get_cwd():
     # SECURITY: Don't leak real path, only show display path
     try:
-        current_dir = get_current_dir()
+        current_dir = get_session_cwd()
         home = os.path.expanduser('~')
         display = current_dir.replace(home, '~', 1)
     except Exception:
@@ -81,15 +79,14 @@ def api_execute_stream():
         return jsonify({"success": False, "error": f"Command '{base_cmd}' is blocked for security"}), 403
 
     # ── Handle `cd` natively so the working directory actually changes ──
-    if base_cmd == 'cd' and (len(command) == 2 or command[2] in (' ', '\t')):
+    if base_cmd == 'cd':
         try:
-            parts = shlex.split(command)
-            if len(parts) == 1 or parts[1] in ('~', ''):
+            if len(cmd_parts) == 1 or cmd_parts[1] in ('~', ''):
                 new_dir = os.path.expanduser('~')
             else:
-                target = os.path.expanduser(parts[1])
+                target = os.path.expanduser(cmd_parts[1])
                 new_dir = target if os.path.isabs(target) else os.path.normpath(
-                    os.path.join(get_current_dir(), target)
+                    os.path.join(get_session_cwd(), target)
                 )
 
             # SECURITY: Validate cd destination
@@ -99,20 +96,14 @@ def api_execute_stream():
                     yield f"cd: restricted: cannot access that directory\n[EXIT_CODE:1]\n"
                 return Response(stream_with_context(_cd_blocked()), mimetype='text/plain')
 
-            # BUG FIX (CRITICAL): Previously used `new_dir` (the raw, unvalidated path)
-            # for both the isdir check AND set_current_dir. This meant a symlink pointing
-            # outside the allowed home dir would pass validation (validate_path_terminal
-            # returns the realpath which is inside home) but then set the cwd to the
-            # *symlink path* — which when later used as a base for further cd calls,
-            # could escape the home boundary step-by-step.
-            # Fix: always use `validated` (the realpath-resolved, bounds-checked path).
+            # Use validated (realpath-resolved) path to prevent symlink escape attacks
             if os.path.isdir(validated):
-                set_current_dir(validated)
+                set_session_cwd(validated)
                 def _cd_ok():
                     yield f"\n[EXIT_CODE:0]\n"
                 return Response(stream_with_context(_cd_ok()), mimetype='text/plain')
             else:
-                target_name = parts[1] if len(parts) > 1 else ''
+                target_name = cmd_parts[1] if len(cmd_parts) > 1 else ''
                 def _cd_err():
                     yield f"cd: {target_name}: No such file or directory\n[EXIT_CODE:1]\n"
                 return Response(stream_with_context(_cd_err()), mimetype='text/plain')
@@ -125,7 +116,10 @@ def api_execute_stream():
         _proc_counter += 1
         proc_id = _proc_counter
 
-    def generate():
+    # Capture CWD here to prevent TOCTOU race condition
+    current_cwd = get_session_cwd()
+
+    def generate(cwd):
         proc = None
         try:
             proc = subprocess.Popen(
@@ -134,10 +128,9 @@ def api_execute_stream():
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                cwd=get_current_dir(),
+                cwd=cwd,  # Use captured CWD instead of calling getter (prevents TOCTOU)
                 preexec_fn=os.setsid,  # Create process group for clean killing
-                # BUG FIX: Pass filtered env so YUYUTERMUX_TOKEN is not inherited
-                # by child processes (could be leaked via error output or env dumps).
+                # Pass filtered env so YUYUTERMUX_TOKEN is not inherited
                 env=_safe_env(),
             )
             with _proc_lock:
@@ -174,9 +167,9 @@ def api_execute_stream():
             yield f"\n[ERROR:internal error]\n"
         finally:
             with _proc_lock:
-                _active_processes.pop(proc_id, None)
+                _active_processes.pop(proc_id, None)  # Safe pop with default
 
-    return Response(stream_with_context(generate()), mimetype='text/plain')
+    return Response(stream_with_context(generate(current_cwd)), mimetype='text/plain')
 
 
 @terminal_bp.route('/api/execute/kill', methods=['POST'])

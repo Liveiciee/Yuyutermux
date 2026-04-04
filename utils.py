@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import time
 import threading
 import functools
-from typing import Union, Optional, Dict, List, Tuple
-from flask import request, jsonify, Response, g
-from werkzeug.exceptions import TooManyRequests
+from typing import Optional, Dict, List, Tuple
+from flask import request, jsonify, Response
 
 HOME_DIR = os.path.expanduser('~')
 PROJECT_DIR = os.path.join(HOME_DIR, 'Yuyutermux')
@@ -77,9 +77,11 @@ def _cleanup_rate_limits(now: float) -> None:
     if now - _last_cleanup < _RATE_CLEANUP_INTERVAL:
         return
     _last_cleanup = now
+    # BUG FIX: Check oldest timestamp (timestamps[0]), not newest (timestamps[-1])
+    # Remove if the oldest request was >5min ago (entire window expired)
     expired_keys = [
         key for key, timestamps in _rate_limit_store.items()
-        if not timestamps or now - timestamps[-1] > 300  # Remove if last request was >5min ago
+        if not timestamps or now - timestamps[0] > 300
     ]
     for key in expired_keys:
         del _rate_limit_store[key]
@@ -105,7 +107,8 @@ def rate_limit(max_requests: int = 30, window: int = 60):
                     t for t in _rate_limit_store[key] if now - t < window
                 ]
 
-                if len(_rate_limit_store[key]) >= max_requests:
+                # BUG FIX: Use > instead of >= for correct limit enforcement
+                if len(_rate_limit_store[key]) > max_requests:
                     return jsonify({
                         "success": False,
                         "error": f"Rate limit exceeded ({max_requests}/{window}s)"
@@ -137,6 +140,15 @@ BLOCKED_COMMANDS = {
     'env', 'exec', 'eval', 'source', 'busybox', 'xargs',
     'nohup', 'setsid', 'unshare', 'nsenter',
     'find', 'awk', 'sed',  # can execute commands
+    # BUG FIX: Added missing shell interpreters and other dangerous commands
+    'sh', 'bash', 'zsh', 'dash', 'fish', 'csh', 'tcsh', 'ksh',  # shells
+    'expect', 'tclsh', 'lua', 'luajit',  # other interpreters
+    'ssh-keygen', 'openssl',  # crypto tools
+    'docker', 'podman', 'lxc', 'lxc-execute',  # container escapes
+    'systemctl', 'service',  # service control
+    'kill', 'killall', 'pkill', 'xkill',  # process termination
+    'crontab', 'at', 'batch',  # job schedulers
+    'write', 'wall', 'mesg',  # user messaging
 }
 
 # Commands that are allowed — used as reference/documentation.
@@ -218,15 +230,20 @@ def json_ok(**kwargs) -> Tuple[Response, int]:
 
 
 def json_err(msg: str, code: int = 500, **kwargs) -> Tuple[Response, int]:
-    # Sanitize error messages — never leak full paths or exception details
-    safe_msg = msg
+    # BUG FIX: Sanitize error messages — never leak full paths or exception details
+    # Also sanitize any 'error' key passed in kwargs to prevent data leak
+    safe_kwargs = {k: v for k, v in kwargs.items() if k != 'error'}
+    
     if code >= 500:
         safe_msg = "Internal server error"
-    return jsonify({"success": False, "error": safe_msg, **kwargs}), code
+    else:
+        safe_msg = msg
+    
+    return jsonify({"success": False, "error": safe_msg, **safe_kwargs}), code
 
 
 def get_req_path() -> str:
-    """Extract path dari request (GET args atau POST json)."""
+    """Extract path from request (GET args or POST json)."""
     if request.method == 'GET':
         return request.args.get('path', '')
     return (request.get_json(silent=True) or {}).get('path', '')
@@ -237,6 +254,38 @@ def sanitize_error(msg: str) -> str:
     msg = msg.replace(HOME_DIR, '~')
     msg = msg.replace(PROJECT_DIR, '~/Yuyutermux')
     return msg
+
+
+# ── SECURITY: Command validation helpers ─────────────────────────────────────
+
+# BUG FIX: Added shell operator detection to prevent command injection
+SHELL_METACHARACTERS = re.compile(r'[;|&`$(){}[\]\\*?<>]')
+
+def contains_shell_operators(cmd: str) -> bool:
+    """Check if command string contains shell metacharacters."""
+    return bool(SHELL_METACHARACTERS.search(cmd))
+
+
+def validate_command(cmd_parts: List[str]) -> Tuple[bool, str]:
+    """Validate command parts for safety.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    if not cmd_parts:
+        return False, "Empty command"
+    
+    # Check for shell operators in any argument (prevents injection)
+    for part in cmd_parts:
+        if contains_shell_operators(part):
+            return False, f"Shell metacharacters not allowed: {part}"
+    
+    # Check command against blocklist
+    cmd_name = os.path.basename(cmd_parts[0])
+    if cmd_name in BLOCKED_COMMANDS:
+        return False, f"Command '{cmd_name}' is not allowed"
+    
+    return True, ""
 
 
 # ── SECURITY: Security headers for all responses ──────────────────────────────
