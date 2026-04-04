@@ -215,32 +215,51 @@ export const api = {
       if (options.body && !options.headers?.['Content-Type']) {
         headers['Content-Type'] = 'application/json'
       }
+
       const res = await fetch(API_BASE + url, {
         ...options,
         signal: controller.signal,
-        headers
+        headers,
+        credentials: 'same-origin'
       })
+
       clearTimeout(timeoutId)
+
       if (res.status === 401) {
         setTimeout(() => { window.location.href = '/login' }, 100)
         return { ok: false, status: 401, data: { success: false, error: 'Unauthorized' }, needsAuth: true }
       }
+
       const contentType = res.headers.get('content-type') || ''
       let data
+
       if (contentType.includes('application/json')) {
-        try { data = await res.json() } catch (e) { data = { success: false, error: 'Invalid JSON response' } }
+        try {
+          data = await res.json()
+        } catch (e) {
+          data = { success: false, error: 'Invalid JSON response' }
+        }
       } else {
         const text = await res.text()
         data = { success: false, error: `Unexpected format: ${contentType || 'unknown'}` }
-        if (text.includes('<!DOCTYPE') || text.includes('<html')) console.error('HTML response:', text.substring(0, 200))
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+          console.error('HTML response:', text.substring(0, 200))
+        }
       }
+
       return { ok: res.ok, status: res.status, data }
+
     } catch (err) {
       clearTimeout(timeoutId)
-      if (err.name === 'AbortError') return { ok: false, status: 408, data: { success: false, error: 'Request timeout' }, timedOut: true }
+
+      if (err.name === 'AbortError') {
+        return { ok: false, status: 408, data: { success: false, error: 'Request timeout' }, timedOut: true }
+      }
+
       return { ok: false, status: 0, data: { success: false, error: err.message || 'Network error' }, networkError: true }
     }
   },
+
   get: (url, options = {}) => api.request(url, { ...options, method: 'GET' }),
   post: (url, body, options = {}) => api.request(url, { ...options, method: 'POST', body: JSON.stringify(body) })
 }

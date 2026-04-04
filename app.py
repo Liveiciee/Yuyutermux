@@ -110,6 +110,6 @@ if __name__ == '__main__':
     app.run(
         host=APP_HOST,
         port=APP_PORT,
-        threads=8,
+        threads=16,
         debug=DEBUG_MODE
     )

@@ -38,27 +38,33 @@ def login():
 def auth_login():
     data = request.get_json(silent=True) or {}
     token = (data.get('token') or '').strip()
+
     if not token:
         return jsonify({"success": False, "error": "Authentication failed"}), 401
+
     if not AUTH_TOKEN or not secrets.compare_digest(token, AUTH_TOKEN):
         return jsonify({"success": False, "error": "Authentication failed"}), 401
+
     resp = make_response(jsonify({"success": True, "redirect": "/"}))
+
     resp.set_cookie(
         _COOKIE_NAME,
         token,
         max_age=_COOKIE_MAX_AGE,
         httponly=True,
-        samesite='Strict',
+        samesite='Lax',
         path='/'
     )
+
     resp.set_cookie(
         _MARKER_COOKIE,
         '1',
         max_age=_COOKIE_MAX_AGE,
         httponly=False,
-        samesite='Strict',
+        samesite='Lax',
         path='/'
     )
+
     return resp
 
 @pages_bp.route('/api/auth/logout', methods=['POST'])

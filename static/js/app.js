@@ -8,68 +8,62 @@ import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
+/* ===== MOBILE DEBUG (NO DEVTOOLS) ===== */
+window.onerror = function (msg, src, line, col, err) {
+  alert("JS ERROR:\n" + msg + "\n" + src + ":" + line)
+}
+window.onunhandledrejection = function (e) {
+  alert("PROMISE ERROR:\n" + (e.reason?.message || e.reason))
+}
+
+/* ===== INTERNAL STATE ===== */
 let _cwdInterval = null
 let _connectionInterval = {}
 
+/* ===== BOOT ===== */
 document.addEventListener('DOMContentLoaded', () => {
-  try { initSplash() } catch (e) { console.error('[initSplash]', e) }
-  try { initInput() } catch (e) { console.error('[initInput]', e) }
-  try { initModules() } catch (e) { console.error('[initModules]', e) }
-  try { initTerminal() } catch (e) { console.error('[initTerminal]', e) }
-  try { initFileManager() } catch (e) { console.error('[initFileManager]', e) }
-  try { initGitHub() } catch (e) { console.error('[initGitHub]', e) }
-  try { initPWA() } catch (e) { console.error('[initPWA]', e) }
-  try { initAuth() } catch (e) { console.error('[initAuth]', e) }
-  try { initShortcuts() } catch (e) { console.error('[initShortcuts]', e) }
+  alert("INIT START")
+
+  try { initSplash(); alert("splash ok") } catch (e) { alert("splash fail") }
+  try { initInput(); alert("input ok") } catch (e) { alert("input fail") }
+  try { initModules(); alert("modules ok") } catch (e) { alert("modules fail") }
+  try { initTerminal(); alert("terminal ok") } catch (e) { alert("terminal fail") }
+  try { initFileManager(); alert("files ok") } catch (e) { alert("files fail") }
+  try { initGitHub(); alert("github ok") } catch (e) { alert("github fail") }
+  try { initPWA(); alert("pwa ok") } catch (e) { alert("pwa fail") }
+  try { initAuth(); alert("auth ok") } catch (e) { alert("auth fail") }
+  try { initShortcuts(); alert("shortcuts ok") } catch (e) { alert("shortcuts fail") }
 })
 
+/* ===== AUTH ===== */
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')
   if (logoutBtn) {
-    // ← FIXED: Jangan set style.display, biarkan class .hidden bekerja
-    // Jika tombol harus muncul setelah login, JS backend atau logic lain yang mengatur class-nya
-    // Disini kita hanya set event handler
     logoutBtn.onclick = () => {
       if (confirm('Logout? Session akan berakhir.')) Auth.logout()
     }
   }
 }
 
+/* ===== SPLASH ===== */
 function initSplash() {
   const splash = document.getElementById('splashScreen')
-  const barFill = splash?.querySelector('.splash-bar-fill')
-  const splashStatus = splash?.querySelector('.splash-status')
   const container = document.querySelector('.paper-container')
-  if (!barFill) return
 
-  const steps = [
-    { pct: '30%', text: 'Loading modules...' },
-    { pct: '60%', text: 'Initializing terminal...' },
-    { pct: '85%', text: 'Connecting to server...' },
-    { pct: '100%', text: 'Ready!' }
-  ]
-  let idx = 0
-  const advance = () => {
-    if (idx >= steps.length) return
-    const step = steps[idx]
-    barFill.style.width = step.pct
-    if (splashStatus) splashStatus.textContent = step.text
-    idx++
-    if (idx < steps.length) setTimeout(advance, 300 + Math.random() * 200)
-    else setTimeout(() => {
-      splash?.classList.add('fade-out')
-      container?.classList.add('visible')
-      setTimeout(() => splash?.remove(), 600)
-    }, 300)
-  }
-  barFill.classList.add('animate')
-  setTimeout(advance, 200)
+  // FORCE UNLOCK (no waiting)
+  setTimeout(() => {
+    splash?.classList.add('fade-out')
+    container?.classList.add('visible')
+    setTimeout(() => splash?.remove(), 300)
+  }, 300)
 }
 
+/* ===== INPUT ===== */
 function initInput() {
   const cmdInput = document.getElementById('cmdInput')
   const charCount = document.getElementById('inputCharCount')
   if (!cmdInput || !charCount) return
+
   cmdInput.addEventListener('input', () => {
     cmdInput.style.height = '22px'
     cmdInput.style.height = Math.min(cmdInput.scrollHeight, 120) + 'px'
@@ -77,12 +71,15 @@ function initInput() {
   })
 }
 
+/* ===== TERMINAL ===== */
 function initTerminal() {
   const sendBtn = document.getElementById('sendBtn')
   const clearBtn = document.getElementById('clearAllBtn')
   const cmdInput = document.getElementById('cmdInput')
+
   if (sendBtn) sendBtn.onclick = () => Terminal.run()
   if (clearBtn) clearBtn.onclick = () => Terminal.clearAll()
+
   if (cmdInput) {
     cmdInput.onkeydown = (e) => {
       if (e.key === 'Enter' && e.ctrlKey) {
@@ -91,9 +88,12 @@ function initTerminal() {
       }
     }
   }
+
   const updateCwd = async () => {
     try {
-      const res = await fetch('/api/execute/cwd')
+      const res = await fetch('/api/execute/cwd', {
+        credentials: 'same-origin'
+      })
       if (res.ok) {
         const data = await res.json()
         if (res.status !== 401 && data.success && data.display) {
@@ -101,12 +101,16 @@ function initTerminal() {
           if (el) el.textContent = data.display
         }
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.log("CWD FAIL", e)
+    }
   }
+
   updateCwd()
-  _cwdInterval = setInterval(updateCwd, 2000)
+  _cwdInterval = setInterval(updateCwd, 5000)
 }
 
+/* ===== FILE MANAGER ===== */
 function initFileManager() {
   const fileModal = document.getElementById('fileModal')
   const extraKeysPaper = document.getElementById('extraKeysPaper')
@@ -117,6 +121,7 @@ function initFileManager() {
     const item = e.target.closest('.file-item')
     if (!item) return
     const { path, type } = item.dataset
+
     if (e.target.closest('.file-del')) {
       e.stopPropagation()
       FileManager.deleteItem(path)
@@ -143,24 +148,29 @@ function initFileManager() {
       FileManager.load('')
     }
   }
+
   if (modalCancel) {
     modalCancel.onclick = () => {
       fileModal.close()
       extraKeysPaper?.classList.remove('hidden')
     }
   }
+
   if (modalSave) modalSave.onclick = () => FileManager.save()
   if (modalNewFile) modalNewFile.onclick = () => FileManager.createNew()
   if (modalRename) modalRename.onclick = () => FileManager.renameFile()
   if (refreshBtn) refreshBtn.onclick = () => FileManager.load(FileManager.dir)
+
   if (uploadInput) {
     uploadInput.onchange = (e) => {
       if (e.target.files[0]) FileManager.uploadFile(e.target.files[0])
       e.target.value = ''
     }
   }
+
   const globalSearchBtn = document.getElementById('btn-global-search')
   if (globalSearchBtn) globalSearchBtn.onclick = () => GlobalSearch.show()
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
       fileModal.close()
@@ -169,55 +179,33 @@ function initFileManager() {
   })
 }
 
+/* ===== GITHUB ===== */
 function initGitHub() {
   GitHub.init()
   const gitBtn = document.getElementById('gitBtn')
   if (gitBtn) gitBtn.addEventListener('click', () => GitHub.open())
 }
 
+/* ===== PWA ===== */
 function initPWA() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/service-worker.js').catch(() => {})
   }
-  let deferredPrompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt = e
-    const promptDiv = document.getElementById('pwaInstallPrompt')
-    if (promptDiv) promptDiv.classList.remove('hidden')
-  })
-  const installBtn = document.getElementById('pwaInstallBtn')
-  if (installBtn) {
-    installBtn.onclick = async () => {
-      if (!deferredPrompt) return
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      const promptDiv = document.getElementById('pwaInstallPrompt')
-      if (promptDiv) promptDiv.classList.add('hidden')
-      deferredPrompt = null
-      if (outcome === 'accepted') Toast.show('App installed!', 'success')
-    }
-  }
-  const dismissBtn = document.getElementById('pwaDismissBtn')
-  if (dismissBtn) {
-    dismissBtn.addEventListener('click', () => {
-      document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
-    })
-  }
 }
 
+/* ===== MODULES ===== */
 function initModules() {
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
-  // ← FIXED: Hapus parameter yang tidak digunakan
-  StatusBar.init() 
+  StatusBar.init()
   Suggestions.init()
   Storage.load()
   Editor.init()
   GlobalSearch.init()
 }
 
+/* ===== SHORTCUTS ===== */
 function initShortcuts() {
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'k') {
@@ -229,33 +217,11 @@ function initShortcuts() {
       input.value = ''
       input.style.height = '22px'
       if (charCount) charCount.textContent = '0 chars'
-      return
-    }
-    if (e.ctrlKey && e.key === 'l') {
-      e.preventDefault()
-      Terminal.clearAll()
-      document.getElementById('cmdInput')?.focus()
-      return
-    }
-    // ← FIXED: Ganti Ctrl+F (browser find) ke Ctrl+E (Edit)
-    if (e.ctrlKey && e.key === 'e') {
-      e.preventDefault()
-      document.getElementById('editFileBtn')?.click()
-      return
-    }
-    if (e.ctrlKey && e.key === 'g') {
-      e.preventDefault()
-      document.getElementById('gitBtn')?.click()
-      return
-    }
-    if (e.ctrlKey && e.key === '/') {
-      e.preventDefault()
-      document.getElementById('extraKeysPaper')?.classList.toggle('hidden')
-      return
     }
   })
 }
 
+/* ===== CLEANUP ===== */
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
   if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)
