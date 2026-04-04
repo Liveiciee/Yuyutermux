@@ -9,6 +9,7 @@ import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
 let _cwdInterval = null
+let _connectionInterval = {}
 
 document.addEventListener('DOMContentLoaded', () => {
   try { initSplash() } catch (e) { console.error('[initSplash]', e) }
@@ -156,6 +157,8 @@ function initFileManager() {
       e.target.value = ''
     }
   }
+  const globalSearchBtn = document.getElementById('btn-global-search')
+  if (globalSearchBtn) globalSearchBtn.onclick = () => GlobalSearch.show()
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
       fileModal.close()
@@ -205,7 +208,7 @@ function initModules() {
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
-  StatusBar.init()
+  StatusBar.init(_connectionInterval)
   Suggestions.init()
   Storage.load()
   Editor.init()
@@ -251,5 +254,5 @@ function initShortcuts() {
 
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
-  StatusBar.destroy()
+  if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)
 })

@@ -199,9 +199,11 @@
   overflow: auto;
   scrollbar-width: none;
   color: var(--text);
+  background: var(--dark);
   pointer-events: none;
   z-index: 1;
   tab-size: 4;
+  margin: 0;
 }
 .editor-highlight-layer::-webkit-scrollbar {
   display: none;
@@ -223,4 +225,5 @@
   position: relative;
   background: transparent !important;
   -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
 }

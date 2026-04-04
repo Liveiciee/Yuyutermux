@@ -62,10 +62,27 @@ export const GitHub = {
 
     this._renderBranchBadge(data)
     this._renderStatusTab(data)
+    this._updateRemoteSelect(data.remotes || [])
 
     const staged = data.staged?.length || 0
     const hint = document.getElementById('gitCommitHint')
     if (hint) hint.textContent = staged > 0 ? `${staged} file(s) staged` : 'No files staged'
+  },
+
+  _updateRemoteSelect(remotes) {
+    const sel = document.getElementById('gitRemoteSelect')
+    if (!sel) return
+    const current = sel.value
+    sel.innerHTML = ''
+    const list = remotes.length > 0 ? remotes : [{ name: 'origin' }]
+    list.forEach(r => {
+      const opt = document.createElement('option')
+      opt.value = r.name
+      opt.textContent = r.name
+      sel.appendChild(opt)
+    })
+    // Preserve previous selection if still valid
+    if ([...sel.options].some(o => o.value === current)) sel.value = current
   },
 
   _renderBranchBadge(data) {

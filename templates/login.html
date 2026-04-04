@@ -264,22 +264,15 @@
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token }),
-                redirect: 'follow'
+                body: JSON.stringify({ token })
             });
-            // Successful login redirects to /
-            if (res.url && !res.url.includes('/login')) {
-                window.location.href = res.url;
+            let data;
+            try { data = await res.json(); } catch { data = {}; }
+            if (res.ok && data.success) {
+                window.location.href = data.redirect || '/';
                 return;
             }
-            // Check for error in redirect URL
-            const url = new URL(res.url);
-            const err = url.searchParams.get('error');
-            if (err) {
-                showError(err);
-            } else {
-                showError('Login gagal');
-            }
+            showError(data.error || 'Login gagal');
         } catch (e) {
             showError('Tidak bisa konek ke server');
         } finally {
