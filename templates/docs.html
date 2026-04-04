@@ -868,7 +868,7 @@
 
                 <article class="guide-item">
                     <h3>Global Search</h3>
-                    <p>In File Manager, click <kbd>SEARCH</kbd> to open the "Find in Files" dialog. Type a query and press Enter or click Search. Results are grouped by file with match counts per file, and each result is expandable/collapsible. Click any match to jump directly to that line in the editor with the matching text highlighted and selected, plus a brief orange flash on the editor wrapper. Toggle case-sensitive mode with the <code>Aa</code> button. The search uses <code>grep</code> on the server across 14 file types (Python, JS, TS, HTML, CSS, JSON, Markdown, TXT, Shell, YAML, TOML, CFG), excluding <code>node_modules</code>, <code>.git</code>, <code>__pycache__</code>, and <code>dist</code> directories. Results are capped at 300 lines and each match line is truncated at 500 characters. The search query is limited to 200 characters.</p>
+                    <p>In File Manager, click <kbd>SEARCH</kbd> to open the "Find in Files" dialog. Type a query and press Enter or click Search. Results are grouped by file with match counts per file, and each result is expandable/collapsible. Click any match to jump directly to that line in the editor with the matching text highlighted and selected, plus a brief orange flash on the editor wrapper. Toggle case-sensitive mode with the <code>Aa</code> button. The search uses <code>grep</code> on the server across 13 file types (Python, JS, TS, HTML, CSS, JSON, Markdown, TXT, Shell, YAML, YML, TOML, CFG), excluding <code>node_modules</code>, <code>.git</code>, <code>__pycache__</code>, and <code>dist</code> directories. Results are capped at 300 lines and each match line is truncated at 500 characters. The search query is limited to 200 characters.</p>
                 </article>
 
                 <article class="guide-item">
@@ -886,10 +886,10 @@
 
                 <article class="guide-item">
                     <h3>Status Bar</h3>
-                    <p>The status bar at the bottom of the terminal displays real-time system information. Connection status is checked via <code>/api/health</code> (lightweight, no directory scanning) every 15 seconds. The working directory is polled every 2 seconds. The command counter increments with each executed command, and the uptime timer starts when the page loads and updates every second. A green pulsing dot means connected, a red pulsing dot means offline. On mobile (&lt;640px), the center CWD display is hidden to save space.</p>
+                    <p>The status bar at the bottom of the terminal displays real-time system information. Connection status is checked via <code>/api/health</code> (lightweight, no directory scanning) every 15 seconds. The working directory is polled every 5 seconds. The command counter increments with each executed command, and the uptime timer starts when the page loads and updates every second. A green pulsing dot means connected, a red pulsing dot means offline. On mobile (&lt;640px), the center CWD display is hidden to save space.</p>
                     <ul class="sub-list">
                         <li><strong>Left</strong> &mdash; Connection status dot + label (CONNECTED / OFFLINE)</li>
-                        <li><strong>Center</strong> &mdash; Live current working directory with ~/ shorthand (updates every 2s, hidden on mobile)</li>
+                        <li><strong>Center</strong> &mdash; Live current working directory with ~/ shorthand (updates every 5s, hidden on mobile)</li>
                         <li><strong>Right</strong> &mdash; Command count + session uptime timer (MM:SS)</li>
                     </ul>
                 </article>
@@ -901,12 +901,17 @@
 
                 <article class="guide-item">
                     <h3>Authentication</h3>
-                    <p>On first visit, the browser redirects to <code>/login</code> where the auth token is entered manually. The token is generated fresh in-memory on every server start via <code>secrets.token_urlsafe(32)</code>, or can be set via the <code>YUYUTERMUX_TOKEN</code> environment variable. On successful login, a <code>yuyu_token</code> HttpOnly cookie is set (valid 30 days, SameSite=Strict). Logout clears the cookie but the server keeps running. Token comparison uses <code>secrets.compare_digest()</code> for constant-time comparison to prevent timing attacks. Error messages are uniform &mdash; they never reveal whether the token was empty, wrong, or the system has no token configured.</p>
+                    <p>On first visit, the browser redirects to <code>/login</code> where the auth token is entered manually. The token is generated fresh in-memory on every server start via <code>secrets.token_urlsafe(32)</code>, or can be set via the <code>YUYUTERMUX_TOKEN</code> environment variable. On successful login, <strong>two cookies</strong> are set (both valid 30 days, SameSite=Lax):</p>
+                    <ul class="sub-list">
+                        <li><code>yuyu_token</code> &mdash; HttpOnly cookie storing the actual auth token. Not readable by JavaScript. Used by the backend for server-side auth (auto-sent by the browser on every request).</li>
+                        <li><code>yuyu_authed</code> &mdash; Non-HttpOnly marker cookie with value <code>1</code>. Readable by JavaScript via <code>document.cookie.includes('yuyu_authed')</code>. Used by the frontend to show/hide UI elements like the logout button.</li>
+                    </ul>
+                    <p>Backend auth (<code>check_auth()</code>) checks the <code>Authorization: Bearer &lt;token&gt;</code> header first, then falls back to the <code>yuyu_token</code> cookie. Both use <code>secrets.compare_digest()</code> for constant-time comparison. Logout clears both cookies and redirects to <code>/login</code>. Error messages are uniform &mdash; they never reveal whether the token was empty, wrong, or the system has no token configured.</p>
                     <ul class="sub-list">
                         <li>Token displayed once in server log on startup</li>
                         <li>View token via <code>run.sh</code> &rarr; Show Token, or set via <code>YUYUTERMUX_TOKEN</code> env var</li>
-                        <li>Cookie is HttpOnly (prevents XSS theft) and SameSite=Strict (prevents CSRF)</li>
-                        <li>All API routes require auth except <code>/api/health</code>, <code>/api/auth/login</code>, <code>/api/auth/logout</code></li>
+                        <li><code>yuyu_token</code> is HttpOnly (prevents XSS theft); <code>yuyu_authed</code> is non-HttpOnly (needed for frontend UI state)</li>
+                        <li>All API routes require auth except <code>/api/health</code>, <code>/api/auth/login</code>, <code>/api/auth/logout</code>, <code>/api/verify-token</code></li>
                     </ul>
                 </article>
 
@@ -984,7 +989,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/execute/kill</span>
-                    <div class="api-desc">Kill all active running processes as process group (<code>os.killpg</code>).</div>
+                    <div class="api-desc">Kill all active running processes. Sends SIGTERM to process group (<code>os.killpg</code>), falls back to <code>proc.kill()</code> on permission error.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/execute/cwd</span>
@@ -1024,7 +1029,7 @@
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/files/search?q=&amp;case=</span>
-                    <div class="api-desc">Grep-based text search (max 200 char query). 14 file types, 300 line cap. 10s timeout. Uses list args (no shell=True).</div>
+                    <div class="api-desc">Grep-based text search (max 200 char query). 13 file types, 300 line cap. 10s timeout. Uses list args (no shell=True).</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method get">GET</span><span class="api-endpoint">/api/project/info</span>
@@ -1104,11 +1109,15 @@
             <div class="api-grid" style="margin-bottom:1.25rem">
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/login</span>
-                    <div class="api-desc">Login with token. Sets HttpOnly cookie (30 days, SameSite=Strict). Uniform error messages.</div>
+                    <div class="api-desc">Login with token. Sets two cookies: <code>yuyu_token</code> (HttpOnly) and <code>yuyu_authed</code> (non-HttpOnly marker). Both 30 days, SameSite=Lax. Uniform error messages.</div>
                 </div>
                 <div class="api-card">
                     <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/logout</span>
-                    <div class="api-desc">Logout. Clears cookie. Server keeps running.</div>
+                    <div class="api-desc">Logout. Clears both cookies. Server keeps running.</div>
+                </div>
+                <div class="api-card">
+                    <span class="api-method post">POST</span><span class="api-endpoint">/api/verify-token</span>
+                    <div class="api-desc">Verify token validity. Accepts <code>{"token": "xxx"}</code>. Returns <code>{"valid": true/false}</code>. Used by frontend auth cache.</div>
                 </div>
             </div>
 
@@ -1195,7 +1204,7 @@
                 Yuyutermux is designed for single-user Termux environments. The security model operates on multiple layers: authentication, input validation, output sanitization, and process isolation. The server binds to <code>0.0.0.0</code> via Waitress (configured in run.sh) but Flask defaults to <code>127.0.0.1</code> for direct launches. Debug mode is off by default. All error messages sanitize real filesystem paths, replacing <code>$HOME</code> with <code>~</code> and <code>~/Yuyutermux</code> for the project directory.
             </p>
             <ul class="sub-list">
-                <li><strong>Token Auth</strong> &mdash; In-memory token via <code>secrets.token_urlsafe(32)</code>, fresh each server start. Or set via <code>YUYUTERMUX_TOKEN</code> env var. Constant-time comparison via <code>secrets.compare_digest()</code>. HttpOnly + SameSite=Strict cookie fallback for browsers.</li>
+                <li><strong>Token Auth</strong> &mdash; In-memory token via <code>secrets.token_urlsafe(32)</code>, fresh each server start. Or set via <code>YUYUTERMUX_TOKEN</code> env var. Constant-time comparison via <code>secrets.compare_digest()</code>. Two-cookie system: <code>yuyu_token</code> (HttpOnly, SameSite=Lax) for backend auth, <code>yuyu_authed</code> (non-HttpOnly, SameSite=Lax) for frontend UI state.</li>
                 <li><strong>Login Page</strong> &mdash; <code>/login</code> auto-redirect if unauthenticated. Uniform error messages (never reveals if token is empty vs wrong). Spinner state during login attempt.</li>
                 <li><strong>Security Headers</strong> &mdash; <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection: 1; mode=block</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy: camera=(), microphone=(), geolocation=()</code>, <code>Cache-Control: no-store, no-cache</code>, <code>Pragma: no-cache</code></li>
                 <li><strong>CSP + SRI</strong> &mdash; Content Security Policy in <code>index.html</code> (also in login.html). Subresource Integrity hashes on all CDN assets (highlight.js JS + CSS, Google Fonts).</li>
@@ -1283,7 +1292,7 @@
                         <li><strong>Mobile File Upload Fix</strong> &mdash; Changed from hidden file input + .click() to &lt;label for&gt; pattern, which works reliably across all mobile browsers</li>
                         <li><strong>Global Search Highlight</strong> &mdash; openFileWithLine() now activates syntax highlighting via Editor.onLoad(lang) and shows orange flash on editorWrapper</li>
                         <li><strong>File Rename</strong> &mdash; Fixed rename to work correctly with proper path handling</li>
-                        <li><strong>Auth System</strong> &mdash; Added /api/auth/login and /api/auth/logout routes. Cookie now HttpOnly + SameSite=Strict. Uniform error messages. Rate limiting with periodic cleanup</li>
+                        <li><strong>Auth System</strong> &mdash; Added /api/auth/login and /api/auth/logout routes. Two-cookie system: <code>yuyu_token</code> (HttpOnly, SameSite=Lax) for backend auth and <code>yuyu_authed</code> (non-HttpOnly) for frontend UI state. Uniform error messages. Rate limiting with periodic cleanup</li>
                         <li><strong>Git Config Injection Prevention</strong> &mdash; Git config values now reject control characters (newline, null, etc.) to prevent config injection attacks</li>
                         <li><strong>Service Worker Hardening</strong> &mdash; Blocks file:// and data:text/html URLs. Cache entry limit (100). Current version: v16</li>
                         <li><strong>Storage XSS Prevention</strong> &mdash; Version-based invalidation + HTML sanitization on localStorage restore</li>

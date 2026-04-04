@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')
   if (!logoutBtn) return
-  if (Auth.getToken()) {
+  if (document.cookie.includes('yuyu_authed')) {
     logoutBtn.classList.remove('hidden')
   }
   logoutBtn.onclick = () => {
