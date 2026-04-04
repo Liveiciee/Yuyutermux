@@ -12,34 +12,35 @@ from utils import (
 
 terminal_bp = Blueprint('terminal', __name__)
 
-# Process management: dict keyed by a simple counter so concurrent
-# requests don't stomp each other.
 _active_processes: dict = {}
 _proc_counter = 0
 _proc_lock = threading.Lock()
 _proc_counter_lock = threading.Lock()
 
-# Session-based current directory (key per user instead of global)
 _SESSION_CWD_KEY = 'terminal_cwd'
 
-
 def get_session_cwd():
-    """Get current working directory from session, defaulting to PROJECT_DIR."""
     return session.get(_SESSION_CWD_KEY, PROJECT_DIR)
 
-
 def set_session_cwd(path):
-    """Set current working directory in session after validation."""
     session[_SESSION_CWD_KEY] = path
 
-
-# ── SECURITY: Maximum process execution time (seconds) ───────────────────────
 MAX_PROCESS_TIMEOUT = 300  # 5 minutes
 
+def _kill_after_timeout(proc, proc_id, deadline):
+    """Kill process group after deadline if still running."""
+    now = time.time()
+    if now < deadline:
+        time.sleep(deadline - now)
+    with _proc_lock:
+        if proc_id in _active_processes and _active_processes.get(proc_id) is proc:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
 
 @terminal_bp.route('/api/execute/cwd', methods=['GET'])
 def api_get_cwd():
-    # SECURITY: Don't leak real path, only show display path
     try:
         current_dir = get_session_cwd()
         home = os.path.expanduser('~')
@@ -49,36 +50,27 @@ def api_get_cwd():
         current_dir = PROJECT_DIR
     return jsonify({"success": True, "cwd": display, "display": display})
 
-
 @terminal_bp.route('/api/execute/stream', methods=['POST'])
 @rate_limit_execute(max_requests=15, window=60)
 def api_execute_stream():
     global _proc_counter
     data = request.json or {}
     command = data.get('command', '').strip()
-
     if not command:
         return jsonify({"success": False, "error": "No command"}), 400
-
-    # ── SECURITY: Check command length to prevent buffer attacks ──
     if len(command) > 10000:
         return jsonify({"success": False, "error": "Command too long (max 10000 chars)"}), 413
-
-    # ── SECURITY: Validate command parts ──
     try:
         cmd_parts = shlex.split(command)
     except ValueError as e:
         return jsonify({"success": False, "error": f"Parse error: {e}"}), 400
-
     if not cmd_parts:
         return jsonify({"success": False, "error": "Empty command"}), 400
-
-    # ── SECURITY: Check for blocked commands (including indirection vectors) ──
     base_cmd = os.path.basename(cmd_parts[0])
     if base_cmd in BLOCKED_COMMANDS:
         return jsonify({"success": False, "error": f"Command '{base_cmd}' is blocked for security"}), 403
 
-    # ── Handle `cd` natively so the working directory actually changes ──
+    # Handle cd natively
     if base_cmd == 'cd':
         try:
             if len(cmd_parts) == 1 or cmd_parts[1] in ('~', ''):
@@ -88,15 +80,11 @@ def api_execute_stream():
                 new_dir = target if os.path.isabs(target) else os.path.normpath(
                     os.path.join(get_session_cwd(), target)
                 )
-
-            # SECURITY: Validate cd destination
             validated = validate_path_terminal(new_dir)
             if not validated:
                 def _cd_blocked():
                     yield f"cd: restricted: cannot access that directory\n[EXIT_CODE:1]\n"
                 return Response(stream_with_context(_cd_blocked()), mimetype='text/plain')
-
-            # Use validated (realpath-resolved) path to prevent symlink escape attacks
             if os.path.isdir(validated):
                 set_session_cwd(validated)
                 def _cd_ok():
@@ -116,11 +104,11 @@ def api_execute_stream():
         _proc_counter += 1
         proc_id = _proc_counter
 
-    # Capture CWD here to prevent TOCTOU race condition
     current_cwd = get_session_cwd()
 
     def generate(cwd):
         proc = None
+        timeout_thread = None
         try:
             proc = subprocess.Popen(
                 cmd_parts,
@@ -128,29 +116,19 @@ def api_execute_stream():
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                cwd=cwd,  # Use captured CWD instead of calling getter (prevents TOCTOU)
-                preexec_fn=os.setsid,  # Create process group for clean killing
-                # Pass filtered env so YUYUTERMUX_TOKEN is not inherited
+                cwd=cwd,
+                preexec_fn=os.setsid,
                 env=_safe_env(),
             )
             with _proc_lock:
                 _active_processes[proc_id] = proc
 
-            # Enforce MAX_PROCESS_TIMEOUT — kill process after timeout
             deadline = time.time() + MAX_PROCESS_TIMEOUT
+            timeout_thread = threading.Thread(target=_kill_after_timeout, args=(proc, proc_id, deadline), daemon=True)
+            timeout_thread.start()
 
             for line in iter(proc.stdout.readline, ''):
                 if line:
-                    if time.time() > deadline:
-                        try:
-                            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-                        except (ProcessLookupError, PermissionError, OSError):
-                            pass
-                        yield f"\n[ERROR: Process killed — exceeded {MAX_PROCESS_TIMEOUT}s timeout]\n"
-                        proc.stdout.close()
-                        proc.wait()
-                        yield f"\n[EXIT_CODE:137]\n"
-                        return
                     yield line
 
             proc.stdout.close()
@@ -163,14 +141,12 @@ def api_execute_stream():
         except MemoryError:
             yield f"Out of memory\n[EXIT_CODE:137]\n"
         except Exception:
-            # SECURITY: Don't leak exception details to client
             yield f"\n[ERROR:internal error]\n"
         finally:
             with _proc_lock:
-                _active_processes.pop(proc_id, None)  # Safe pop with default
+                _active_processes.pop(proc_id, None)
 
     return Response(stream_with_context(generate(current_cwd)), mimetype='text/plain')
-
 
 @terminal_bp.route('/api/execute/kill', methods=['POST'])
 def api_execute_kill():
@@ -178,12 +154,10 @@ def api_execute_kill():
         if not _active_processes:
             return jsonify({"success": False, "message": "No active process"})
         snapshot = list(_active_processes.items())
-
     killed = []
     for pid, proc in snapshot:
         if proc.poll() is None:
             try:
-                # Kill entire process group (children too)
                 os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
                 killed.append(pid)
             except (ProcessLookupError, PermissionError):
@@ -192,7 +166,6 @@ def api_execute_kill():
                     killed.append(pid)
                 except Exception:
                     pass
-
     if killed:
         return jsonify({"success": True, "message": f"Killed {len(killed)} process(es)"})
     return jsonify({"success": False, "message": "No running processes found"})

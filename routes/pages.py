@@ -8,12 +8,9 @@ _COOKIE_NAME = 'yuyu_token'
 _MARKER_COOKIE = 'yuyu_authed'
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 
-
 def _page_guard():
-    """Redirect to /login if no valid cookie for page routes."""
     if not check_auth():
         return redirect('/login')
-
 
 @pages_bp.route('/')
 def index():
@@ -22,14 +19,12 @@ def index():
         return guard
     return render_template('index.html')
 
-
 @pages_bp.route('/docs')
 def docs():
     guard = _page_guard()
     if guard:
         return guard
     return render_template('docs.html')
-
 
 @pages_bp.route('/login')
 def login():
@@ -38,19 +33,15 @@ def login():
     error = request.args.get('error', '')
     return render_template('login.html', error=error)
 
-
 @pages_bp.route('/api/auth/login', methods=['POST'])
-@rate_limit(max_requests=5, window=60)  # BUG FIX: Add rate limiting to prevent brute force
+@rate_limit(max_requests=5, window=60)
 def auth_login():
     data = request.get_json(silent=True) or {}
     token = (data.get('token') or '').strip()
-
     if not token:
         return jsonify({"success": False, "error": "Authentication failed"}), 401
-
     if not AUTH_TOKEN or not secrets.compare_digest(token, AUTH_TOKEN):
         return jsonify({"success": False, "error": "Authentication failed"}), 401
-
     resp = make_response(jsonify({"success": True, "redirect": "/"}))
     resp.set_cookie(
         _COOKIE_NAME,
@@ -70,10 +61,8 @@ def auth_login():
     )
     return resp
 
-
 @pages_bp.route('/api/auth/logout', methods=['POST'])
 def auth_logout():
-    # BUG FIX: Return JSON instead of redirect for API consistency
     resp = make_response(jsonify({"success": True, "redirect": "/login"}))
     resp.delete_cookie(_COOKIE_NAME, path='/')
     resp.delete_cookie(_MARKER_COOKIE, path='/')

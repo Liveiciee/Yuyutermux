@@ -12,25 +12,20 @@ import re
 
 files_bp = Blueprint('files', __name__)
 
-
 @files_bp.route('/api/files/list')
 @rate_limit(max_requests=30, window=60)
 def api_files_list():
     path = validate_path(get_req_path())
     if not path:
         return json_err("Invalid path", 403, items=[])
-
     if not os.path.exists(path):
         return json_err("Path not found", 404, items=[])
-
     try:
         items = []
         for entry in os.scandir(path):
             try:
                 stat = entry.stat()
                 is_dir = entry.is_dir()
-
-                # Human-readable file size
                 size_str = "-"
                 if not is_dir:
                     size = stat.st_size
@@ -40,13 +35,8 @@ def api_files_list():
                         size_str = f"{size/1024:.1f}K"
                     else:
                         size_str = f"{size/1024/1024:.1f}M"
-
-                # Compute relative path instead of leaking absolute filesystem path
-                if path == PROJECT_DIR:
-                    rel_path = entry.name
-                else:
-                    rel_path = path.replace(PROJECT_DIR + os.sep, '', 1) + os.sep + entry.name
-
+                # Use relpath for safe relative path
+                rel_path = os.path.relpath(os.path.join(path, entry.name), PROJECT_DIR)
                 items.append({
                     "name": entry.name,
                     "path": rel_path,
@@ -56,20 +46,15 @@ def api_files_list():
                 })
             except (PermissionError, OSError):
                 continue
-
         items.sort(key=lambda x: (x['type'] != 'directory', x['name'].lower()))
-
-        # SECURITY: Only show relative display path
+        # Display path with ~/Yuyutermux prefix
         if path == PROJECT_DIR:
             display = '~/Yuyutermux'
         else:
-            display = '~/Yuyutermux/' + path.replace(PROJECT_DIR, '').lstrip('/')
-
+            display = '~/Yuyutermux/' + os.path.relpath(path, PROJECT_DIR)
         return json_ok(current_path=display, items=items)
-
     except Exception:
         return json_err("Failed to list directory", 500, items=[])
-
 
 @files_bp.route('/api/files/read', methods=['POST'])
 @rate_limit(max_requests=30, window=60)
@@ -77,58 +62,42 @@ def api_files_read():
     path = validate_path(get_req_path())
     if not path:
         return json_err("Invalid file path", 403, content="")
-
     if not os.path.isfile(path):
         return json_err("Invalid file path", 400, content="")
-
     if os.path.getsize(path) > MAX_FILE_SIZE:
         return json_err("File too large (>1MB)", 413, content="")
-
     try:
         with open(path, 'r', encoding='utf-8', errors='replace') as f:
-            rel_path = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
+            rel_path = os.path.relpath(path, PROJECT_DIR) if path != PROJECT_DIR else ''
             return json_ok(path=rel_path, content=f.read())
     except Exception:
         return json_err("Failed to read file", 500, content="")
-
 
 @files_bp.route('/api/files/write', methods=['POST'])
 @rate_limit(max_requests=20, window=60)
 def api_files_write():
     data = request.json or {}
-
     if 'path' not in data:
         return json_err("No path provided", 400)
-
     path = validate_path(data['path'])
     if not path:
         return json_err("Invalid path", 403)
-
-    # SECURITY: Check write content size
     content = data.get('content', '')
-    if len(content) > 5 * 1024 * 1024:  # 5MB max write content
+    if len(content) > 5 * 1024 * 1024:
         return json_err("Content too large (>5MB)", 413)
-
-    # SECURITY: Block writing to sensitive file patterns
     filename = os.path.basename(path)
-    rel_to_project = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
-
-    # Filename-only patterns (no slash)
+    rel_to_project = os.path.relpath(path, PROJECT_DIR) if path != PROJECT_DIR else ''
     blocked_filenames = {'.auth_token', '.env', '.htaccess', '.htpasswd',
                          'passwd', 'shadow',
                          '.bashrc', '.bash_profile', '.profile', '.bash_history'}
     for pat in blocked_filenames:
         if filename == pat:
             return json_err("Cannot write to protected file", 403)
-
-    # Path patterns (can contain slash — check against relative project path)
     blocked_path_patterns = ['.ssh/', 'ssh/']
     for pat in blocked_path_patterns:
         if pat in rel_to_project:
             return json_err("Cannot write to protected path", 403)
-
     parent = os.path.dirname(path)
-
     try:
         if parent:
             os.makedirs(parent, exist_ok=True)
@@ -138,20 +107,16 @@ def api_files_write():
     except Exception:
         return json_err("Failed to save file")
 
-
 @files_bp.route('/api/files/delete', methods=['POST'])
 @rate_limit(max_requests=20, window=60)
 def api_files_delete():
     path = validate_path(get_req_path())
     if not path:
         return json_err("Invalid path", 403)
-
-    # SECURITY: Prevent deletion of critical project files
     critical_files = ['app.py', 'utils.py', 'run.sh', '.auth_token']
     filename = os.path.basename(path)
     if filename in critical_files and os.path.dirname(path) == PROJECT_DIR:
         return json_err(f"Cannot delete protected file: {filename}", 403)
-
     try:
         if os.path.isdir(path):
             import shutil
@@ -162,33 +127,24 @@ def api_files_delete():
     except Exception:
         return json_err("Failed to delete")
 
-
 @files_bp.route('/api/files/create', methods=['POST'])
 @rate_limit(max_requests=20, window=60)
 def api_files_create():
     data = request.json or {}
     filename = data.get('filename', '')
-
     if not filename:
         return json_err("No filename provided", 400)
-
-    # SECURITY: Sanitize filename — remove path separators and dangerous chars
     filename = os.path.basename(filename)
     if not filename or filename.startswith('.'):
         return json_err("Invalid filename", 400)
-
     dir_path = validate_path(data.get('path', ''))
     if not dir_path:
         return json_err("Invalid path", 403)
-
     new_path = os.path.join(dir_path, os.path.basename(filename))
-
     if not new_path.startswith(PROJECT_DIR):
         return json_err("Cannot create outside project directory", 403)
-
     if os.path.exists(new_path):
         return json_err("File already exists", 409)
-
     try:
         with open(new_path, 'w', encoding='utf-8') as f:
             pass
@@ -196,17 +152,14 @@ def api_files_create():
     except Exception:
         return json_err("Failed to create file")
 
-
 @files_bp.route('/api/files/download')
 @rate_limit(max_requests=30, window=60)
 def api_files_download():
     path = validate_path(get_req_path())
     if not path:
         return json_err("Invalid path", 403)
-
     if not os.path.isfile(path):
         return json_err("File not found", 404)
-
     return send_from_directory(
         os.path.dirname(path),
         os.path.basename(path),
@@ -214,40 +167,28 @@ def api_files_download():
         download_name=os.path.basename(path)
     )
 
-
 @files_bp.route('/api/files/upload', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
 def api_files_upload():
     target = validate_path(request.form.get('path', ''))
     if not target:
         return json_err("Invalid upload path", 403)
-
     if 'file' not in request.files:
         return json_err("No file part", 400)
-
     file = request.files['file']
     if not file.filename:
         return json_err("No selected file", 400)
-
-    # SECURITY: Check upload size
     file.seek(0, os.SEEK_END)
     file_size = file.tell()
     file.seek(0)
-
     if file_size > MAX_UPLOAD_SIZE:
         return json_err(f"File too large (max {MAX_UPLOAD_SIZE // (1024*1024)}MB)", 413)
-
-    # SECURITY: Sanitize filename
     safe_filename = os.path.basename(file.filename)
     if not safe_filename or safe_filename.startswith('.'):
         return json_err("Invalid filename", 400)
-
     save_path = os.path.join(target, safe_filename)
-
     if not save_path.startswith(PROJECT_DIR):
         return json_err("Invalid upload path", 403)
-
-    # Handle name collision — use timestamped name to prevent overwrite
     if os.path.exists(save_path):
         name, ext = os.path.splitext(safe_filename)
         for attempt in range(10):
@@ -260,7 +201,6 @@ def api_files_upload():
                 break
         else:
             return json_err("Too many files with same name", 409)
-
     try:
         file.save(save_path)
         rel_path = os.path.relpath(save_path, PROJECT_DIR)
@@ -268,25 +208,18 @@ def api_files_upload():
     except Exception:
         return json_err("Upload failed")
 
-
 @files_bp.route('/api/files/search')
 @rate_limit(max_requests=15, window=60)
 def search_files():
     q = request.args.get('q', '').strip()
     if not q:
         return json_ok(results=[])
-
-    # SECURITY: Limit search query length
     if len(q) > 200:
         return json_err("Search query too long", 413, results=[])
-
     folder = validate_path(request.args.get('folder', ''))
     if not folder:
         return json_err("Invalid search folder", 403, results=[])
-
     case_sensitive = request.args.get('case', '0') == '1'
-
-    # BUG FIX: Use grep -F (fixed string) not regex to prevent ReDoS.
     grep_flags = ['-rn', '-F',
                   '--include=*.py', '--include=*.js', '--include=*.ts',
                   '--include=*.html', '--include=*.css', '--include=*.json',
@@ -295,30 +228,23 @@ def search_files():
                   '--include=*.cfg',
                   '--exclude-dir=node_modules', '--exclude-dir=.git',
                   '--exclude-dir=__pycache__', '--exclude-dir=dist']
-
     if not case_sensitive:
         grep_flags.append('-i')
-
     grep_flags.extend(['--', q, folder])
-
     try:
         result = subprocess.run(
             ['grep'] + grep_flags,
             capture_output=True, text=True, timeout=10,
-            # BUG FIX: Use _safe_env() to prevent leaking YUYUTERMUX_TOKEN
             env={**_safe_env(), 'LC_ALL': 'C'}
         )
-
-        # SECURITY: Limit output size
         raw_lines = result.stdout.split('\n')
-        raw = '\n'.join(raw_lines[:300])  # Cap at 300 lines
+        raw = '\n'.join(raw_lines[:300])
     except subprocess.TimeoutExpired:
         return json_err("Search timeout", 408, results=[])
     except FileNotFoundError:
         return json_err("grep not found", 500, results=[])
     except Exception:
         return json_err("Search failed", 500, results=[])
-
     file_map = {}
     for line in raw.split('\n'):
         if not line.strip():
@@ -327,20 +253,18 @@ def search_files():
         if not match:
             continue
         filepath, lineno, text = match.groups()
-        rel = filepath[len(folder):].lstrip('/') if filepath.startswith(folder) else filepath
+        rel = os.path.relpath(filepath, folder) if filepath.startswith(folder) else filepath
         rel = sanitize_error(rel)
-        text = text[:500]  # Truncate long match lines
+        text = text[:500]
         if rel not in file_map:
             file_map[rel] = []
         file_map[rel].append({"line": int(lineno), "text": text.strip()})
-
     results = sorted(
         [{"file": f, "matches": m} for f, m in file_map.items()],
         key=lambda x: len(x['matches']),
         reverse=True
     )
     return json_ok(results=results)
-
 
 @files_bp.route('/api/project/info')
 def project_info():
@@ -356,12 +280,9 @@ def project_info():
             tree_str = "Command 'tree' not found"
     except Exception:
         tree_str = "Error generating tree"
-
     files, folders = 0, 0
     for root, dirs, filenames in os.walk(PROJECT_DIR):
-        # SECURITY: Skip hidden directories
         dirs[:] = [d for d in dirs if not d.startswith('.') and d != '__pycache__']
         folders += len(dirs)
         files += len([f for f in filenames if not f.endswith('.pyc')])
-
     return json_ok(tree=tree_str, files=files, folders=folders)

@@ -6,15 +6,10 @@ from utils import PROJECT_DIR, rate_limit, sanitize_error, _safe_env
 
 github_bp = Blueprint('github', __name__)
 
-# ── SECURITY: Valid branch name pattern ──────────────────────────────────────
 BRANCH_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9._\-/]*$')
-
-# ── SECURITY: Valid remote name pattern ──────────────────────────────────────
 REMOTE_NAME_RE = re.compile(r'^[a-zA-Z0-9._\-]+$')
 
-
 def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple:
-    """Run git command, return (success, stdout, stderr)."""
     try:
         result = subprocess.run(
             ['git'] + args,
@@ -36,23 +31,18 @@ def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple:
     except Exception:
         return False, '', 'Git operation failed'
 
-
 def _is_repo() -> bool:
     ok, _, _ = git_run(['rev-parse', '--git-dir'])
     return ok
 
-
 def _validate_branch_name(name: str) -> bool:
-    """Validate branch name to prevent injection."""
     return bool(name and BRANCH_NAME_RE.match(name) and len(name) <= 255)
 
-
 def _mask_git_url(url: str) -> str:
-    """Mask credentials in git URLs (both HTTPS and SSH)."""
+    """Mask credentials in git URLs (HTTPS and SSH)."""
     if not url:
         return url
-    
-    # Handle HTTPS URLs: https://user:pass@host/path
+    # HTTPS: https://user:pass@host/path
     if '://' in url and '@' in url:
         try:
             scheme, rest = url.split('://', 1)
@@ -62,40 +52,42 @@ def _mask_git_url(url: str) -> str:
                     return f"{scheme}://***@{path}"
         except Exception:
             pass
-    
-    # Handle SSH URLs: git@github.com:path or ssh://git@host/path
-    if '@' in url and ':' in url and '://' not in url:
-        # Standard SSH format: user@host:path
-        try:
-            user_host, path = url.split(':', 1)
-            if '@' in user_host:
-                return f"***@{path}"
-        except Exception:
-            pass
-    
+    # SSH: git@github.com:user/repo.git or ssh://git@host/path
+    if '@' in url:
+        # ssh://git@host/path
+        if '://' in url:
+            try:
+                scheme, rest = url.split('://', 1)
+                if '@' in rest:
+                    user_host, path = rest.split('@', 1)
+                    # user_host bisa berisi user, misal 'git'
+                    return f"{scheme}://***@{path}"
+            except Exception:
+                pass
+        # git@github.com:user/repo.git
+        elif ':' in url:
+            try:
+                user_host, path = url.split(':', 1)
+                if '@' in user_host:
+                    host = user_host.split('@')[1]
+                    return f"***@{host}:{path}"
+            except Exception:
+                pass
     return url
-
-
-# ── STATUS ────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/status')
 @rate_limit(max_requests=30, window=60)
 def git_status():
     if not _is_repo():
         return jsonify({"success": True, "is_repo": False})
-
     _, branch, _ = git_run(['branch', '--show-current'])
     if not branch:
         _, short_hash, _ = git_run(['rev-parse', '--short', 'HEAD'])
         branch = f'detached@{short_hash}' if short_hash else 'unknown'
-
     _, porcelain, _ = git_run(['status', '--porcelain'])
-
     staged, unstaged, untracked = [], [], []
     for line in (porcelain or '').split('\n'):
-        if not line:
-            continue
-        if len(line) < 4:
+        if not line or len(line) < 4:
             continue
         x, y, filepath = line[0], line[1], line[3:]
         filepath = sanitize_error(filepath)
@@ -106,19 +98,15 @@ def git_status():
                 staged.append({'status': x, 'file': filepath})
             if y not in (' ', '?'):
                 unstaged.append({'status': y, 'file': filepath})
-
-    # Remotes
     _, remote_raw, _ = git_run(['remote', '-v'])
     remotes, seen = [], set()
     for line in (remote_raw or '').split('\n'):
         if line and '(fetch)' in line:
             parts = line.split()
             if len(parts) >= 2 and parts[0] not in seen:
-                url = _mask_git_url(parts[1])  # BUG FIX: Use masking function
+                url = _mask_git_url(parts[1])
                 remotes.append({'name': parts[0], 'url': url})
                 seen.add(parts[0])
-
-    # Ahead / behind
     ahead = behind = 0
     _, ab, _ = git_run(['rev-list', '--left-right', '--count', 'HEAD...@{u}'])
     if ab:
@@ -128,7 +116,6 @@ def git_status():
                 ahead, behind = int(parts[0]), int(parts[1])
             except ValueError:
                 pass
-
     return jsonify({
         "success": True,
         "is_repo": True,
@@ -141,9 +128,6 @@ def git_status():
         "behind": behind,
     })
 
-
-# ── LOG ───────────────────────────────────────────────────────────────────────
-
 @github_bp.route('/api/git/log')
 @rate_limit(max_requests=20, window=60)
 def git_log():
@@ -151,14 +135,12 @@ def git_log():
         limit = min(int(request.args.get('limit', 15)), 50)
     except (ValueError, TypeError):
         limit = 15
-
     ok, out, err = git_run([
         'log', f'--max-count={limit}',
         '--pretty=format:%H|%h|%s|%an|%ar'
     ])
     if not ok:
         return jsonify({"success": False, "error": err, "commits": []})
-
     commits = []
     for line in out.split('\n'):
         if not line:
@@ -172,16 +154,12 @@ def git_log():
             })
     return jsonify({"success": True, "commits": commits})
 
-
-# ── BRANCHES ──────────────────────────────────────────────────────────────────
-
 @github_bp.route('/api/git/branches')
 @rate_limit(max_requests=20, window=60)
 def git_branches():
     ok, out, err = git_run(['branch', '-a'])
     if not ok:
         return jsonify({"success": False, "error": err, "branches": []})
-
     branches = []
     for line in out.split('\n'):
         if not line or 'HEAD ->' in line:
@@ -190,11 +168,7 @@ def git_branches():
         name = line.strip().lstrip('* ')
         if name:
             branches.append({'name': name, 'current': is_current})
-
     return jsonify({"success": True, "branches": branches})
-
-
-# ── INIT ──────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/init', methods=['POST'])
 @rate_limit(max_requests=5, window=60)
@@ -204,9 +178,6 @@ def git_init():
         return jsonify({"success": True, "message": out or "Repository initialized"})
     return jsonify({"success": False, "error": err})
 
-
-# ── STAGE / UNSTAGE / DISCARD ─────────────────────────────────────────────────
-
 @github_bp.route('/api/git/add', methods=['POST'])
 @rate_limit(max_requests=20, window=60)
 def git_add():
@@ -214,16 +185,13 @@ def git_add():
     files = data.get('files', ['.'])
     if isinstance(files, str):
         files = [files]
-
     for f in files:
         if '..' in str(f):
             return jsonify({"success": False, "error": "Invalid path"})
-
     ok, out, err = git_run(['add', '--'] + [str(f) for f in files])
     if ok:
         return jsonify({"success": True, "message": f"Staged: {', '.join(str(f) for f in files)}"})
     return jsonify({"success": False, "error": err})
-
 
 @github_bp.route('/api/git/unstage', methods=['POST'])
 @rate_limit(max_requests=20, window=60)
@@ -236,7 +204,6 @@ def git_unstage():
     if ok:
         return jsonify({"success": True, "message": f"Unstaged: {filepath}"})
     return jsonify({"success": False, "error": err})
-
 
 @github_bp.route('/api/git/discard', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
@@ -252,9 +219,6 @@ def git_discard():
         return jsonify({"success": True, "message": f"Discarded: {filepath}"})
     return jsonify({"success": False, "error": err})
 
-
-# ── COMMIT ────────────────────────────────────────────────────────────────────
-
 @github_bp.route('/api/git/commit', methods=['POST'])
 @rate_limit(max_requests=15, window=60)
 def git_commit():
@@ -262,17 +226,12 @@ def git_commit():
     message = data.get('message', '').strip()
     if not message:
         return jsonify({"success": False, "error": "Commit message required"})
-
     if len(message) > 5000:
         return jsonify({"success": False, "error": "Commit message too long (max 5000 chars)"})
-
     ok, out, err = git_run(['commit', '-m', message])
     if ok:
         return jsonify({"success": True, "message": out})
     return jsonify({"success": False, "error": err or out})
-
-
-# ── PUSH / PULL / FETCH ───────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/push', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
@@ -281,13 +240,10 @@ def git_push():
     remote = data.get('remote', 'origin')
     branch = data.get('branch', '')
     force = data.get('force', False)
-
     if not REMOTE_NAME_RE.match(remote):
         return jsonify({"success": False, "error": "Invalid remote name"})
-
     if branch and not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name"})
-
     args = ['push']
     if force:
         args.append('--force')
@@ -298,7 +254,6 @@ def git_push():
         args.append(branch)
     else:
         args.append('HEAD')
-
     ok, out, err = git_run(args)
     msg = out or err or 'Push successful'
     if ok:
@@ -307,19 +262,16 @@ def git_push():
         return jsonify({"success": False, "error": err, "needs_upstream": True})
     return jsonify({"success": False, "error": err or out})
 
-
 @github_bp.route('/api/git/pull', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
 def git_pull():
     data = request.json or {}
     remote = data.get('remote', 'origin')
     branch = data.get('branch', '')
-
     if not REMOTE_NAME_RE.match(remote):
         return jsonify({"success": False, "error": "Invalid remote name"})
     if branch and not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name"})
-
     args = ['pull', remote]
     if branch:
         args.append(branch)
@@ -327,7 +279,6 @@ def git_pull():
     if ok:
         return jsonify({"success": True, "message": out or 'Pull successful'})
     return jsonify({"success": False, "error": err or out})
-
 
 @github_bp.route('/api/git/fetch', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
@@ -337,30 +288,21 @@ def git_fetch():
         return jsonify({"success": True, "message": out or 'Fetch complete'})
     return jsonify({"success": False, "error": err})
 
-
-# ── BRANCH ────────────────────────────────────────────────────────────────────
-
 @github_bp.route('/api/git/checkout', methods=['POST'])
 @rate_limit(max_requests=10, window=60)
 def git_checkout():
     data = request.json or {}
     branch = data.get('branch', '').strip()
     create = data.get('create', False)
-
     if not branch:
         return jsonify({"success": False, "error": "Branch name required"})
-
     if not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name. Use only letters, numbers, dots, hyphens, underscores, and slashes."})
-
     args = ['checkout', '-b', branch] if create else ['checkout', branch]
     ok, out, err = git_run(args)
     if ok:
         return jsonify({"success": True, "message": out or f"Switched to {branch}"})
     return jsonify({"success": False, "error": err})
-
-
-# ── REMOTE ────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/remote', methods=['POST'])
 @rate_limit(max_requests=5, window=60)
@@ -369,13 +311,10 @@ def git_remote():
     action = data.get('action', 'add')
     name = data.get('name', 'origin')
     url = data.get('url', '').strip()
-
     if not REMOTE_NAME_RE.match(name):
         return jsonify({"success": False, "error": "Invalid remote name"})
-
     if url and not re.match(r'^(https?://|git://|ssh://|git@)', url):
         return jsonify({"success": False, "error": "Invalid remote URL format"})
-
     if action == 'add':
         if not url:
             return jsonify({"success": False, "error": "URL required"})
@@ -386,13 +325,9 @@ def git_remote():
         ok, out, err = git_run(['remote', 'remove', name])
     else:
         return jsonify({"success": False, "error": "Unknown action"})
-
     if ok:
         return jsonify({"success": True, "message": f"Remote '{name}' updated"})
     return jsonify({"success": False, "error": err})
-
-
-# ── CONFIG ────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/config', methods=['GET', 'POST'])
 @rate_limit(max_requests=10, window=60)
@@ -401,10 +336,8 @@ def git_config():
         _, name, _ = git_run(['config', '--global', 'user.name'])
         _, email, _ = git_run(['config', '--global', 'user.email'])
         return jsonify({"success": True, "name": name[:100] if name else '', "email": email[:100] if email else ''})
-
     data = request.json or {}
     msgs = []
-
     for key, val in [('user.name', data.get('name', '')), ('user.email', data.get('email', ''))]:
         if val:
             if len(val) > 200:
@@ -415,11 +348,7 @@ def git_config():
             if not ok:
                 return jsonify({"success": False, "error": err})
             msgs.append(f"{key.split('.')[1].title()}: {val}")
-
     return jsonify({"success": True, "message": ', '.join(msgs) or "No changes"})
-
-
-# ── DIFF ──────────────────────────────────────────────────────────────────────
 
 @github_bp.route('/api/git/diff')
 @rate_limit(max_requests=20, window=60)
@@ -427,7 +356,6 @@ def git_diff():
     filepath = request.args.get('file', '')
     if '..' in filepath:
         return jsonify({"success": False, "diff": ""})
-
     staged = request.args.get('staged', '0') == '1'
     args = ['diff']
     if staged:
