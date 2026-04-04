@@ -175,7 +175,13 @@
 
 <div class="login-box">
     <div class="login-header">
-        <h1 class="login-title">⌕ Authentication</h1>
+        <h1 class="login-title">
+            <svg style="width:14px;height:14px;vertical-align:middle;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Authentication
+        </h1>
     </div>
     <div class="login-body">
         <div>
@@ -206,7 +212,7 @@
 
         <p class="login-hint">
             Token ditampilkan di Termux saat server start.<br>
-            Atau jalankan: <code>run.sh</code> → pilih <code>[6] Show Token</code>
+            Atau jalankan: <code>run.sh</code> &rarr; pilih <code>[6] Show Token</code>
         </p>
     </div>
 </div>
@@ -227,21 +233,21 @@
 
     // Get error message from URL parameter (safe)
     function getErrorFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const err = urlParams.get('error');
+        var urlParams = new URLSearchParams(window.location.search);
+        var err = urlParams.get('error');
         if (err) {
             return decodeURIComponent(err);
         }
         return null;
     }
 
-    const input = document.getElementById('tokenInput');
-    const btn = document.getElementById('loginBtn');
-    const errorBox = document.getElementById('errorBox');
-    const spinner = document.getElementById('spinner');
+    var input = document.getElementById('tokenInput');
+    var btn = document.getElementById('loginBtn');
+    var errorBox = document.getElementById('errorBox');
+    var spinner = document.getElementById('spinner');
 
     // Show any error passed via URL (from server redirect)
-    const initialError = getErrorFromUrl();
+    var initialError = getErrorFromUrl();
     if (initialError) {
         errorBox.textContent = escapeHtml(initialError);
         errorBox.classList.add('visible');
@@ -250,7 +256,7 @@
     input.focus();
 
     async function doLogin() {
-        const token = input.value.trim();
+        var token = input.value.trim();
         if (!token) {
             showError('Token tidak boleh kosong');
             return;
@@ -261,13 +267,13 @@
         errorBox.classList.remove('visible');
 
         try {
-            const res = await fetch('/api/auth/login', {
+            var res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ token: token })
             });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
+            var data;
+            try { data = await res.json(); } catch (e) { data = {}; }
             if (res.ok && data.success) {
                 window.location.href = data.redirect || '/';
                 return;
@@ -290,7 +296,7 @@
     }
 
     btn.addEventListener('click', doLogin);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
 </script>
 
 </body>

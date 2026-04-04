@@ -29,6 +29,7 @@
             min-height: 100vh;
         }
 
+        /* Nav */
         .docs-nav {
             display: flex;
             justify-content: space-between;
@@ -47,6 +48,26 @@
             margin: 0;
         }
 
+        .nav-link {
+            text-decoration: none;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.9rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            transition: 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .nav-link:hover {
+            background: var(--border);
+            color: var(--accent);
+        }
+
+        /* Sections */
         .docs-section {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -79,22 +100,120 @@
             font: 0.8125rem/1.65 var(--mono);
         }
 
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--dark) 0%, var(--surface) 100%);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+        }
+
+        .hero-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            opacity: 0.9;
+        }
+
+        .hero h2 {
+            font: 700 1.5rem/1.2 var(--sans);
+            color: var(--accent);
+            margin: 0 0 0.75rem;
+        }
+
+        .hero p {
+            color: var(--text2);
+            font-size: 0.85rem;
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.6;
+        }
+
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .hero-tag {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 0.25rem 0.75rem;
+            font-size: 0.7rem;
+            color: var(--text2);
+            border-radius: 999px;
+        }
+
+        .hero-tag strong {
+            color: var(--accent);
+        }
+
+        /* Stats Grid */
+        .stats-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .stats-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font: 700 0.7rem/1 var(--sans);
+            color: var(--cement);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            margin-bottom: 1.25rem;
         }
 
         .stat-card {
             background: var(--bg);
             border: 1px solid var(--border);
-            padding: 0.75rem;
+            padding: 1rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0.3;
+        }
+
+        .stat-icon {
+            width: 20px;
+            height: 20px;
+            margin: 0 auto 0.5rem;
+            opacity: 0.7;
         }
 
         .stat-value {
-            font: 700 1.75rem/1 var(--sans);
+            font: 700 1.5rem/1 var(--sans);
             color: var(--accent);
             display: block;
         }
@@ -110,24 +229,139 @@
         }
 
         .stat-label {
-            font: 0.625rem/1 var(--mono);
+            font: 0.6rem/1 var(--mono);
             color: var(--cement);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-top: 0.25rem;
         }
 
+        /* Tree View */
         .tree-view {
             background: var(--bg);
             border: 1px solid var(--border);
             padding: 1rem;
             overflow: auto;
-            max-height: 420px;
-            font: 0.75rem/1.55 var(--mono);
+            max-height: 300px;
+            font: 0.7rem/1.55 var(--mono);
             white-space: pre;
             color: var(--text2);
+            margin-top: 1rem;
         }
 
+        /* Quick Links Grid */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .quick-link:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .quick-link-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--dark);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .quick-link-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent);
+        }
+
+        .quick-link-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .quick-link-title {
+            font: 700 0.75rem/1 var(--sans);
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .quick-link-desc {
+            font-size: 0.65rem;
+            color: var(--cement);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            text-align: center;
+            transition: border-color 0.15s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 0.75rem;
+            background: var(--dark);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-icon svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent);
+        }
+
+        .feature-card h4 {
+            font: 700 0.7rem/1 var(--sans);
+            color: var(--accent);
+            margin: 0 0 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .feature-card p {
+            font-size: 0.65rem;
+            color: var(--cement);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Guide List */
         .guide-list {
             display: flex;
             flex-direction: column;
@@ -150,6 +384,9 @@
             margin: 0 0 0.5rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .guide-item p {
@@ -169,7 +406,7 @@
         }
 
         .sub-list li::before {
-            content: '\00b7';
+            content: '›';
             color: var(--accent);
             margin-right: 0.5rem;
         }
@@ -196,9 +433,34 @@
             margin: 0 0.1rem;
         }
 
+        /* Two Column Layout */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .two-col-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+        }
+
+        .two-col-item h4 {
+            font: 700 0.7rem/1 var(--sans);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 0 0 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Spec Grid */
         .spec-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 1rem;
         }
 
@@ -218,14 +480,15 @@
 
         .spec-item p {
             color: var(--text);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             line-height: 1.5;
             margin: 0;
         }
 
+        /* API Grid */
         .api-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 0.75rem;
         }
 
@@ -254,15 +517,16 @@
         }
 
         .api-desc {
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             color: var(--cement);
             margin-top: 0.35rem;
             line-height: 1.5;
         }
 
+        /* Key Grid */
         .key-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 0.6rem;
         }
 
@@ -288,70 +552,43 @@
 
         .key-desc {
             color: var(--cement);
-            font-size: 0.68rem;
+            font-size: 0.65rem;
         }
 
-        .nav-link {
-            text-decoration: none;
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            padding: 0.3rem 0.9rem;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            transition: 0.1s;
-        }
-
-        .nav-link:hover {
-            background: var(--border);
-            color: var(--accent);
-        }
-
-        .badge-grid {
-            display: flex;
-            flex-wrap: wrap;
+        /* Shortcut Table */
+        .shortcut-table {
+            display: grid;
+            grid-template-columns: 1fr auto;
             gap: 0.5rem;
         }
 
-        .badge {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 0.35rem 0.7rem;
-            font-size: 0.68rem;
-            color: var(--text2);
-            border-radius: 3px;
-        }
-
-        .badge strong {
-            color: var(--accent);
-            font-weight: 700;
-        }
-
         .shortcut-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.4rem 0;
-            border-bottom: 1px dotted var(--border);
-            font-size: 0.72rem;
+            display: contents;
         }
 
-        .shortcut-row:last-child { border-bottom: none; }
+        .shortcut-row span {
+            padding: 0.5rem;
+            border-bottom: 1px dotted var(--border);
+        }
 
-        .shortcut-action { color: var(--text2); }
-        .shortcut-keys { color: var(--accent); font-size: 0.68rem; text-align: right; }
+        .shortcut-action { color: var(--text2); font-size: 0.72rem; }
+        .shortcut-keys { color: var(--accent); font-size: 0.65rem; text-align: right; white-space: nowrap; }
 
+        /* TOC */
         .toc-list {
             color: var(--text2);
             font-size: 0.75rem;
             line-height: 2;
             margin: 0;
-            padding: 0 0 0 1rem;
+            padding: 0;
             list-style: none;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.25rem 2rem;
         }
 
         .toc-list li::before {
-            content: '\203a';
+            content: '›';
             color: var(--accent);
             margin-right: 0.5rem;
         }
@@ -366,30 +603,24 @@
             color: var(--accent);
         }
 
-        .version-badge {
-            display: inline-block;
-            background: var(--accent-glow);
-            border: 1px solid var(--accent-dim);
-            color: var(--accent);
-            font: 700 0.6rem/1 var(--mono);
-            padding: 0.2rem 0.6rem;
-            border-radius: 3px;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-        }
-
+        /* Responsive */
         @media (max-width: 640px) {
             :root {
                 --docs-gap: 0.75rem;
                 --section-padding: 1rem;
             }
 
-            .stat-value { font-size: 1.4rem; }
-
-            .spec-grid,
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .two-col { grid-template-columns: 1fr; }
+            .toc-list { grid-template-columns: 1fr; }
+            .quick-links { grid-template-columns: 1fr; }
+            .feature-grid { grid-template-columns: repeat(2, 1fr); }
+            .spec-grid { grid-template-columns: 1fr; }
             .api-grid { grid-template-columns: 1fr; }
+            .key-grid { grid-template-columns: repeat(2, 1fr); }
 
-            .key-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+            .hero h2 { font-size: 1.2rem; }
+            .stat-value { font-size: 1.25rem; }
         }
     </style>
 </head>
@@ -398,89 +629,173 @@
 <div class="docs-layout">
     <nav class="docs-nav">
         <h1 class="docs-title">
-            <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px;flex-shrink:0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 8h12M6 4l-4 4 4 4"/></svg>
+            <svg style="width:14px;height:14px;vertical-align:middle;margin-right:6px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="8" y1="10" x2="14" y2="10"/>
+            </svg>
             Yuyutermux Documentation
         </h1>
         <a href="/" class="nav-link">
-            <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px;display:inline-block" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
-            Back
+            <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px;display:inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Home
         </a>
     </nav>
 
-    <!-- TABLE OF CONTENTS -->
-    <section class="docs-section" aria-labelledby="toc-heading">
-        <div class="docs-header"><h2 id="toc-heading">Table of Contents</h2></div>
-        <div class="docs-body">
-            <ul class="toc-list">
-                <li><a href="#overview">Overview &amp; Project Structure</a></li>
-                <li><a href="#features">Feature Overview</a></li>
-                <li><a href="#guide">Quick Guide</a></li>
-                <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
-                <li><a href="#api">API Endpoints</a></li>
-                <li><a href="#stack">Tech Stack</a></li>
-                <li><a href="#security">Security Model</a></li>
-                <li><a href="#architecture">Frontend Architecture</a></li>
-                <li><a href="#changelog">Changelog</a></li>
-                <li><a href="#caveats">Caveats &amp; Known Limitations</a></li>
-            </ul>
+    <!-- HERO -->
+    <section class="hero">
+        <svg class="hero-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h2>Web-Based Terminal &amp; File Manager</h2>
+        <p>Full-featured terminal emulator, code editor with syntax highlighting, file manager, Git client, and global search — all accessible from your mobile browser.</p>
+        <div class="hero-tags">
+            <span class="hero-tag"><strong>Flask</strong> Backend</span>
+            <span class="hero-tag"><strong>PWA</strong> Installable</span>
+            <span class="hero-tag"><strong>Termux</strong> Native</span>
+            <span class="hero-tag"><strong>Mobile</strong> Optimized</span>
         </div>
     </section>
 
-    <!-- OVERVIEW & PROJECT STRUCTURE -->
-    <section class="docs-section" id="overview" aria-labelledby="tree-heading">
-        <div class="docs-header"><h2 id="tree-heading">Overview &amp; Project Structure</h2></div>
-        <div class="docs-body">
-            <p style="color:var(--text2);font-size:0.75rem;line-height:1.65;margin:0 0 1rem">
-                Yuyutermux is a self-hosted web-based terminal and file manager built for Termux on Android. It provides a full-featured terminal emulator, code editor with syntax highlighting, file manager with upload/download, Git client, and global search &mdash; all accessible from a mobile browser. The project uses Flask on the backend and vanilla ES modules on the frontend with zero build step. Originally evolved from a native Android GUI experiment using the <code>termuxgui</code> library, the project pivoted to a Flask/PWA architecture for long-term stability.
-            </p>
-            <div class="stat-grid">
-                <div class="stat-card">
-                    <span class="stat-value" id="folderCount">&mdash;</span>
-                    <span class="stat-label">Folders</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value" id="fileCount">&mdash;</span>
-                    <span class="stat-label">Files</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value loading" id="cssCount">···</span>
-                    <span class="stat-label">CSS Files</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value loading" id="jsCount">···</span>
-                    <span class="stat-label">JS Modules</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value loading" id="pyRoutes">···</span>
-                    <span class="stat-label">Py Routes</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-value loading" id="apiEndpoints">···</span>
-                    <span class="stat-label">API Endpoints</span>
-                </div>
+    <!-- STATS -->
+    <section class="stats-section">
+        <div class="stats-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Project Statistics
+        </div>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span class="stat-value" id="folderCount">&mdash;</span>
+                <span class="stat-label">Folders</span>
             </div>
-            <pre class="tree-view" id="treeOutput" aria-live="polite">Loading tree...</pre>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="stat-value" id="fileCount">&mdash;</span>
+                <span class="stat-label">Files</span>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                <span class="stat-value loading" id="jsCount">···</span>
+                <span class="stat-label">JS Modules</span>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span class="stat-value loading" id="pyRoutes">···</span>
+                <span class="stat-label">Py Routes</span>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="stat-value loading" id="apiEndpoints">···</span>
+                <span class="stat-label">API Endpoints</span>
+            </div>
+            <div class="stat-card">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="stat-value loading" id="cssCount">···</span>
+                <span class="stat-label">CSS Files</span>
+            </div>
+        </div>
+        <pre class="tree-view" id="treeOutput" aria-live="polite">Loading project tree...</pre>
+    </section>
+
+    <!-- QUICK LINKS -->
+    <section class="docs-section" aria-labelledby="quick-heading">
+        <div class="docs-header"><h2 id="quick-heading">Quick Navigation</h2></div>
+        <div class="docs-body">
+            <div class="quick-links">
+                <a href="#guide" class="quick-link">
+                    <div class="quick-link-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <div class="quick-link-content">
+                        <span class="quick-link-title">Quick Guide</span>
+                        <span class="quick-link-desc">Terminal, File Manager, Editor usage</span>
+                    </div>
+                </a>
+                <a href="#features" class="quick-link">
+                    <div class="quick-link-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    </div>
+                    <div class="quick-link-content">
+                        <span class="quick-link-title">Features</span>
+                        <span class="quick-link-desc">All features overview</span>
+                    </div>
+                </a>
+                <a href="#shortcuts" class="quick-link">
+                    <div class="quick-link-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M6 16h8"/></svg>
+                    </div>
+                    <div class="quick-link-content">
+                        <span class="quick-link-title">Shortcuts</span>
+                        <span class="quick-link-desc">Keyboard shortcuts reference</span>
+                    </div>
+                </a>
+                <a href="#api" class="quick-link">
+                    <div class="quick-link-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </div>
+                    <div class="quick-link-content">
+                        <span class="quick-link-title">API Reference</span>
+                        <span class="quick-link-desc">All API endpoints</span>
+                    </div>
+                </a>
+            </div>
         </div>
     </section>
 
-    <!-- FEATURE OVERVIEW -->
+    <!-- FEATURES GRID -->
     <section class="docs-section" id="features" aria-labelledby="features-heading">
-        <div class="docs-header"><h2 id="features-heading">Feature Overview</h2></div>
+        <div class="docs-header"><h2 id="features-heading">Features</h2></div>
         <div class="docs-body">
-            <div class="badge-grid">
-                <div class="badge"><strong>Terminal</strong> &mdash; Streaming command execution via chunked transfer encoding</div>
-                <div class="badge"><strong>File Manager</strong> &mdash; Browse, edit, upload (50MB), download, rename, delete</div>
-                <div class="badge"><strong>Code Editor</strong> &mdash; Real-time syntax highlighting overlay, line numbers, auto-indent (Python/JS/CSS/JSON)</div>
-                <div class="badge"><strong>Global Search</strong> &mdash; Grep-based text search with case toggle, click-to-open with line highlight</div>
-                <div class="badge"><strong>Git Panel</strong> &mdash; Full Git workflow: status, commit, push/pull/fetch, branches, diff, config</div>
-                <div class="badge"><strong>PWA</strong> &mdash; Installable as standalone Android app via Service Worker</div>
-                <div class="badge"><strong>Status Bar</strong> &mdash; Live CWD, connection status, command counter, session uptime</div>
-                <div class="badge"><strong>Extra Keys</strong> &mdash; Quick-access symbol bar (Tab, |, ~, $, &gt;, &lt;, *, etc.)</div>
-                <div class="badge"><strong>Command History</strong> &mdash; 50 entries, navigate with arrow keys, live suggestions dropdown</div>
-                <div class="badge"><strong>Virtual Scroll</strong> &mdash; Auto-collapse older terminal entries for smooth performance</div>
-                <div class="badge"><strong>Terminal Persistence</strong> &mdash; History saved to localStorage with XSS sanitization</div>
-                <div class="badge"><strong>Auth &amp; Security</strong> &mdash; Bearer token + HttpOnly cookie, CSP, SRI, rate limiting, blocked commands</div>
-                <div class="badge"><strong>CLI Tools</strong> &mdash; run.sh server manager + edit.sh file wizard</div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    </div>
+                    <h4>Terminal</h4>
+                    <p>Streaming command execution</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h4>File Manager</h4>
+                    <p>Browse, upload, download</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    </div>
+                    <h4>Code Editor</h4>
+                    <p>Syntax highlighting</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <h4>Global Search</h4>
+                    <p>Grep-based text search</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+                    </div>
+                    <h4>Git Panel</h4>
+                    <p>Full Git workflow</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    </div>
+                    <h4>PWA</h4>
+                    <p>Installable as app</p>
+                </div>
             </div>
         </div>
     </section>
@@ -581,7 +896,7 @@
 
                 <article class="guide-item">
                     <h3>PWA Install</h3>
-                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app &mdash; no browser address bar, icon on home screen, runs like a native app in standalone mode. An automatic install prompt appears when conditions are met, or use "Add to Home Screen" from the browser menu. The Service Worker pre-caches HTML pages and CSS for offline access, caches dynamic assets (JS modules, CDN fonts) at runtime on first load, and never caches API requests. Cache is limited to 100 entries to prevent flooding. Internal URLs (<code>file://</code>, <code>data:text/html</code>) are blocked for security. To force a cache refresh, use the "Bust Cache" feature in <code>run.sh</code> which increments the cache version (currently v16) without requiring a server restart.</p>
+                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app &mdash; no browser address bar, icon on home screen, runs like a native app in standalone mode. An automatic install prompt appears when conditions are met, or use "Add to Home Screen" from the browser menu. The Service Worker pre-caches HTML pages and CSS for dynamic assets (JS modules, CDN fonts) at runtime on first load, and never caches API requests. Cache is limited to 100 entries to prevent flooding. Internal URLs (<code>file://</code>, <code>data:text/html</code>) are blocked for security. To force a cache refresh, use the "Bust Cache" feature in <code>run.sh</code> which increments the cache version (currently v16) without requiring a server restart.</p>
                 </article>
 
                 <article class="guide-item">
@@ -622,20 +937,38 @@
     <section class="docs-section" id="shortcuts" aria-labelledby="shortcuts-heading">
         <div class="docs-header"><h2 id="shortcuts-heading">Keyboard Shortcuts</h2></div>
         <div class="docs-body">
-            <div class="shortcut-row"><span class="shortcut-action">Execute command</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Save file (in editor)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Commit (in Git message box)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>↑</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>↓</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Clear terminal input</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Clear terminal output</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Open Files modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Open Git modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>G</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Toggle extra keys panel</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Close dialog / modal</span><span class="shortcut-keys"><kbd>Escape</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Insert tab in editor</span><span class="shortcut-keys"><kbd>Tab</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Auto-indent new line</span><span class="shortcut-keys"><kbd>Enter</kbd> (editor)</span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Search in files</span><span class="shortcut-keys"><kbd>Enter</kbd> (in search input)</span></div>
+            <div class="two-col">
+                <div class="two-col-item">
+                    <h4>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001"/></svg>
+                        Terminal &amp; Editor
+                    </h4>
+                    <div class="shortcut-table">
+                        <div class="shortcut-row"><span class="shortcut-action">Execute command</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Save file</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>↑</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>↓</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Clear input</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Clear output</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Insert tab</span><span class="shortcut-keys"><kbd>Tab</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Commit (Git)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
+                    </div>
+                </div>
+                <div class="two-col-item">
+                    <h4>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                        Navigation
+                    </h4>
+                    <div class="shortcut-table">
+                        <div class="shortcut-row"><span class="shortcut-action">Open Files modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Open Git modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>G</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Toggle extra keys</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Close modal</span><span class="shortcut-keys"><kbd>Escape</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Auto-indent</span><span class="shortcut-keys"><kbd>Enter</kbd> (editor)</span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Search in files</span><span class="shortcut-keys"><kbd>Enter</kbd> (search input)</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -1031,10 +1364,12 @@
     </section>
 
 </div>
+
+<script>
 (function() {
     // Helper: set stat value, remove loading state
     function setStat(id, value) {
-        const el = document.getElementById(id);
+        var el = document.getElementById(id);
         if (!el) return;
         el.textContent = value;
         el.classList.remove('loading');
@@ -1042,12 +1377,12 @@
 
     // Helper: count file lines in tree ending with a given extension
     function countExt(tree, ext) {
-        return tree.split('\n').filter(l => l.trim().endsWith(ext)).length;
+        return tree.split('\n').filter(function(l) { return l.trim().endsWith(ext); }).length;
     }
 
     // Helper: remove loading class from all stat-value elements
     function unsetLoading() {
-        document.querySelectorAll('.stat-value.loading').forEach(el => {
+        document.querySelectorAll('.stat-value.loading').forEach(function(el) {
             el.textContent = '\u2014'; // em dash fallback
             el.classList.remove('loading');
         });
@@ -1056,12 +1391,12 @@
     (async function() {
         try {
             // ── Phase 1: fetch project tree ──
-            const res = await fetch('/api/project/info');
+            var res = await fetch('/api/project/info');
             if (!res.ok) { unsetLoading(); return; }
-            const data = await res.json();
+            var data = await res.json();
             if (!data.success) { unsetLoading(); return; }
 
-            const tree = data.tree || '';
+            var tree = data.tree || '';
 
             document.getElementById('treeOutput').textContent = tree;
             setStat('folderCount', data.folders || 0);
@@ -1072,38 +1407,38 @@
             setStat('jsCount',  countExt(tree, '.js'));
 
             // ── Phase 3: fetch route directory listing ──
-            const routesRes = await fetch('/api/files/list?path=routes');
+            var routesRes = await fetch('/api/files/list?path=routes');
             if (!routesRes.ok) { setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return; }
-            const routesData = await routesRes.json();
+            var routesData = await routesRes.json();
             if (!routesData.success || !Array.isArray(routesData.items)) {
                 setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return;
             }
 
             // Filter to actual route modules (exclude __init__.py)
-            const routePyFiles = routesData.items.filter(f =>
-                f.name && f.name.endsWith('.py') && f.name !== '__init__.py'
-            );
+            var routePyFiles = routesData.items.filter(function(f) {
+                return f.name && f.name.endsWith('.py') && f.name !== '__init__.py';
+            });
             setStat('pyRoutes', routePyFiles.length);
 
             // ── Phase 4: read each route file, count @*.route( decorators ──
-            let totalEndpoints = 0;
-            const reads = routePyFiles.map(async (file) => {
+            var totalEndpoints = 0;
+            var reads = routePyFiles.map(async function(file) {
                 try {
-                    const r = await fetch('/api/files/read', {
+                    var r = await fetch('/api/files/read', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ path: file.path })
                     });
                     if (!r.ok) return 0;
-                    const d = await r.json();
+                    var d = await r.json();
                     if (d.success && typeof d.content === 'string') {
                         return (d.content.match(/@\w+\.route\(/g) || []).length;
                     }
                 } catch (e) { /* skip */ }
                 return 0;
             });
-            const counts = await Promise.all(reads);
-            totalEndpoints = counts.reduce((a, b) => a + b, 0);
+            var counts = await Promise.all(reads);
+            totalEndpoints = counts.reduce(function(a, b) { return a + b; }, 0);
             setStat('apiEndpoints', totalEndpoints);
 
         } catch (e) {
