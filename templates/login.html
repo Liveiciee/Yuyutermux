@@ -183,9 +183,7 @@
             <p class="login-desc">Masukkan auth token untuk akses terminal.</p>
         </div>
 
-        <div id="errorBox" class="login-error{% if error %} visible{% endif %}">
-            {{ error if error else '' }}
-        </div>
+        <div id="errorBox" class="login-error"></div>
 
         <div class="login-field">
             <label class="login-label" for="tokenInput">Auth Token</label>
@@ -214,23 +212,53 @@
 </div>
 
 <script>
-    const input = document.getElementById('tokenInput')
-    const btn = document.getElementById('loginBtn')
-    const errorBox = document.getElementById('errorBox')
-    const spinner = document.getElementById('spinner')
+    // Helper: escape HTML to prevent XSS when showing error messages
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c; // keep emojis intact
+        });
+    }
 
-    input.focus()
+    // Get error message from URL parameter (safe)
+    function getErrorFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const err = urlParams.get('error');
+        if (err) {
+            return decodeURIComponent(err);
+        }
+        return null;
+    }
+
+    const input = document.getElementById('tokenInput');
+    const btn = document.getElementById('loginBtn');
+    const errorBox = document.getElementById('errorBox');
+    const spinner = document.getElementById('spinner');
+
+    // Show any error passed via URL (from server redirect)
+    const initialError = getErrorFromUrl();
+    if (initialError) {
+        errorBox.textContent = escapeHtml(initialError);
+        errorBox.classList.add('visible');
+    }
+
+    input.focus();
 
     async function doLogin() {
-        const token = input.value.trim()
+        const token = input.value.trim();
         if (!token) {
-            showError('Token tidak boleh kosong')
-            return
+            showError('Token tidak boleh kosong');
+            return;
         }
 
-        btn.disabled = true
-        spinner.style.display = 'inline-block'
-        errorBox.classList.remove('visible')
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        errorBox.classList.remove('visible');
 
         try {
             const res = await fetch('/api/auth/login', {
@@ -238,33 +266,38 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token }),
                 redirect: 'follow'
-            })
+            });
             // Successful login redirects to /
             if (res.url && !res.url.includes('/login')) {
-                window.location.href = res.url
-                return
+                window.location.href = res.url;
+                return;
             }
             // Check for error in redirect URL
-            const url = new URL(res.url)
-            const err = url.searchParams.get('error')
-            showError(err || 'Login gagal')
+            const url = new URL(res.url);
+            const err = url.searchParams.get('error');
+            if (err) {
+                showError(err);
+            } else {
+                showError('Login gagal');
+            }
         } catch (e) {
-            showError('Tidak bisa konek ke server')
+            showError('Tidak bisa konek ke server');
         } finally {
-            btn.disabled = false
-            spinner.style.display = 'none'
+            btn.disabled = false;
+            spinner.style.display = 'none';
         }
     }
 
     function showError(msg) {
-        errorBox.textContent = msg
-        errorBox.classList.add('visible')
-        input.focus()
-        input.select()
+        // SAFE: use textContent to avoid XSS
+        errorBox.textContent = escapeHtml(msg);
+        errorBox.classList.add('visible');
+        input.focus();
+        input.select();
     }
 
-    btn.addEventListener('click', doLogin)
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+    btn.addEventListener('click', doLogin);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 </script>
 
 </body>

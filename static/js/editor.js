@@ -22,7 +22,7 @@ export const Editor = {
     if (!this.ta || !this.gutter) return
 
     this._createHighlightLayer()
-    this._syncLayerStyles() // Pastikan style layer sama persis dengan textarea
+    this._syncLayerStyles() // 🔧 FIX: sync styles immediately
 
     this._taInputHandler = () => {
       this.updateGutter()
@@ -39,9 +39,9 @@ export const Editor = {
     this._initViewport()
   },
 
-  // Sinkronkan style highlight layer dengan textarea (font, padding, line-height)
+  // 🔧 NEW: synchronize highlight layer styles with textarea
   _syncLayerStyles() {
-    if (!this.ta || !this.highlightLayer) return
+    if (!this.ta || !this.highlightLayer || !this.gutter) return
     const styles = window.getComputedStyle(this.ta)
     const layer = this.highlightLayer
     layer.style.fontFamily = styles.fontFamily
@@ -50,9 +50,9 @@ export const Editor = {
     layer.style.padding = styles.padding
     layer.style.whiteSpace = styles.whiteSpace
     layer.style.tabSize = styles.tabSize
-    // Pastikan posisi left mengikuti gutter width
+    // Adjust left position based on gutter width (line numbers)
     const gutterWidth = this.gutter.offsetWidth
-    layer.style.left = `${gutterWidth + 1}px` // +1 untuk border
+    layer.style.left = `${gutterWidth + 1}px` // +1 for border
   },
 
   destroy() {
@@ -124,7 +124,7 @@ export const Editor = {
       }
     }
     this.ta.classList.add('highlighting-on')
-    // Pastikan textarea benar-benar transparan (tambahan inline style)
+    // Force textarea transparent
     this.ta.style.color = 'transparent'
     this.ta.style.background = 'transparent'
     this.ta.style.webkitTextFillColor = 'transparent'
@@ -162,7 +162,7 @@ export const Editor = {
     } else {
       this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
     }
-    // Sinkronkan ulang posisi layer setelah gutter berubah lebar
+    // 🔧 FIX: re-sync layer position after gutter changes width
     this._syncLayerStyles()
   },
 
@@ -204,6 +204,7 @@ export const Editor = {
   insertAtCursor(text) {
     if (!this.ta) return
     this.ta.focus()
+    // Use setRangeText to preserve undo stack
     const start = this.ta.selectionStart
     const end = this.ta.selectionEnd
     this.ta.setRangeText(text, start, end, 'end')

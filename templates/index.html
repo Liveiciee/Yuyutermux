@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
     <meta name="theme-color" content="#0D0D0D">
-    <!-- SECURITY: Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none';">
+    <!-- SECURITY: Strict CSP - removed unsafe-inline/unsafe-eval for scripts -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; worker-src 'self'; frame-ancestors 'none';">
     <meta name="referrer" content="no-referrer">
     <title>Yuyutermux</title>
     <link rel="icon" href="/static/favicon.ico">
@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/static/css/ui.css">
     <link rel="stylesheet" href="/static/css/animation.css">
 
-    <!-- Fonts: Cyber-Minimalist DNA -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -72,7 +72,7 @@
         </div>
     </section>
 
-    <!-- STATUS BAR (Claude Code style) -->
+    <!-- STATUS BAR -->
     <div class="status-bar" id="statusBar">
         <div class="status-left">
             <span class="status-dot connected" id="statusDot"></span>
@@ -101,7 +101,6 @@
             </div>
             <div class="input-wrapper">
                 <textarea id="cmdInput" rows="1" placeholder="Enter command..." autocomplete="off" spellcheck="false"></textarea>
-                <!-- Command Suggestions Dropdown -->
                 <div class="suggestions-dropdown hidden" id="suggestionsDropdown"></div>
             </div>
             <button id="sendBtn" class="send-btn" title="Execute (Ctrl+Enter)">
@@ -125,17 +124,10 @@
         </header>
         <div class="breadcrumb" id="currentPathDisplay">~/Yuyutermux</div>
         <div class="file-toolbar">
-            <!-- FIX: Changed upload button to <label> wrapping the hidden input.
-                 On mobile browsers, programmatic .click() on a hidden file input often
-                 fails to open the file picker. Using <label for="uploadInput"> ensures
-                 the file picker opens on all platforms. -->
             <label for="uploadInput" id="uploadBtn" class="paper-btn small" style="cursor:pointer">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 UPLOAD
             </label>
-            <!-- FIX: Use CSS-based hiding instead of [hidden] attribute.
-                 The hidden attribute (display:none) prevents file picker from opening
-                 on many mobile browsers when triggered programmatically. -->
             <input type="file" id="uploadInput" style="position:fixed;left:-9999px;opacity:0;width:1px;height:1px;pointer-events:none">
             <button id="refreshFileListBtn" class="paper-btn small">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
@@ -171,8 +163,6 @@
 <!-- ====== GIT MODAL ====== -->
 <dialog id="gitModal" class="paper-modal git-modal" aria-label="Git Panel">
     <div class="modal-box git-box">
-
-        <!-- Header -->
         <header class="modal-header git-modal-header">
             <div class="git-header-left">
                 <span class="git-icon">⎇</span>
@@ -185,8 +175,6 @@
                 <button id="gitCloseBtn" class="paper-btn ghost">&times;</button>
             </div>
         </header>
-
-        <!-- Tab bar -->
         <nav class="git-tabs">
             <button class="git-tab active" data-tab="status">STATUS</button>
             <button class="git-tab" data-tab="commit">COMMIT</button>
@@ -195,13 +183,9 @@
             <button class="git-tab" data-tab="branches">BRANCHES</button>
             <button class="git-tab" data-tab="config">CONFIG</button>
         </nav>
-
-        <!-- Tab: STATUS -->
         <div class="git-tab-pane" data-tab="status" id="gitStatusPane">
             <div class="git-loading">Loading status...</div>
         </div>
-
-        <!-- Tab: COMMIT -->
         <div class="git-tab-pane hidden" data-tab="commit">
             <div class="git-commit-area">
                 <div class="git-section-label">COMMIT MESSAGE</div>
@@ -213,8 +197,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tab: SYNC -->
         <div class="git-tab-pane hidden" data-tab="sync">
             <div class="git-sync-area">
                 <div class="git-section-label">REMOTE</div>
@@ -233,25 +215,18 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tab: LOG -->
         <div class="git-tab-pane hidden" data-tab="log" id="gitLogPane">
             <div class="git-loading">Loading...</div>
         </div>
-
-        <!-- Tab: BRANCHES -->
         <div class="git-tab-pane hidden" data-tab="branches" id="gitBranchPane">
             <div class="git-loading">Loading...</div>
         </div>
-
-        <!-- Tab: CONFIG -->
         <div class="git-tab-pane hidden" data-tab="config">
             <div class="git-config-area">
                 <div class="git-section-label">IDENTITY (global)</div>
                 <input id="gitConfigName" class="git-input" type="text" placeholder="Your name">
                 <input id="gitConfigEmail" class="git-input" type="email" placeholder="your@email.com">
                 <button id="gitSaveConfigBtn" class="paper-btn primary" style="margin-top:8px">SAVE IDENTITY</button>
-
                 <div class="git-section-label" style="margin-top:20px">REMOTE</div>
                 <input id="gitRemoteName" class="git-input" type="text" placeholder="Remote name (default: origin)" value="origin">
                 <input id="gitRemoteUrl" class="git-input" type="text" placeholder="https://github.com/user/repo.git">
@@ -262,7 +237,6 @@
                 <button id="gitSaveRemoteBtn" class="paper-btn primary" style="margin-top:8px">SAVE REMOTE</button>
             </div>
         </div>
-
     </div>
 </dialog>
 
@@ -281,7 +255,7 @@
     </div>
 </div>
 
-<!-- Scripts di bawah body, defer untuk non-blocking (with SRI) -->
+<!-- Scripts: defer, integrity, and module -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha384-1kN8cZ8qo0S26r21w1Urh09x9w3SJ4TLH2tic7cw3a7Gwk0WxNJFuU45CbP7S1m4" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js" integrity="sha384-VmpM1z6TlER2c9WHBpZSP5N8pW6tT7YK1pN3CLMEK1C3f3/f4Mp4hMxszmF2tGEM" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js" integrity="sha384-wL4oBv3w0mjfKBGwTHZ8YzdqStoy5LvE3YLCP8VMEj/ZG3i5Gb7GB8q6Ap6ehQiK" crossorigin="anonymous"></script>
