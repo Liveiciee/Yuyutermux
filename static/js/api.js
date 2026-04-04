@@ -47,7 +47,6 @@ export const api = {
     try {
       const authHeaders = Auth.getHeaders()
       const headers = { ...authHeaders, ...options.headers }
-      // Hanya set Content-Type jika body ada dan tidak di override
       if (options.body && !options.headers?.['Content-Type']) {
         headers['Content-Type'] = 'application/json'
       }

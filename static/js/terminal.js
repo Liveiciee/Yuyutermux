@@ -90,7 +90,9 @@ export const StatusBar = {
       if (res.ok) {
         if (dot) dot.className = 'status-dot connected'
         if (conn) conn.textContent = 'CONNECTED'
-      } else throw new Error()
+      } else {
+        throw new Error()
+      }
     } catch {
       if (dot) dot.className = 'status-dot error'
       if (conn) conn.textContent = 'OFFLINE'
@@ -108,7 +110,9 @@ export function bindEntryActions(entry) {
       if (!pre) return
       navigator.clipboard.writeText(pre.textContent).then(() => {
         copyBtn.innerHTML = '<span style="color:var(--success)">\u2713</span> COPIED'
-        setTimeout(() => copyBtn.innerHTML = `${ICONS.copy} COPY`, 1500)
+        setTimeout(() => {
+          copyBtn.innerHTML = `${ICONS.copy} COPY`
+        }, 1500)
       })
     }
   }
@@ -146,6 +150,12 @@ function applyVirtualScroll(area) {
     if (idx < entries.length - keepCount) entry.classList.add('collapsed')
     else entry.classList.remove('collapsed')
   })
+}
+
+function stripTerminalMarkers(text) {
+  return text
+    .replace(/\$\$EXIT_CODE:\d+\$\$\n?/g, '')
+    .replace(/\$\$ERROR:[\s\S]*?\$\$\n?/g, '')
 }
 
 export const Terminal = {
@@ -193,9 +203,13 @@ export const Terminal = {
       </div>`
 
     entry.classList.add(ANIM_CLASSES.entryPulse)
-    entry.addEventListener('animationend', () => {
-      entry.classList.remove(ANIM_CLASSES.entryPulse)
-    }, { once: true })
+    entry.addEventListener(
+      'animationend',
+      () => {
+        entry.classList.remove(ANIM_CLASSES.entryPulse)
+      },
+      { once: true }
+    )
 
     const pre = entry.querySelector('.output-content')
     const warning = entry.querySelector('.hang-warning')
@@ -224,9 +238,13 @@ export const Terminal = {
       entry.classList.remove('running')
       entry.classList.add(success ? 'success' : 'error')
       entry.classList.add(success ? ANIM_CLASSES.entryDoneSuccess : ANIM_CLASSES.entryDoneError)
-      entry.addEventListener('animationend', () => {
-        entry.classList.remove(ANIM_CLASSES.entryDoneSuccess, ANIM_CLASSES.entryDoneError)
-      }, { once: true })
+      entry.addEventListener(
+        'animationend',
+        () => {
+          entry.classList.remove(ANIM_CLASSES.entryDoneSuccess, ANIM_CLASSES.entryDoneError)
+        },
+        { once: true }
+      )
       if (actions) actions.classList.remove('hidden')
       const badge = document.createElement('span')
       badge.className = `cmd-status-badge ${success ? 'success' : 'error'}`
@@ -298,7 +316,16 @@ export const Terminal = {
         return
       }
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        isError = true
+        exitCode = res.status
+        throw new Error(`HTTP ${res.status}`)
+      }
+
+      if (!res.body) {
+        throw new Error('No response body')
+      }
+
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
 
@@ -314,13 +341,13 @@ export const Terminal = {
       }
 
       const text = pre ? pre.textContent : ''
-      const exitMatch = text.match(/\[EXIT_CODE:(\d+)\]/)
+      const exitMatch = text.match(/\$\$EXIT_CODE:(\d+)\$\$/)
       if (exitMatch) {
         exitCode = parseInt(exitMatch[1], 10)
         isError = exitCode !== 0
       }
-      if (pre) pre.textContent = text.replace(/\[EXIT_CODE:\d+\]\n?/g, '').replace(/\[ERROR:.*?\]\n?/g, '')
 
+      if (pre) pre.textContent = stripTerminalMarkers(text)
     } catch (err) {
       if (err.name === 'AbortError') {
         await api.post('/api/execute/kill')
@@ -329,7 +356,7 @@ export const Terminal = {
       }
       if (pre) pre.textContent = `STREAM ERROR: ${err.message}`
       isError = true
-      exitCode = 1
+      exitCode = exitCode || 1
     } finally {
       stopHangTimer()
       if (btn) {
@@ -376,9 +403,13 @@ export const Terminal = {
       </div>`
 
     entry.classList.add(ANIM_CLASSES.entryPulse)
-    entry.addEventListener('animationend', () => {
-      entry.classList.remove(ANIM_CLASSES.entryPulse)
-    }, { once: true })
+    entry.addEventListener(
+      'animationend',
+      () => {
+        entry.classList.remove(ANIM_CLASSES.entryPulse)
+      },
+      { once: true }
+    )
 
     bindEntryActions(entry)
     area.appendChild(entry)
@@ -421,12 +452,12 @@ export const Terminal = {
       this._clearTimeout = null
       if (area) {
         area.innerHTML = `
-          <div class="placeholder">
+          <div class="placeholder" id="terminalPlaceholder">
             <div class="placeholder-icon">
               <span class="placeholder-cursor">&gt;_</span>
             </div>
             <div class="placeholder-text">READY FOR COMMANDS</div>
-            <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
+            <div class="placeholder-hint">Ctrl+Enter to execute · Extra keys below</div>
           </div>`
       }
       Toast.show('Terminal cleared', 'info')
@@ -507,7 +538,7 @@ export const Suggestions = {
       div.textContent = m
       const hint = document.createElement('span')
       hint.className = 'suggestion-hint'
-      hint.textContent = '\u2191\u2193 enter'
+      hint.textContent = '↑↓ enter'
       div.appendChild(hint)
       div.addEventListener('mousedown', (e) => {
         e.preventDefault()

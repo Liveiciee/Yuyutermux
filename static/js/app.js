@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAuth() {
   const logoutBtn = document.getElementById('logoutBtn')
   if (logoutBtn) {
-    logoutBtn.style.display = ''
+    // ← FIXED: Jangan set style.display, biarkan class .hidden bekerja
+    // Jika tombol harus muncul setelah login, JS backend atau logic lain yang mengatur class-nya
+    // Disini kita hanya set event handler
     logoutBtn.onclick = () => {
       if (confirm('Logout? Session akan berakhir.')) Auth.logout()
     }
@@ -208,7 +210,8 @@ function initModules() {
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
-  StatusBar.init(_connectionInterval)
+  // ← FIXED: Hapus parameter yang tidak digunakan
+  StatusBar.init() 
   Suggestions.init()
   Storage.load()
   Editor.init()
@@ -234,7 +237,8 @@ function initShortcuts() {
       document.getElementById('cmdInput')?.focus()
       return
     }
-    if (e.ctrlKey && e.key === 'f') {
+    // ← FIXED: Ganti Ctrl+F (browser find) ke Ctrl+E (Edit)
+    if (e.ctrlKey && e.key === 'e') {
       e.preventDefault()
       document.getElementById('editFileBtn')?.click()
       return
