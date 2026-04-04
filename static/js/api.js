@@ -179,11 +179,23 @@ export const Auth = {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5000)
     try {
-      await fetch('/api/execute/kill', { method: 'POST', signal: controller.signal }).catch(() => {})
+      await fetch('/api/execute/kill', {
+        method: 'POST',
+        signal: controller.signal,
+        credentials: 'same-origin'
+      }).catch(() => {})
       clearTimeout(timeout)
+
       const logoutController = new AbortController()
       const logoutTimeout = setTimeout(() => logoutController.abort(), 3000)
-      await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: logoutController.signal }).catch(() => {})
+
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: logoutController.signal,
+        credentials: 'same-origin'
+      }).catch(() => {})
+
       clearTimeout(logoutTimeout)
     } finally {
       window.location.href = '/login'
@@ -231,91 +243,4 @@ export const api = {
   },
   get: (url, options = {}) => api.request(url, { ...options, method: 'GET' }),
   post: (url, body, options = {}) => api.request(url, { ...options, method: 'POST', body: JSON.stringify(body) })
-}
-
-const ANSI_CODES = {
-  '0': '', '1': 'ansi-bold', '2': 'ansi-dim', '3': 'ansi-italic',
-  '4': 'ansi-underline', '30': 'ansi-black', '31': 'ansi-red',
-  '32': 'ansi-green', '33': 'ansi-yellow', '34': 'ansi-blue',
-  '35': 'ansi-magenta', '36': 'ansi-cyan', '37': 'ansi-white',
-  '90': 'ansi-black', '91': 'ansi-red', '92': 'ansi-green',
-  '93': 'ansi-yellow', '94': 'ansi-blue', '95': 'ansi-magenta',
-  '96': 'ansi-cyan', '97': 'ansi-white'
-}
-
-export function parseAnsi(text) {
-  if (!text) return ''
-  let classes = []
-  let result = ''
-  let i = 0
-  const len = text.length
-  let spanOpen = false
-  while (i < len) {
-    if (text[i] === '\x1b' && i+1 < len && text[i+1] === '[') {
-      const end = text.indexOf('m', i+2)
-      if (end === -1) { result += esc(text.slice(i)); break }
-      const codes = text.slice(i+2, end).split(';')
-      for (const code of codes) {
-        if (code === '0') {
-          classes = []
-        } else if (ANSI_CODES[code]) {
-          const cls = ANSI_CODES[code]
-          if (!classes.includes(cls)) classes.push(cls)
-        }
-      }
-      i = end + 1
-      if (spanOpen) result += '</span>'
-      if (classes.length) {
-        result += `<span class="${esc(classes.join(' '))}">`
-        spanOpen = true
-      } else {
-        spanOpen = false
-      }
-    } else {
-      let start = i
-      while (i < len && !(text[i] === '\x1b' && i+1 < len && text[i+1] === '[')) i++
-      result += esc(text.slice(start, i))
-    }
-  }
-  if (spanOpen) result += '</span>'
-  return result
-}
-
-const FILE_ICONS = {
-  py: { icon: '\u{1F40D}', cls: 'py' }, js: { icon: '\u26A1', cls: 'js' },
-  ts: { icon: '\u{1F537}', cls: 'js' }, html: { icon: '\u{1F310}', cls: 'html' },
-  htm: { icon: '\u{1F310}', cls: 'html' }, css: { icon: '\u{1F3A8}', cls: 'css' },
-  json: { icon: '\u{1F4CB}', cls: 'json' }, md: { icon: '\u{1F4DD}', cls: 'md' },
-  txt: { icon: '\u{1F4C4}', cls: 'default' }, sh: { icon: '\u2699', cls: 'sh' },
-  yaml: { icon: '\u2699', cls: 'sh' }, yml: { icon: '\u2699', cls: 'sh' },
-  toml: { icon: '\u2699', cls: 'sh' }, cfg: { icon: '\u2699', cls: 'sh' },
-  log: { icon: '\u{1F4CB}', cls: 'default' }, zip: { icon: '\u{1F4E6}', cls: 'default' },
-  png: { icon: '\u{1F5BC}', cls: 'default' }, jpg: { icon: '\u{1F5BC}', cls: 'default' },
-  gif: { icon: '\u{1F5BC}', cls: 'default' }, svg: { icon: '\u{1F5BC}', cls: 'default' },
-  gitignore: { icon: '\u{1F500}', cls: 'default' }, env: { icon: '\u2696', cls: 'sh' },
-  dockerfile: { icon: '\u{1F433}', cls: 'sh' }, makefile: { icon: '\u2699', cls: 'sh' },
-  rs: { icon: '\u{1F980}', cls: 'rs' }, go: { icon: '\u{1F425}', cls: 'go' },
-  java: { icon: '\u2615', cls: 'java' }, cpp: { icon: '\u{1F579}', cls: 'cpp' },
-  c: { icon: '\u{1F579}', cls: 'cpp' }, h: { icon: '\u{1F4C3}', cls: 'cpp' },
-  hpp: { icon: '\u{1F4C3}', cls: 'cpp' }, readme: { icon: '\u{1F4DD}', cls: 'md' }
-}
-
-export function getFileIcon(name, isDir) {
-  if (isDir) return { icon: '\u{1F4C1}', cls: 'dir' }
-  const lower = name.toLowerCase()
-  if (FILE_ICONS[lower]) return FILE_ICONS[lower]
-  if (name.startsWith('.')) {
-    const noDot = name.slice(1).toLowerCase()
-    if (FILE_ICONS[noDot]) return FILE_ICONS[noDot]
-  }
-  const parts = name.split('.')
-  if (parts.length > 1) {
-    const ext = parts.pop().toLowerCase()
-    if (FILE_ICONS[ext]) return FILE_ICONS[ext]
-    if (parts.length > 1) {
-      const double = parts.pop().toLowerCase() + '.' + ext
-      if (FILE_ICONS[double]) return FILE_ICONS[double]
-    }
-  }
-  return { icon: '\u{1F4C4}', cls: 'default' }
 }
