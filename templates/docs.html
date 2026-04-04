@@ -485,19 +485,139 @@
             margin: 0;
         }
 
-        /* API Grid */
-        .api-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 0.75rem;
-        }
-
-        .api-card {
+        /* Auto API Reference styles (collapsible cards) */
+        .api-ref-search {
+            width: 100%;
+            padding: 0.6rem 0.9rem;
             background: var(--bg);
             border: 1px solid var(--border);
-            padding: 0.75rem 0.9rem;
+            color: var(--text);
+            font: 0.75rem/1.4 var(--mono);
+            outline: none;
+            transition: border-color 0.15s;
+            box-sizing: border-box;
+            margin-bottom: 1rem;
+        }
+        .api-ref-search:focus {
+            border-color: var(--accent);
+        }
+        .api-ref-search::placeholder {
+            color: var(--cement);
         }
 
+        .api-ref-group {
+            margin-bottom: 1.25rem;
+        }
+        .api-ref-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .api-ref-group-title {
+            font: 700 0.7rem/1 var(--sans);
+            color: var(--cement);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 0 0 0.6rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px dotted var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .api-ref-group-title .group-count {
+            font: 600 0.6rem/1 var(--mono);
+            background: var(--dark);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+        }
+
+        .api-ref-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            transition: border-color 0.15s;
+            cursor: default;
+        }
+        .api-ref-card:last-child {
+            margin-bottom: 0;
+        }
+        .api-ref-card:hover {
+            border-color: var(--accent);
+        }
+        .api-ref-card.hidden {
+            display: none;
+        }
+        .api-ref-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .api-ref-card-header .toggle-icon {
+            font-size: 0.55rem;
+            color: var(--cement);
+            transition: transform 0.15s;
+            flex-shrink: 0;
+            width: 12px;
+            text-align: center;
+        }
+        .api-ref-card.open .toggle-icon {
+            transform: rotate(90deg);
+        }
+        .api-ref-card-summary {
+            font: 0.68rem/1.4 var(--mono);
+            color: var(--text2);
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .api-ref-card-details {
+            display: none;
+            padding: 0 0.75rem 0.6rem 2rem;
+            font-size: 0.65rem;
+            line-height: 1.6;
+            color: var(--text2);
+            border-top: 1px dotted var(--border);
+        }
+        .api-ref-card.open .api-ref-card-details {
+            display: block;
+        }
+        .api-ref-params {
+            margin-top: 0.35rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        .api-ref-param {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--dark);
+            border: 1px solid var(--border);
+            padding: 0.15rem 0.45rem;
+            font-size: 0.6rem;
+            border-radius: 3px;
+        }
+        .api-ref-param .param-type {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .api-ref-param .param-name {
+            color: var(--text);
+        }
+        .api-ref-empty {
+            text-align: center;
+            color: var(--cement);
+            font-size: 0.72rem;
+            padding: 1.5rem 0;
+        }
         .api-method {
             display: inline-block;
             font: 700 0.6rem/1 var(--mono);
@@ -506,22 +626,10 @@
             margin-right: 0.4rem;
             text-transform: uppercase;
         }
-
         .api-method.get { background: #1a4a2e; color: #6ee7a0; }
         .api-method.post { background: #3b2a1a; color: #f5b96b; }
-
-        .api-endpoint {
-            font: 700 0.72rem/1 var(--mono);
-            color: var(--text);
-            display: inline;
-        }
-
-        .api-desc {
-            font-size: 0.65rem;
-            color: var(--cement);
-            margin-top: 0.35rem;
-            line-height: 1.5;
-        }
+        .api-method.put { background: #1a3a5c; color: #7bc5ff; }
+        .api-method.delete { background: #5c1a1a; color: #ff7b7b; }
 
         /* Key Grid */
         .key-grid {
@@ -574,35 +682,6 @@
         .shortcut-action { color: var(--text2); font-size: 0.72rem; }
         .shortcut-keys { color: var(--accent); font-size: 0.65rem; text-align: right; white-space: nowrap; }
 
-        /* TOC */
-        .toc-list {
-            color: var(--text2);
-            font-size: 0.75rem;
-            line-height: 2;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.25rem 2rem;
-        }
-
-        .toc-list li::before {
-            content: '›';
-            color: var(--accent);
-            margin-right: 0.5rem;
-        }
-
-        .toc-list a {
-            color: var(--text2);
-            text-decoration: none;
-            transition: color 0.15s;
-        }
-
-        .toc-list a:hover {
-            color: var(--accent);
-        }
-
         /* Responsive */
         @media (max-width: 640px) {
             :root {
@@ -612,11 +691,9 @@
 
             .stat-grid { grid-template-columns: repeat(2, 1fr); }
             .two-col { grid-template-columns: 1fr; }
-            .toc-list { grid-template-columns: 1fr; }
             .quick-links { grid-template-columns: 1fr; }
             .feature-grid { grid-template-columns: repeat(2, 1fr); }
             .spec-grid { grid-template-columns: 1fr; }
-            .api-grid { grid-template-columns: 1fr; }
             .key-grid { grid-template-columns: repeat(2, 1fr); }
 
             .hero h2 { font-size: 1.2rem; }
@@ -736,13 +813,13 @@
                         <span class="quick-link-desc">Keyboard shortcuts reference</span>
                     </div>
                 </a>
-                <a href="#api" class="quick-link">
+                <a href="#api-reference" class="quick-link">
                     <div class="quick-link-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                     </div>
                     <div class="quick-link-content">
-                        <span class="quick-link-title">API Reference</span>
-                        <span class="quick-link-desc">All API endpoints</span>
+                        <span class="quick-link-title">Auto API Reference</span>
+                        <span class="quick-link-desc">Live introspected endpoints</span>
                     </div>
                 </a>
             </div>
@@ -797,6 +874,18 @@
                     <p>Installable as app</p>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- AUTO API REFERENCE (Phase 5: Code-as-Doc) -->
+    <section class="docs-section" id="api-reference" aria-labelledby="api-ref-heading">
+        <div class="docs-header"><h2 id="api-ref-heading">Auto API Reference</h2></div>
+        <div class="docs-body">
+            <p style="color:var(--text2);font-size:0.72rem;line-height:1.5;margin:0 0 0.75rem">
+                Automatically generated from Flask's <code>url_map</code> and Python docstrings. <span id="apiRefTotal"></span>
+            </p>
+            <input type="text" class="api-ref-search" id="apiRefSearch" placeholder="Filter routes by name or description..." autocomplete="off">
+            <div id="apiRefContainer"><span class="api-ref-empty">Loading endpoints...</span></div>
         </div>
     </section>
 
@@ -875,7 +964,7 @@
                     <h3>Git / GitHub Panel</h3>
                     <p>Click <kbd>[GIT]</kbd> in the header to open the Git panel. This is a full-featured Git client with 6 tabs covering the entire Git workflow. The panel displays the current branch name, sync status (ahead/behind count), and comprehensive file change tracking. Remote URLs containing tokens are automatically masked in the status display (shown as <code>https://***@github.com/...</code>). Push operations auto-detect missing upstream and offer to set it with <code>--set-upstream</code>. Branch names and remote names are validated against regex patterns to prevent injection.</p>
                     <ul class="sub-list">
-                        <li><strong>Status Tab</strong> &mdash; View staged, modified, untracked files with change type badges. Stage/unstage/discard individual files or in bulk (UNSTAGE ALL, STAGE ALL, ADD ALL).</li>
+                        <li><strong>Status Tab</strong> &mdash; View staged, unstaged, untracked files with change type badges. Stage/unstage/discard individual files or in bulk (UNSTAGE ALL, STAGE ALL, ADD ALL).</li>
                         <li><strong>Commit Tab</strong> &mdash; Write commit messages (max 5000 chars), stage all, and commit. Supports <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to commit.</li>
                         <li><strong>Sync Tab</strong> &mdash; Push (with force option), pull, and fetch from remote. Auto-detects missing upstream and offers to set it.</li>
                         <li><strong>Log Tab</strong> &mdash; View commit history with short hash, message, author, and relative time (up to 50 commits).</li>
@@ -972,172 +1061,6 @@
                         <div class="shortcut-row"><span class="shortcut-action">Auto-indent</span><span class="shortcut-keys"><kbd>Enter</kbd> (editor)</span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Search in files</span><span class="shortcut-keys"><kbd>Enter</kbd> (search input)</span></div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- API ENDPOINTS -->
-    <section class="docs-section" id="api" aria-labelledby="api-heading">
-        <div class="docs-header"><h2 id="api-heading">API Endpoints</h2></div>
-        <div class="docs-body">
-            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Terminal</h3>
-            <div class="api-grid" style="margin-bottom:1.25rem">
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/execute/stream</span>
-                    <div class="api-desc">Execute command via chunked transfer. Handles <code>cd</code> natively. Max 10,000 chars. Blocked command list enforced. 5-minute timeout.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/execute/kill</span>
-                    <div class="api-desc">Kill all active running processes. Sends SIGTERM to process group (<code>os.killpg</code>), falls back to <code>proc.kill()</code> on permission error.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/execute/cwd</span>
-                    <div class="api-desc">Get current working directory. Returns display path with ~/ shorthand only (never leaks real path).</div>
-                </div>
-            </div>
-
-            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Files</h3>
-            <div class="api-grid" style="margin-bottom:1.25rem">
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/files/list?path=</span>
-                    <div class="api-desc">Directory listing. Returns relative paths, file names, types, sizes (human-readable), and modification times.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/files/read</span>
-                    <div class="api-desc">Read file content. Max 1MB. Returns UTF-8 text with errors replaced (not ignored).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/files/write</span>
-                    <div class="api-desc">Write content to file (max 5MB). Auto-creates parent dirs. Blocks protected file patterns (.auth_token, .env, .bashrc, etc.).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/files/delete</span>
-                    <div class="api-desc">Delete file or directory (via shutil.rmtree). Protects critical project files (app.py, utils.py, run.sh).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/files/create</span>
-                    <div class="api-desc">Create new empty file. Sanitizes filename, rejects hidden files and path separators.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/files/download?path=</span>
-                    <div class="api-desc">Download file as attachment (Content-Disposition header).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/files/upload</span>
-                    <div class="api-desc">Upload file via multipart (max 50MB). Generates timestamp-based unique name on collision. Sanitizes filename.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/files/search?q=&amp;case=</span>
-                    <div class="api-desc">Grep-based text search (max 200 char query). 13 file types, 300 line cap. 10s timeout. Uses list args (no shell=True).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/project/info</span>
-                    <div class="api-desc">Project tree (via <code>tree</code> command) + file/folder counts. Skips hidden dirs.</div>
-                </div>
-            </div>
-
-            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Git</h3>
-            <div class="api-grid" style="margin-bottom:1.25rem">
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/git/status</span>
-                    <div class="api-desc">Full status: branch, staged/unstaged/untracked files, remotes (token-masked), ahead/behind count.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/git/log?limit=</span>
-                    <div class="api-desc">Commit history with full hash, short hash, message, author, relative time. Limit 1&ndash;50, default 15.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/git/branches</span>
-                    <div class="api-desc">List all branches (local + remote) with current marker.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/init</span>
-                    <div class="api-desc">Initialize a new git repository.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/add</span>
-                    <div class="api-desc">Stage files. Accepts file list or <code>.</code> for all. Validates against path traversal.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/unstage</span>
-                    <div class="api-desc">Unstage file(s) via <code>git restore --staged</code>.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/discard</span>
-                    <div class="api-desc">Discard working tree changes via <code>git restore</code>.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/commit</span>
-                    <div class="api-desc">Commit staged changes with message (max 5000 chars).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/push</span>
-                    <div class="api-desc">Push to remote. Supports force push. Auto-set-upstream on failure. Validates branch/remote names.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/pull</span>
-                    <div class="api-desc">Pull from remote. Default: origin. Validates branch/remote names.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/fetch</span>
-                    <div class="api-desc">Fetch all remotes.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/checkout</span>
-                    <div class="api-desc">Switch branch or create new with <code>create: true</code>. Validates branch name regex.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/remote</span>
-                    <div class="api-desc">Add or remove remote (auto-updates if exists). Validates name and URL format.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/git/config</span>
-                    <div class="api-desc">Get global Git identity (name + email).</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/git/config</span>
-                    <div class="api-desc">Set global Git identity. Max 200 chars, rejects control characters to prevent config injection.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/git/diff</span>
-                    <div class="api-desc">Get diff output. Supports <code>?file=</code> and <code>?staged=1</code> for staged diff.</div>
-                </div>
-            </div>
-
-            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">Auth</h3>
-            <div class="api-grid" style="margin-bottom:1.25rem">
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/login</span>
-                    <div class="api-desc">Login with token. Sets two cookies: <code>yuyu_token</code> (HttpOnly) and <code>yuyu_authed</code> (non-HttpOnly marker). Both 30 days, SameSite=Lax. Uniform error messages.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/auth/logout</span>
-                    <div class="api-desc">Logout. Clears both cookies. Server keeps running.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method post">POST</span><span class="api-endpoint">/api/verify-token</span>
-                    <div class="api-desc">Verify token validity. Accepts <code>{"token": "xxx"}</code>. Returns <code>{"valid": true/false}</code>. Used by frontend auth cache.</div>
-                </div>
-            </div>
-
-            <h3 style="font:700 0.7rem/1 var(--sans);color:var(--cement);text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.75rem">System</h3>
-            <div class="api-grid">
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/api/health</span>
-                    <div class="api-desc">Health check (no auth required). Returns <code>{"status": "ok", "service": "yuyutermux"}</code>.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/</span>
-                    <div class="api-desc">Main app page (index.html). Protected by auth.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/docs</span>
-                    <div class="api-desc">This documentation page. Protected by auth.</div>
-                </div>
-                <div class="api-card">
-                    <span class="api-method get">GET</span><span class="api-endpoint">/login</span>
-                    <div class="api-desc">Login page. Redirects to <code>/</code> if already authenticated.</div>
                 </div>
             </div>
         </div>
@@ -1456,6 +1379,153 @@
             unsetLoading();
         }
     })();
+})();
+
+// ── Phase 5: Sync Auto API Reference from /api/docs/endpoints ──
+(function syncApiDocs() {
+    var container = document.getElementById('apiRefContainer');
+    var searchInput = document.getElementById('apiRefSearch');
+    var totalSpan = document.getElementById('apiRefTotal');
+    if (!container) return;
+
+    // Debounce helper for search input
+    var searchTimer = null;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(filterCards, 200);
+        });
+    }
+
+    // Escape HTML to prevent XSS in user-visible docstrings
+    function esc(str) {
+        if (!str) return '';
+        var d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // Toggle collapsible card (global onclick handler)
+    window.toggleApiCard = function(card) {
+        card.classList.toggle('open');
+    };
+
+    // Filter cards by search query
+    function filterCards() {
+        var q = (searchInput ? searchInput.value : '').toLowerCase();
+        var cards = container.querySelectorAll('.api-ref-card');
+        var groups = container.querySelectorAll('.api-ref-group');
+        var visibleCount = 0;
+
+        cards.forEach(function(card) {
+            var text = (card.getAttribute('data-search') || '').toLowerCase();
+            if (!q || text.indexOf(q) !== -1) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        // Hide groups that have no visible cards
+        groups.forEach(function(group) {
+            var vis = group.querySelectorAll('.api-ref-card:not(.hidden)');
+            group.style.display = vis.length === 0 ? 'none' : '';
+        });
+    }
+
+    // Render method badge
+    function methodBadge(method) {
+        var cls = method.toLowerCase() === 'get' ? 'get' : (method.toLowerCase() === 'post' ? 'post' : (method.toLowerCase() === 'put' ? 'put' : 'delete'));
+        return '<span class="api-method ' + cls + '">' + esc(method) + '</span>';
+    }
+
+    // Render params
+    function paramsHtml(params) {
+        if (!params || params.length === 0) return '';
+        var html = '<div class="api-ref-params">';
+        params.forEach(function(p) {
+            html += '<span class="api-ref-param">'
+                + '<span class="param-type">' + esc(p.type || 'string') + '</span>'
+                + '<span class="param-name">' + esc(p.name) + '</span>'
+                + '</span>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // Render one route card
+    function cardHtml(route) {
+        var searchText = route.path + ' ' + (route.summary || '') + ' ' + (route.details || '');
+        var hasDetails = (route.details || '').length > 0 || (route.params && route.params.length > 0);
+        var methodsStr = route.methods.map(methodBadge).join(' ');
+        var summaryText = esc(route.path);
+        if (route.summary) {
+            summaryText += ' &mdash; ' + esc(route.summary);
+        }
+
+        var html = '<div class="api-ref-card' + (hasDetails ? '' : ' open') + '" data-search="' + esc(searchText) + '">';
+        html += '<div class="api-ref-card-header" onclick="this.parentElement.classList.toggle(\'open\')">';
+        if (hasDetails) {
+            html += '<span class="toggle-icon">&#9654;</span>';
+        } else {
+            html += '<span class="toggle-icon">&bull;</span>';
+        }
+        html += methodsStr;
+        html += '<span class="api-ref-card-summary">' + summaryText + '</span></div>';
+
+        if (hasDetails) {
+            html += '<div class="api-ref-card-details">';
+            if (route.details) {
+                html += '<div>' + esc(route.details).replace(/\n/g, '<br>') + '</div>';
+            }
+            html += paramsHtml(route.params);
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    // Render all groups
+    function renderGroups(data) {
+        var html = '';
+        var groups = data.groups || {};
+        var keys = Object.keys(groups).sort();
+
+        if (keys.length === 0) {
+            html = '<span class="api-ref-empty">No endpoints found.</span>';
+        } else {
+            keys.forEach(function(key) {
+                var routes = groups[key];
+                html += '<div class="api-ref-group">';
+                html += '<div class="api-ref-group-title">' + esc(key);
+                html += ' <span class="group-count">' + routes.length + '</span></div>';
+                routes.forEach(function(route) {
+                    html += cardHtml(route);
+                });
+                html += '</div>';
+            });
+        }
+
+        container.innerHTML = html;
+        if (totalSpan) {
+            totalSpan.textContent = data.total + ' endpoint' + (data.total !== 1 ? 's' : '') + ' across ' + keys.length + ' group' + (keys.length !== 1 ? 's' : '') + '.';
+        }
+    }
+
+    // Fetch and render
+    fetch('/api/docs/endpoints')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                renderGroups(data);
+            } else {
+                container.innerHTML = '<span class="api-ref-empty">Failed to load endpoints.</span>';
+            }
+        })
+        .catch(function() {
+            container.innerHTML = '<span class="api-ref-empty">Unable to fetch endpoint data. Is the server running?</span>';
+        });
 })();
 </script>
 
