@@ -274,7 +274,7 @@ export const FileManager = {
     }
     
     try {
-      const res = await fetch('/api/files/upload', { method: 'POST', body: formData })
+      const res = await fetch('/api/files/upload', { method: 'POST', body: formData, credentials: 'same-origin' })
 
       if (res.status === 401) {
         window.location.href = '/login'

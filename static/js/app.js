@@ -8,31 +8,22 @@ import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
-/* ===== MOBILE DEBUG (NO DEVTOOLS) ===== */
-window.onerror = function (msg, src, line, col, err) {
-  alert("JS ERROR:\n" + msg + "\n" + src + ":" + line)
-}
-window.onunhandledrejection = function (e) {
-  alert("PROMISE ERROR:\n" + (e.reason?.message || e.reason))
-}
-
 /* ===== INTERNAL STATE ===== */
 let _cwdInterval = null
 let _connectionInterval = {}
 
 /* ===== BOOT ===== */
 document.addEventListener('DOMContentLoaded', () => {
-  alert("INIT START")
-
-  try { initSplash(); alert("splash ok") } catch (e) { alert("splash fail") }
-  try { initInput(); alert("input ok") } catch (e) { alert("input fail") }
-  try { initModules(); alert("modules ok") } catch (e) { alert("modules fail") }
-  try { initTerminal(); alert("terminal ok") } catch (e) { alert("terminal fail") }
-  try { initFileManager(); alert("files ok") } catch (e) { alert("files fail") }
-  try { initGitHub(); alert("github ok") } catch (e) { alert("github fail") }
-  try { initPWA(); alert("pwa ok") } catch (e) { alert("pwa fail") }
-  try { initAuth(); alert("auth ok") } catch (e) { alert("auth fail") }
-  try { initShortcuts(); alert("shortcuts ok") } catch (e) { alert("shortcuts fail") }
+  try { initModules() } catch (e) { console.error('initModules:', e) }
+  try { initInput() } catch (e) { console.error('initInput:', e) }
+  try { initTerminal() } catch (e) { console.error('initTerminal:', e) }
+  try { initFileManager() } catch (e) { console.error('initFileManager:', e) }
+  try { initGitHub() } catch (e) { console.error('initGitHub:', e) }
+  try { initPWA() } catch (e) { console.error('initPWA:', e) }
+  try { initAuth() } catch (e) { console.error('initAuth:', e) }
+  try { initShortcuts() } catch (e) { console.error('initShortcuts:', e) }
+  /* Splash dismissed LAST — deterministic: all inits complete */
+  initSplash()
 })
 
 /* ===== AUTH ===== */
@@ -49,13 +40,16 @@ function initAuth() {
 function initSplash() {
   const splash = document.getElementById('splashScreen')
   const container = document.querySelector('.paper-container')
+  if (!splash) return
 
-  // FORCE UNLOCK (no waiting)
-  setTimeout(() => {
-    splash?.classList.add('fade-out')
+  /* Deterministic exit: called after all init functions completed.
+     requestAnimationFrame ensures the browser has painted the initial
+     state so the CSS transition actually animates. */
+  requestAnimationFrame(() => {
+    splash.classList.add('fade-out')
     container?.classList.add('visible')
-    setTimeout(() => splash?.remove(), 300)
-  }, 300)
+    setTimeout(() => splash.remove(), 600)
+  })
 }
 
 /* ===== INPUT ===== */

@@ -307,7 +307,8 @@ export const Terminal = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: cmd }),
-        signal: controller.signal
+        signal: controller.signal,
+        credentials: 'same-origin'
       })
 
       if (res.status === 401) {

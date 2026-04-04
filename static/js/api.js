@@ -11,6 +11,26 @@ export const esc = (s) => {
   }[c]))
 }
 
+export function getFileIcon(name, isDir) {
+  if (isDir) return { cls: 'dir', icon: '\u{1F4C1}' }
+  const ext = (name || '').split('.').pop()?.toLowerCase() || ''
+  const map = {
+    py: { cls: 'py', icon: '\u{1F40D}' },
+    js: { cls: 'js', icon: '\u{1F4DC}' },
+    ts: { cls: 'ts', icon: '\u{1F539}' },
+    json: { cls: 'json', icon: '\u{1F4CB}' },
+    md: { cls: 'md', icon: '\u{1F4DD}' },
+    html: { cls: 'html', icon: '\u{1F310}' },
+    css: { cls: 'css', icon: '\u{1F3A8}' },
+    sh: { cls: 'sh', icon: '\u26A1' },
+    yml: { cls: 'yml', icon: '\u2699' },
+    yaml: { cls: 'yaml', icon: '\u2699' },
+    txt: { cls: 'txt', icon: '\u{1F4C4}' },
+    lock: { cls: 'lock', icon: '\u{1F512}' },
+  }
+  return map[ext] || { cls: 'file', icon: '\u{1F4C4}' }
+}
+
 // ========== AUTH MODULE (Steroid Edition) ==========
 const tokenCache = new Map()
 const pendingPromises = new Map()
