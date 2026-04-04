@@ -224,8 +224,3 @@
   background: transparent !important;
   -webkit-text-fill-color: transparent;
 }
-
-/* ══════════════════════════════════════════════════════════════════
-   TOAST ANIMATION
-   ══════════════════════════════════════════════════════════════════ */
-/* Note: Toast animations are defined in base.css (toastIn, toastOut) */

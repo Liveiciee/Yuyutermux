@@ -22,6 +22,7 @@ export const Editor = {
     if (!this.ta || !this.gutter) return
 
     this._createHighlightLayer()
+    this._syncLayerStyles() // Pastikan style layer sama persis dengan textarea
 
     this._taInputHandler = () => {
       this.updateGutter()
@@ -36,6 +37,22 @@ export const Editor = {
 
     this.updateGutter()
     this._initViewport()
+  },
+
+  // Sinkronkan style highlight layer dengan textarea (font, padding, line-height)
+  _syncLayerStyles() {
+    if (!this.ta || !this.highlightLayer) return
+    const styles = window.getComputedStyle(this.ta)
+    const layer = this.highlightLayer
+    layer.style.fontFamily = styles.fontFamily
+    layer.style.fontSize = styles.fontSize
+    layer.style.lineHeight = styles.lineHeight
+    layer.style.padding = styles.padding
+    layer.style.whiteSpace = styles.whiteSpace
+    layer.style.tabSize = styles.tabSize
+    // Pastikan posisi left mengikuti gutter width
+    const gutterWidth = this.gutter.offsetWidth
+    layer.style.left = `${gutterWidth + 1}px` // +1 untuk border
   },
 
   destroy() {
@@ -107,6 +124,11 @@ export const Editor = {
       }
     }
     this.ta.classList.add('highlighting-on')
+    // Pastikan textarea benar-benar transparan (tambahan inline style)
+    this.ta.style.color = 'transparent'
+    this.ta.style.background = 'transparent'
+    this.ta.style.webkitTextFillColor = 'transparent'
+    this.syncScroll()
   },
 
   setLanguage(lang) {
@@ -137,9 +159,11 @@ export const Editor = {
     const lineCount = this.ta.value.split('\n').length
     if (lineCount <= 1) {
       this.gutter.textContent = '1'
-      return
+    } else {
+      this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
     }
-    this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
+    // Sinkronkan ulang posisi layer setelah gutter berubah lebar
+    this._syncLayerStyles()
   },
 
   syncScroll() {
@@ -180,7 +204,6 @@ export const Editor = {
   insertAtCursor(text) {
     if (!this.ta) return
     this.ta.focus()
-    // Gunakan setRangeText untuk preserve undo stack
     const start = this.ta.selectionStart
     const end = this.ta.selectionEnd
     this.ta.setRangeText(text, start, end, 'end')
