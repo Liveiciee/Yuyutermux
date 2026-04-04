@@ -1,3 +1,4 @@
+/* ui.css - FIXED */
 .log-line {
   padding: 2px 0;
   opacity: 0.9;
@@ -368,15 +369,12 @@
   display: none;
 }
 
-/* FIX: Add ::backdrop styling — without this, the browser's default backdrop
-   can cover the dialog content, making modals appear invisible/broken */
 .paper-modal::backdrop {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* Polyfill for browsers that use ::-webkit-backdrop */
 .paper-modal + .backdrop {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
@@ -388,7 +386,6 @@
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  /* FIX: Ensure dialog renders above the backdrop layer */
   z-index: 99999;
 }
 
@@ -603,19 +600,15 @@
   font: 12px/1.5 var(--mono);
   text-align: right;
   user-select: none;
-  /* FIX: Changed from overflow:hidden to overflow-y:auto with hidden scrollbar.
-     overflow:hidden prevents syncScroll() from working — scrollTop has no effect
-     on a non-scrollable element, so line numbers never scroll with the textarea. */
   overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   border-right: 1px solid var(--light);
   flex-shrink: 0;
   white-space: pre;
   opacity: 0.6;
 }
 
-/* FIX: Hide scrollbar on Chrome/Safari for .line-numbers */
 .line-numbers::-webkit-scrollbar {
   display: none;
 }
