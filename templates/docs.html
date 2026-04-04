@@ -421,6 +421,7 @@
                 <li><a href="#security">Security Model</a></li>
                 <li><a href="#architecture">Frontend Architecture</a></li>
                 <li><a href="#changelog">Changelog</a></li>
+                <li><a href="#caveats">Caveats &amp; Known Limitations</a></li>
             </ul>
         </div>
     </section>
@@ -964,9 +965,72 @@
         </div>
     </section>
 
-</div>
+    <!-- CAVEATS & KNOWN LIMITATIONS -->
+    <section class="docs-section" id="caveats" aria-labelledby="caveats-heading">
+        <div class="docs-header"><h2 id="caveats-heading">Caveats &amp; Known Limitations</h2></div>
+        <div class="docs-body">
+            <div class="guide-list">
 
-<script>
+                <article class="guide-item">
+                    <h3>No Interactive / PTY Terminal</h3>
+                    <p>Yuyutermux streams command output but does NOT provide a real pseudo-terminal (PTY). There is no stdin — you cannot interact with a running process after it starts. Commands that expect interactive input (e.g. <code>python</code> REPL, <code>ftp</code>, password prompts from <code>ssh</code>, <code>vim</code>) will hang until the 5-minute timeout kills them. Use the KILL button or <kbd>CTRL+C</kbd> key in the extra keys bar to terminate a hung process.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Command Blocklist is Not a Sandbox</h3>
+                    <p>The blocked command list (<code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>bash</code>, <code>python</code>, etc.) prevents the most obvious misuse but is NOT a real security sandbox. A determined attacker with valid token access can still do damage via allowed commands. Yuyutermux is intended for trusted single-user use on a local device, not as a public-facing service.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>File Manager Scope: Project Directory Only</h3>
+                    <p>The file manager (<kbd>[FILES]</kbd>) is locked to <code>~/Yuyutermux</code> and cannot browse outside it. The terminal's <code>cd</code> command allows navigation within the entire home directory (<code>~</code>), but all file read/write/delete/upload operations are restricted to the project directory. Editing files outside <code>~/Yuyutermux</code> requires using the terminal directly.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Auth Token Resets on Every Server Restart</h3>
+                    <p>If no <code>YUYUTERMUX_TOKEN</code> environment variable is set, a fresh random token is generated each time the server starts. Existing browser sessions with the old cookie will be logged out on the next API call. To persist the token across restarts, set the env var in your shell config (e.g. <code>~/.bashrc</code>) or use the <code>YUYUTERMUX_TOKEN</code> var when starting via <code>run.sh</code>.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>File Size Limits</h3>
+                    <p>Files larger than <strong>1 MB</strong> cannot be opened or edited in the browser editor (the API rejects them). Upload is capped at <strong>50 MB</strong> per file. The file write API accepts content up to <strong>5 MB</strong>. There is no in-browser progress indicator for large uploads — the UI will appear frozen until the upload completes or fails.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Syntax Highlighting Requires CDN</h3>
+                    <p>The code editor's syntax highlighting depends on <code>highlight.js 11.9</code> loaded from the Cloudflare CDN. If the device is offline or the CDN is unreachable, the editor still works but shows plain unstyled text. The editor detects this gracefully — it removes the <code>highlighting-on</code> class and falls back to normal textarea rendering.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Rate Limiting is In-Memory and Per-Restart</h3>
+                    <p>Rate limit counters are stored in Python memory, not persisted to disk. They reset completely on server restart. Limits are per-IP per-endpoint: 30 req/60s general, 15 req/60s for command execution, 10 req/60s for uploads, 5 req/60s for login attempts. On <code>localhost</code>, all requests appear to come from <code>127.0.0.1</code>, so rate limits are effectively global when accessed locally.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Service Worker Caches Aggressively</h3>
+                    <p>The Service Worker caches HTML pages and CSS on install, and JS modules at runtime. After updating project files, the browser may serve stale cached versions. Use <strong>Bust Cache</strong> in <code>run.sh</code> to increment the SW cache version and force a fresh fetch. API calls (<code>/api/*</code>) are never cached. Hard-reload in Brave (<kbd>⋮</kbd> → Reload) bypasses the SW for one request only.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Single-User Only</h3>
+                    <p>Yuyutermux has no concept of multiple users, sessions, or workspaces. There is one auth token, one working directory state, and one set of active processes server-wide. Running multiple browser tabs simultaneously will share the same terminal CWD state, and killing a process in one tab affects all tabs.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>Git Operations Require a Valid <code>git</code> Install</h3>
+                    <p>All Git panel features call the system <code>git</code> binary via subprocess. If <code>git</code> is not installed in Termux (<code>pkg install git</code>), all Git API calls will return "git not found" errors. GitHub push/pull over HTTPS requires embedding a Personal Access Token (PAT) in the remote URL — SSH key auth is not configurable through the UI.</p>
+                </article>
+
+                <article class="guide-item">
+                    <h3>No Undo for File Delete or Git Discard</h3>
+                    <p>Deleting a file (including directories, via <code>shutil.rmtree</code>) and discarding Git changes (<code>git restore</code>) are permanent and irreversible from within the app. There is a confirmation dialog for both operations, but no recycle bin or undo history. Make sure you have backups or are on a git-tracked project before deleting.</p>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+</div>
 (function() {
     // Helper: set stat value, remove loading state
     function setStat(id, value) {
@@ -1011,12 +1075,12 @@
             const routesRes = await fetch('/api/files/list?path=routes');
             if (!routesRes.ok) { setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return; }
             const routesData = await routesRes.json();
-            if (!routesData.success || !Array.isArray(routesData.files)) {
+            if (!routesData.success || !Array.isArray(routesData.items)) {
                 setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return;
             }
 
             // Filter to actual route modules (exclude __init__.py)
-            const routePyFiles = routesData.files.filter(f =>
+            const routePyFiles = routesData.items.filter(f =>
                 f.name && f.name.endsWith('.py') && f.name !== '__init__.py'
             );
             setStat('pyRoutes', routePyFiles.length);
@@ -1028,7 +1092,7 @@
                     const r = await fetch('/api/files/read', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ path: 'routes/' + file.name })
+                        body: JSON.stringify({ path: file.path })
                     });
                     if (!r.ok) return 0;
                     const d = await r.json();
