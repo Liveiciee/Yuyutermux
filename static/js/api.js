@@ -11,19 +11,171 @@ export const esc = (s) => {
   }[c]))
 }
 
+// ========== AUTH MODULE (Steroid Edition) ==========
+const tokenCache = new Map()
+const pendingPromises = new Map()
+
+const POSITIVE_CACHE_TTL = 5 * 60 * 1000
+const NEGATIVE_CACHE_TTL = 5 * 60 * 1000
+const MAX_CACHE_SIZE = 1000
+const NETWORK_TIMEOUT_MS = 5000
+const STUCK_PROMISE_THRESHOLD_MS = 15000
+const CACHE_CLEANUP_INTERVAL_MS = 60 * 1000
+
+let cleanupInterval = null
+
+function startCacheCleanup() {
+  if (cleanupInterval) return
+  cleanupInterval = setInterval(() => {
+    const now = Date.now()
+    for (const [token, { isPositive, timestamp }] of tokenCache) {
+      const ttl = isPositive ? POSITIVE_CACHE_TTL : NEGATIVE_CACHE_TTL
+      if (now - timestamp >= ttl) tokenCache.delete(token)
+    }
+    while (tokenCache.size >= MAX_CACHE_SIZE) {
+      tokenCache.delete(tokenCache.keys().next().value)
+    }
+  }, CACHE_CLEANUP_INTERVAL_MS)
+}
+
+function stopCacheCleanup() {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval)
+    cleanupInterval = null
+  }
+}
+
+function getCookieValue(name) {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
+  return match ? match[2] : null
+}
+
+function isRetryableError(err, status) {
+  if (status >= 500) return true
+  if (status === 408) return true
+  if (status >= 400 && status < 500) return false
+  if (err.name === 'AbortError') return true
+  if (err instanceof TypeError) return true
+  return false
+}
+
+async function fetchWithRetry(token, externalSignal, maxAttempts = 2) {
+  let lastError
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (externalSignal?.aborted) throw new Error('AbortError')
+
+    const controller = new AbortController()
+    const onAbort = () => controller.abort()
+    externalSignal?.addEventListener('abort', onAbort, { once: true })
+
+    const timeoutId = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS)
+    try {
+      const response = await fetch('/api/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token.trim() }),
+        signal: controller.signal,
+        credentials: 'same-origin'
+      })
+      clearTimeout(timeoutId)
+      externalSignal?.removeEventListener('abort', onAbort)
+
+      if (response.status === 401 || response.status === 403) return false
+      if (!response.ok) throw new Error(`HTTP_${response.status}`)
+
+      const data = await response.json()
+      if (typeof data.valid !== 'boolean') {
+        console.warn('[AUTH] Invalid API response: valid field not boolean')
+        return false
+      }
+      return data.valid
+    } catch (err) {
+      clearTimeout(timeoutId)
+      externalSignal?.removeEventListener('abort', onAbort)
+      lastError = err
+
+      const statusMatch = err.message?.match(/HTTP_(\d+)/)
+      const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0
+
+      if (!isRetryableError(err, statusCode)) {
+        if (statusCode === 400 || statusCode === 401 || statusCode === 403) return false
+        break
+      }
+
+      if (attempt < maxAttempts) {
+        const random = crypto.getRandomValues(new Uint32Array(1))[0] / 0xFFFFFFFF
+        const delay = Math.min(100 * Math.pow(2, attempt) + random * 100, 1000)
+        await new Promise(r => setTimeout(r, delay))
+      }
+    }
+  }
+  console.error('[AUTH] Verification failed', lastError?.message)
+  return false
+}
+
+async function isAuthenticatedInternal() {
+  const token = getCookieValue('yuyu_token')?.trim()
+  if (!token || token.length === 0 || token.length > 2048) return false
+
+  const now = Date.now()
+  const cached = tokenCache.get(token)
+  if (cached) {
+    const ttl = cached.isPositive ? POSITIVE_CACHE_TTL : NEGATIVE_CACHE_TTL
+    if (now - cached.timestamp < ttl) return cached.valid
+    tokenCache.delete(token)
+  }
+
+  const existing = pendingPromises.get(token)
+  if (existing) return existing
+
+  const controller = new AbortController()
+  const promise = (async () => {
+    const watchdog = setTimeout(() => {
+      if (pendingPromises.has(token)) {
+        controller.abort()
+        pendingPromises.delete(token)
+      }
+    }, STUCK_PROMISE_THRESHOLD_MS)
+
+    let isValid = false
+    try {
+      isValid = await fetchWithRetry(token, controller.signal)
+    } catch {
+      isValid = false
+    }
+    clearTimeout(watchdog)
+    tokenCache.delete(token)
+    tokenCache.set(token, {
+      valid: isValid,
+      timestamp: Date.now(),
+      isPositive: isValid === true
+    })
+    pendingPromises.delete(token)
+    return isValid
+  })()
+
+  pendingPromises.set(token, promise)
+  return promise
+}
+
+startCacheCleanup()
+
 export const Auth = {
   getToken() {
-    const match = document.cookie.match(/(?:^|;\s*)yuyu_token=([^;]+)/)
-    return match ? decodeURIComponent(match[1]) : ''
+    return getCookieValue('yuyu_token') || ''
   },
   getHeaders() {
     const token = this.getToken()
     return token ? { 'Authorization': `Bearer ${token}` } : {}
   },
-  isAuthenticated() {
-    return /(?:^|;\s*)yuyu_authed=1(?:;|$)/.test(document.cookie)
+  async isAuthenticated() {
+    return await isAuthenticatedInternal()
   },
   async logout() {
+    tokenCache.clear()
+    pendingPromises.clear()
+    stopCacheCleanup()
+
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5000)
     try {
@@ -36,7 +188,8 @@ export const Auth = {
     } finally {
       window.location.href = '/login'
     }
-  }
+  },
+  stopCacheCleanup
 }
 
 export const api = {

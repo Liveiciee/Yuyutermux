@@ -1,10 +1,10 @@
 import os
 import secrets
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 
 from utils import (
     PROJECT_DIR, check_auth, set_security_headers,
-    AUTH_TOKEN
+    AUTH_TOKEN, secrets as utils_secrets
 )
 
 from routes.pages import pages_bp
@@ -16,15 +16,11 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_bytes(32)
 
 # ── SECURITY: Disable debug in production ────────────────────────────────────
-# NEVER run with debug=True in production — it exposes the Werkzeug debugger
-# which allows Remote Code Execution (RCE)
 DEBUG_MODE = os.environ.get('YUYUTERMUX_DEBUG', '0') == '1'
 
 # ── SECURITY: Bind to localhost only by default ──────────────────────────────
-# Prevents exposure to the network. Override with YUYUTERMUX_HOST env var.
 APP_HOST = os.environ.get('YUYUTERMUX_HOST', '127.0.0.1')
 
-# BUG FIX #1: int() crash if YUYUTERMUX_PORT non-numeric — add try/except
 try:
     APP_PORT = int(os.environ.get('YUYUTERMUX_PORT', '5000'))
 except (ValueError, TypeError):
@@ -32,7 +28,7 @@ except (ValueError, TypeError):
     print(f"[WARN] Invalid YUYUTERMUX_PORT value, defaulting to {APP_PORT}")
 
 # ── SECURITY: Global auth check for all /api/ routes ─────────────────────────
-_AUTH_EXEMPT = {'/api/health', '/api/auth/login', '/api/auth/logout'}
+_AUTH_EXEMPT = {'/api/health', '/api/auth/login', '/api/auth/logout', '/api/verify-token'}
 
 @app.before_request
 def global_auth_check():
@@ -60,11 +56,34 @@ def enforce_json_content_type():
     """Reject POST requests without proper Content-Type to prevent CSRF."""
     if request.method in ('POST', 'PUT', 'DELETE'):
         if request.path in _AUTH_EXEMPT:
-            return  # login/logout handle their own content-type
+            return  # login/logout/verify handle their own content-type
         ct = request.content_type or ''
         if not (ct.startswith('application/json') or
                 ct.startswith('multipart/form-data')):
             return jsonify({"success": False, "error": "Invalid Content-Type"}), 415
+
+
+# ── NEW ENDPOINT: Token Verification for Steroid Auth ────────────────────────
+@app.route('/api/verify-token', methods=['POST'])
+def verify_token():
+    """
+    Endpoint untuk validasi token oleh frontend (Steroid Auth).
+    Menerima JSON: {"token": "xxx"}
+    Returns: {"valid": true/false}
+    """
+    data = request.get_json(silent=True) or {}
+    token = data.get('token', '').strip()
+    
+    if not token:
+        return jsonify({"valid": False}), 400
+    
+    # Jika tidak ada token diset di env, anggap valid (mode dev/backward compat)
+    if not AUTH_TOKEN:
+        return jsonify({"valid": True})
+    
+    # Validasi token dengan constant-time comparison
+    is_valid = utils_secrets.compare_digest(token, AUTH_TOKEN)
+    return jsonify({"valid": is_valid})
 
 
 # ── Register blueprints ──────────────────────────────────────────────────────
