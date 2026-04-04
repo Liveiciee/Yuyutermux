@@ -33,6 +33,9 @@ function initAuth() {
     logoutBtn.onclick = () => {
       if (confirm('Logout? Session akan berakhir.')) Auth.logout()
     }
+    Auth.isAuthenticated().then(ok => {
+      logoutBtn.classList.toggle('hidden', !ok)
+    })
   }
 }
 
