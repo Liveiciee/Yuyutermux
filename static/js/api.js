@@ -1,80 +1,86 @@
 export const API_BASE = ''
 
 export const SERVER_HINT_HTML = '<br><span style="opacity:0.7;font-size:11px">Server-nya nyalakan dulu di terminal &#x1F60D;</span>'
-export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal &#x1F60D;'
+export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal \u{1F60D}'
 
-export const esc = (s) => s ? s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) : ''
+export const esc = (s) => {
+  if (s == null) return ''
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', 
+    '"': '&quot;', "'": '&#39;'
+  }[c]))
+}
 
-// ── SECURITY: Auth token management ──────────────────────────────────────────
-// The actual `yuyu_token` cookie is httponly (server-set, JS cannot read it).
-// The browser automatically sends it with every same-origin request, so all
-// API calls are authenticated via the cookie without JS touching the token.
-// `yuyu_authed=1` is a companion non-httponly marker cookie (no token value)
-// that lets JS know a session is active — used only for UI state checks.
 export const Auth = {
   getToken() {
-    // NOTE: yuyu_token is httponly — this always returns '' intentionally.
-    // Auth is handled server-side via the auto-sent httponly cookie.
-    // Do not use this for auth checks; use isAuthenticated() instead.
     const match = document.cookie.match(/(?:^|;\s*)yuyu_token=([^;]+)/)
     return match ? decodeURIComponent(match[1]) : ''
   },
-
   getHeaders() {
-    // yuyu_token is httponly → getToken() returns '' → no Bearer header sent.
-    // Auth still works because the browser automatically includes the httponly
-    // cookie in every same-origin fetch/XHR request. This is intentional.
     const token = this.getToken()
     return token ? { 'Authorization': `Bearer ${token}` } : {}
   },
-
-  // BUG FIX: Was `!!this.getToken()` — always returned false because yuyu_token
-  // is httponly and invisible to document.cookie. Now reads the non-httponly
-  // companion marker cookie `yuyu_authed=1` set by the server on login.
-  // This marker has no sensitive value; it only signals "session is active".
   isAuthenticated() {
     return /(?:^|;\s*)yuyu_authed=1(?:;|$)/.test(document.cookie)
   },
-
-  logout() {
-    fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    }).finally(() => {
+  async logout() {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    try {
+      await fetch('/api/execute/kill', { method: 'POST', signal: controller.signal }).catch(() => {})
+      clearTimeout(timeout)
+      const logoutController = new AbortController()
+      const logoutTimeout = setTimeout(() => logoutController.abort(), 3000)
+      await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: logoutController.signal }).catch(() => {})
+      clearTimeout(logoutTimeout)
+    } finally {
       window.location.href = '/login'
-    })
+    }
   }
 }
 
 export const api = {
   async request(url, options = {}) {
+    const controller = new AbortController()
+    const timeout = options.timeout || 30000
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
     try {
       const authHeaders = Auth.getHeaders()
+      const headers = { ...authHeaders, ...options.headers }
+      // Hanya set Content-Type jika body ada dan tidak di override
+      if (options.body && !options.headers?.['Content-Type']) {
+        headers['Content-Type'] = 'application/json'
+      }
       const res = await fetch(API_BASE + url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-          ...options.headers
-        }
+        signal: controller.signal,
+        headers
       })
-
-      // SECURITY: Handle 401 — redirect to login page
+      clearTimeout(timeoutId)
       if (res.status === 401) {
-        window.location.href = '/login'
+        setTimeout(() => { window.location.href = '/login' }, 100)
         return { ok: false, status: 401, data: { success: false, error: 'Unauthorized' }, needsAuth: true }
       }
-
-      return { ok: res.ok, status: res.status, data: await res.json() }
+      const contentType = res.headers.get('content-type') || ''
+      let data
+      if (contentType.includes('application/json')) {
+        try { data = await res.json() } catch (e) { data = { success: false, error: 'Invalid JSON response' } }
+      } else {
+        const text = await res.text()
+        data = { success: false, error: `Unexpected format: ${contentType || 'unknown'}` }
+        if (text.includes('<!DOCTYPE') || text.includes('<html')) console.error('HTML response:', text.substring(0, 200))
+      }
+      return { ok: res.ok, status: res.status, data }
     } catch (err) {
-      return { ok: false, error: err.message }
+      clearTimeout(timeoutId)
+      if (err.name === 'AbortError') return { ok: false, status: 408, data: { success: false, error: 'Request timeout' }, timedOut: true }
+      return { ok: false, status: 0, data: { success: false, error: err.message || 'Network error' }, networkError: true }
     }
   },
-  get: (url) => api.request(url),
-  post: (url, body) => api.request(url, { method: 'POST', body: JSON.stringify(body) })
+  get: (url, options = {}) => api.request(url, { ...options, method: 'GET' }),
+  post: (url, body, options = {}) => api.request(url, { ...options, method: 'POST', body: JSON.stringify(body) })
 }
 
-// ANSI COLOR PARSER
 const ANSI_CODES = {
   '0': '', '1': 'ansi-bold', '2': 'ansi-dim', '3': 'ansi-italic',
   '4': 'ansi-underline', '30': 'ansi-black', '31': 'ansi-red',
@@ -85,59 +91,83 @@ const ANSI_CODES = {
   '96': 'ansi-cyan', '97': 'ansi-white'
 }
 
-// BUG FIX: Old version prepended `</span>` unconditionally on every ANSI escape,
-// producing an unmatched closing tag at the very start of the string (before any
-// opening <span> existed). This caused incorrect nesting in the DOM:
-//   "</span><span class='ansi-red'>foo</span>" — the leading </span> is orphaned.
-// Fix: track `spanOpen` state and only emit </span> when one is actually open.
-// Also now appends a final </span> when the text ends with an open span.
 export function parseAnsi(text) {
   if (!text) return ''
-  let spanOpen = false
-  const result = text.replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
-    const safeCodes = codes.split(';').filter(c => c in ANSI_CODES || c === '').join(';')
-    const classes = safeCodes
-      ? safeCodes.split(';').map(c => ANSI_CODES[c] || '').filter(Boolean).join(' ')
-      : ''
-
-    let out = spanOpen ? '</span>' : ''
-    spanOpen = false
-
-    if (classes) {
-      out += `<span class="${classes}">`
-      spanOpen = true
+  let classes = []
+  let result = ''
+  let i = 0
+  const len = text.length
+  while (i < len) {
+    if (text[i] === '\x1b' && i+1 < len && text[i+1] === '[') {
+      const end = text.indexOf('m', i+2)
+      if (end === -1) { result += esc(text.slice(i)); break }
+      const codes = text.slice(i+2, end).split(';')
+      // Update classes berdasarkan kode ANSI
+      for (const code of codes) {
+        if (code === '0') {
+          classes = []
+        } else if (ANSI_CODES[code]) {
+          const cls = ANSI_CODES[code]
+          if (!classes.includes(cls)) classes.push(cls)
+        }
+      }
+      i = end + 1
+      // Tutup span sebelumnya, buka span baru dengan class gabungan
+      result += '</span>'
+      if (classes.length) {
+        result += `<span class="${esc(classes.join(' '))}">`
+      } else {
+        result += '<span>'
+      }
+    } else {
+      let start = i
+      while (i < len && !(text[i] === '\x1b' && i+1 < len && text[i+1] === '[')) i++
+      result += esc(text.slice(start, i))
     }
-    return out
-  })
-  return spanOpen ? result + '</span>' : result
+  }
+  // Tutup span terakhir jika perlu
+  if (result.endsWith('</span>')) return result
+  const lastOpen = result.lastIndexOf('<span')
+  const lastClose = result.lastIndexOf('</span>')
+  if (lastOpen > lastClose) result += '</span>'
+  return result
 }
 
-// FILE TYPE ICONS
 const FILE_ICONS = {
-  py: { icon: '\u{1F40D}', cls: 'py' },
-  js: { icon: '\u26A1', cls: 'js' },
-  ts: { icon: '\u{1F537}', cls: 'js' },
-  html: { icon: '\u{1F310}', cls: 'html' },
-  htm: { icon: '\u{1F310}', cls: 'html' },
-  css: { icon: '\u{1F3A8}', cls: 'css' },
-  json: { icon: '\u{1F4CB}', cls: 'json' },
-  md: { icon: '\u{1F4DD}', cls: 'md' },
-  txt: { icon: '\u{1F4C4}', cls: 'default' },
-  sh: { icon: '\u2699', cls: 'sh' },
-  yaml: { icon: '\u2699', cls: 'sh' },
-  yml: { icon: '\u2699', cls: 'sh' },
-  toml: { icon: '\u2699', cls: 'sh' },
-  cfg: { icon: '\u2699', cls: 'sh' },
-  log: { icon: '\u{1F4CB}', cls: 'default' },
-  zip: { icon: '\u{1F4E6}', cls: 'default' },
-  png: { icon: '\u{1F5BC}', cls: 'default' },
-  jpg: { icon: '\u{1F5BC}', cls: 'default' },
-  gitignore: { icon: '\u{1F500}', cls: 'default' }
+  py: { icon: '\u{1F40D}', cls: 'py' }, js: { icon: '\u26A1', cls: 'js' },
+  ts: { icon: '\u{1F537}', cls: 'js' }, html: { icon: '\u{1F310}', cls: 'html' },
+  htm: { icon: '\u{1F310}', cls: 'html' }, css: { icon: '\u{1F3A8}', cls: 'css' },
+  json: { icon: '\u{1F4CB}', cls: 'json' }, md: { icon: '\u{1F4DD}', cls: 'md' },
+  txt: { icon: '\u{1F4C4}', cls: 'default' }, sh: { icon: '\u2699', cls: 'sh' },
+  yaml: { icon: '\u2699', cls: 'sh' }, yml: { icon: '\u2699', cls: 'sh' },
+  toml: { icon: '\u2699', cls: 'sh' }, cfg: { icon: '\u2699', cls: 'sh' },
+  log: { icon: '\u{1F4CB}', cls: 'default' }, zip: { icon: '\u{1F4E6}', cls: 'default' },
+  png: { icon: '\u{1F5BC}', cls: 'default' }, jpg: { icon: '\u{1F5BC}', cls: 'default' },
+  gif: { icon: '\u{1F5BC}', cls: 'default' }, svg: { icon: '\u{1F5BC}', cls: 'default' },
+  gitignore: { icon: '\u{1F500}', cls: 'default' }, env: { icon: '\u2696', cls: 'sh' },
+  dockerfile: { icon: '\u{1F433}', cls: 'sh' }, makefile: { icon: '\u2699', cls: 'sh' },
+  rs: { icon: '\u{1F980}', cls: 'rs' }, go: { icon: '\u{1F425}', cls: 'go' },
+  java: { icon: '\u2615', cls: 'java' }, cpp: { icon: '\u{1F579}', cls: 'cpp' },
+  c: { icon: '\u{1F579}', cls: 'cpp' }, h: { icon: '\u{1F4C3}', cls: 'cpp' },
+  hpp: { icon: '\u{1F4C3}', cls: 'cpp' }, readme: { icon: '\u{1F4DD}', cls: 'md' }
 }
 
 export function getFileIcon(name, isDir) {
   if (isDir) return { icon: '\u{1F4C1}', cls: 'dir' }
-  const ext = name.split('.').pop()?.toLowerCase() || ''
-  const noExt = name.startsWith('.') ? name.slice(1) : null
-  return FILE_ICONS[noExt || ext] || FILE_ICONS[ext] || { icon: '\u{1F4C4}', cls: 'default' }
+  const lower = name.toLowerCase()
+  if (FILE_ICONS[lower]) return FILE_ICONS[lower]
+  if (name.startsWith('.')) {
+    const noDot = name.slice(1).toLowerCase()
+    if (FILE_ICONS[noDot]) return FILE_ICONS[noDot]
+  }
+  const parts = name.split('.')
+  if (parts.length > 1) {
+    const ext = parts.pop().toLowerCase()
+    if (FILE_ICONS[ext]) return FILE_ICONS[ext]
+    if (parts.length > 1) {
+      const double = parts.pop().toLowerCase() + '.' + ext
+      if (FILE_ICONS[double]) return FILE_ICONS[double]
+    }
+  }
+  return { icon: '\u{1F4C4}', cls: 'default' }
 }

@@ -13,7 +13,7 @@ const FileTemplates = {
   
   item: (item, isActive, parentPath = null) => {
     const icon = getFileIcon(item.name, item.type === 'directory')
-    const size = item.type === 'file' ? item.size : ''
+    const size = item.type === 'file' ? esc(String(item.size ?? '')) : ''
     const activeClass = isActive ? ' active-file' : ''
     
     return `
@@ -53,86 +53,90 @@ export const FileManager = {
   },
 
   async load(path = '') {
+    const browser = this.el.browser
+    const pathEl = this.el.path
+    if (!browser) return
+
     this.dir = path
-    this.el.browser.innerHTML = FileTemplates.error('Loading...')
+    browser.innerHTML = FileTemplates.error('Loading...')
     
     const { ok, data } = await api.get(`/api/files/list?path=${encodeURIComponent(path)}`)
     
     if (!ok) {
-      this.el.browser.innerHTML = FileTemplates.error('ERROR: Failed to fetch', SERVER_HINT_HTML)
+      browser.innerHTML = FileTemplates.error('ERROR: Failed to fetch', SERVER_HINT_HTML)
       return
     }
     
     if (data?.error) {
-      this.el.browser.innerHTML = FileTemplates.error(`ERROR: ${data.error}`)
+      browser.innerHTML = FileTemplates.error(`ERROR: ${data.error}`)
       return
     }
     
-    this.el.path.textContent = data.current_path || '~/Yuyutermux'
-    this.render(data.items)
+    if (pathEl) pathEl.textContent = data.current_path || '~/Yuyutermux'
+    this.render(data.items || [])
   },
 
   render(items) {
+    const browser = this.el.browser
+    if (!browser) return
+
     let html = ''
     
     if (this.dir) {
-      const parent = this.dir.split('/').slice(0, -1).join('/')
+      const parent = this.dir.split('/').slice(0, -1).join('/') || ''
       html += FileTemplates.parentDir(parent)
     }
     
-    items.forEach(item => {
+    (items || []).forEach(item => {
       const isActive = this.file === item.path
       html += FileTemplates.item(item, isActive)
     })
     
-    this.el.browser.innerHTML = html || FileTemplates.empty
+    browser.innerHTML = html || FileTemplates.empty
   },
 
   async openItem(path, type) {
+    const editorEl = this.el.editor
+    if (!editorEl) return
+
     if (type === 'directory') {
       return this.load(path)
     }
     
     this.file = path
-    this.el.editor.value = 'Loading...'
+    editorEl.value = 'Loading...'
     
-    const name = path.split('/').pop()
+    const name = path.split('/').pop() || 'unknown'
     const ext = name.split('.').pop()?.toLowerCase() || ''
     
-    document.getElementById('editorFileName').textContent = name
-    document.getElementById('editorLang').textContent = LANG_MAP[ext] || ext || 'text'
-    document.getElementById('modalRename').classList.remove('hidden')
+    const fileNameSpan = document.getElementById('editorFileName')
+    const langSpan = document.getElementById('editorLang')
+    const renameBtn = document.getElementById('modalRename')
+    if (fileNameSpan) fileNameSpan.textContent = name
+    if (langSpan) langSpan.textContent = LANG_MAP[ext] || ext || 'text'
+    if (renameBtn) renameBtn.classList.remove('hidden')
     
     const { ok, data } = await api.post('/api/files/read', { path })
     
     if (!ok || data?.error) {
-      this.el.editor.value = `// ERROR: ${data?.error || 'Failed to fetch'}${SERVER_HINT_TEXT}`
+      editorEl.value = `// ERROR: ${data?.error || 'Failed to fetch'}${SERVER_HINT_TEXT}`
       this.content = ''
       return
     }
     
     this.content = data.content || ''
-    this.el.editor.value = this.content
+    editorEl.value = this.content
     Editor.onLoad(LANG_MAP[ext] || ext || '')
     this.load(this.dir)
   },
 
   downloadFile(path) {
-    // BUG FIX: Old version used `window.location.href = /api/files/download?path=...`
-    // which navigates the current page to the download URL. If the server returns
-    // a non-file response (e.g. 401 login page HTML), it replaces the entire app UI
-    // with an HTML document. Using a temporary hidden <a download> element instead:
-    //   1. Triggers a download dialog, not a page navigation
-    //   2. If the response is not a file (401, 404), the browser handles it gracefully
-    //      without disrupting the current app state
-    //   3. The httponly cookie is automatically included (same-origin navigation)
     const a = document.createElement('a')
     a.href = `/api/files/download?path=${encodeURIComponent(path)}`
-    a.download = path.split('/').pop() || 'download'
+    a.download = (path.split('/').pop()) || 'download'
     a.style.display = 'none'
     document.body.appendChild(a)
     a.click()
-    // Small delay before removal so the browser has time to initiate the download
     setTimeout(() => document.body.removeChild(a), 200)
     Toast.show('Downloading...', 'info')
   },
@@ -158,10 +162,14 @@ export const FileManager = {
   clearEditor() {
     this.file = ''
     this.content = ''
-    this.el.editor.value = ''
-    document.getElementById('editorFileName').textContent = 'No file selected'
-    document.getElementById('editorLang').textContent = '\u2014'
-    document.getElementById('modalRename').classList.add('hidden')
+    const editorEl = this.el.editor
+    if (editorEl) editorEl.value = ''
+    const fileNameSpan = document.getElementById('editorFileName')
+    const langSpan = document.getElementById('editorLang')
+    const renameBtn = document.getElementById('modalRename')
+    if (fileNameSpan) fileNameSpan.textContent = 'No file selected'
+    if (langSpan) langSpan.textContent = '\u2014'
+    if (renameBtn) renameBtn.classList.add('hidden')
   },
 
   async save() {
@@ -171,25 +179,27 @@ export const FileManager = {
     }
     
     const btn = document.getElementById('modalSave')
-    const originalText = btn.innerHTML
+    if (!btn) return
     
+    const originalText = btn.innerHTML
     btn.innerHTML = 'SAVING...'
     btn.disabled = true
     
+    const editorEl = this.el.editor
     const { ok, data } = await api.post('/api/files/write', { 
       path: this.file, 
-      content: this.el.editor.value 
+      content: editorEl ? editorEl.value : ''
     })
     
     btn.disabled = false
     
     if (ok && data?.success) {
-      this.content = this.el.editor.value
+      if (editorEl) this.content = editorEl.value
       btn.innerHTML = '\u2713 SAVED'
       const filename = this.file.split('/').pop()
       Toast.show(`${filename} saved`, 'success')
       Terminal.log(`SAVE ${filename} \u2014 File saved successfully`)
-      setTimeout(() => btn.innerHTML = originalText, 1500)
+      setTimeout(() => { if (btn.isConnected) btn.innerHTML = originalText }, 1500)
     } else {
       btn.innerHTML = originalText
       Toast.show(!ok ? 'Connection failed' : (data?.error || 'Save failed'), 'error')
@@ -211,16 +221,18 @@ export const FileManager = {
   },
 
   async renameFile() {
-    if (!this.file) return
+    if (!this.file) {
+      Toast.show('No file selected', 'warning')
+      return
+    }
     
-    const oldName = this.file.split('/').pop()
+    const oldName = this.file.split('/').pop() || 'file'
     const newName = prompt(`Rename "${oldName}" to:`, oldName)
     if (!newName || newName === oldName) return
     
-    const parent = this.file.substring(0, this.file.lastIndexOf('/'))
-    const newPath = parent + '/' + newName
+    const parent = this.file.substring(0, this.file.lastIndexOf('/')) || ''
+    const newPath = parent ? parent + '/' + newName : newName
     
-    // Read → write new → delete old (non-atomic; known limitation)
     const { ok: readOk, data: readData } = await api.post('/api/files/read', { path: this.file })
     if (!readOk || readData?.error) {
       Toast.show('Failed to read file', 'error')
@@ -241,7 +253,8 @@ export const FileManager = {
     
     this.file = newPath
     this.content = readData.content
-    document.getElementById('editorFileName').textContent = newName
+    const fileNameSpan = document.getElementById('editorFileName')
+    if (fileNameSpan) fileNameSpan.textContent = newName
     Toast.show(`Renamed to ${newName}`, 'success')
     this.load(this.dir)
   },
@@ -251,8 +264,6 @@ export const FileManager = {
     formData.append('file', file)
     formData.append('path', this.dir)
     
-    // uploadBtn is a <label> element, not a <button> — use pointer-events/opacity
-    // instead of .disabled (which has no effect on labels)
     const btn = document.getElementById('uploadBtn')
     const originalText = btn?.innerHTML
     
@@ -263,10 +274,6 @@ export const FileManager = {
     }
     
     try {
-      // NOTE: Do NOT set Content-Type header for FormData — the browser must set
-      // it automatically with the correct multipart boundary. Setting it manually
-      // omits the boundary and causes the server to reject the upload.
-      // The httponly cookie is sent automatically (same-origin request).
       const res = await fetch('/api/files/upload', { method: 'POST', body: formData })
 
       if (res.status === 401) {
@@ -296,21 +303,28 @@ export const FileManager = {
 
   async openFileWithLine(filepath, targetLine) {
     const modal = document.getElementById('fileModal')
-    if (!modal.open) {
-      modal.showModal()
-      document.getElementById('extraKeysPaper')?.classList.add('hidden')
-    }
+    const extraKeys = document.getElementById('extraKeysPaper')
+    if (modal) {
+      if (!modal.open) {
+        try { modal.showModal() } catch { modal.show?.() || (modal.hidden = false) }
+        if (extraKeys) extraKeys.classList.add('hidden')
+      }
+    } else return
     
     this.file = filepath
-    const editor = document.getElementById('modalContent')
+    const editor = this.el.editor
+    if (!editor) return
     editor.value = 'Loading...'
     
-    const name = filepath.split('/').pop()
+    const name = filepath.split('/').pop() || 'unknown'
     const ext = name.split('.').pop()?.toLowerCase() || ''
     
-    document.getElementById('editorFileName').textContent = name
-    document.getElementById('editorLang').textContent = LANG_MAP[ext] || ext || 'text'
-    document.getElementById('modalRename').classList.remove('hidden')
+    const fileNameSpan = document.getElementById('editorFileName')
+    const langSpan = document.getElementById('editorLang')
+    const renameBtn = document.getElementById('modalRename')
+    if (fileNameSpan) fileNameSpan.textContent = name
+    if (langSpan) langSpan.textContent = LANG_MAP[ext] || ext || 'text'
+    if (renameBtn) renameBtn.classList.remove('hidden')
     
     const { ok, data } = await api.post('/api/files/read', { path: filepath })
     
@@ -323,7 +337,6 @@ export const FileManager = {
     editor.value = this.content
     Editor.onLoad(LANG_MAP[ext] || ext || '')
     
-    // Scroll to target line (after highlight renders)
     setTimeout(() => {
       const lines = editor.value.split('\n')
       if (targetLine < 1 || targetLine > lines.length) return
@@ -340,12 +353,10 @@ export const FileManager = {
       editor.focus()
       editor.setSelectionRange(startPos, endPos)
       
-      // Highlight flash — apply to editorWrapper, not editor directly
-      // (textarea has background: transparent !important when highlighting-on is active)
       const wrapper = document.getElementById('editorWrapper')
       if (wrapper) {
         wrapper.style.background = 'rgba(255,107,53,0.15)'
-        setTimeout(() => { wrapper.style.background = '' }, 1000)
+        setTimeout(() => { if (wrapper) wrapper.style.background = '' }, 1000)
       }
     }, 100)
   }

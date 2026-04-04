@@ -29,12 +29,13 @@ export const ExtraKeys = {
       btn.className = 'extra-key' + (key.type === 'action' ? ' accent' : '')
       btn.textContent = key.label
       btn.onclick = (e) => {
-        // Ripple effect
+        if (!btn.isConnected) return
         btn.classList.remove('ripple')
-        // Force reflow so animation restarts if clicked rapidly
         void btn.offsetWidth
         btn.classList.add('ripple')
-        setTimeout(() => btn.classList.remove('ripple'), 400)
+        setTimeout(() => {
+          if (btn.isConnected) btn.classList.remove('ripple')
+        }, 400)
         this.handle(key)
       }
       row.appendChild(btn)
@@ -43,6 +44,7 @@ export const ExtraKeys = {
 
   handle(key) {
     const input = document.getElementById('cmdInput')
+    if (!input) return
     input.focus()
     
     if (key.type === 'insert') {
@@ -65,19 +67,23 @@ export const ExtraKeys = {
     
     switch (action) {
       case 'clear':
-        input.value = ''
-        input.style.height = '22px'
+        if (input) {
+          input.value = ''
+          input.style.height = '22px'
+        }
         if (charCount) charCount.textContent = '0 chars'
         break
       case 'kill':
-        api.post('/api/execute/kill')
+        api.post('/api/execute/kill').catch(() => {
+          Toast.show('Failed to send kill signal', 'error')
+        })
         Toast.show('Kill signal sent', 'warning')
         break
       case 'up':
-        Terminal.navUp()
+        if (Terminal.navUp) Terminal.navUp()
         break
       case 'down':
-        Terminal.navDown()
+        if (Terminal.navDown) Terminal.navDown()
         break
     }
   }

@@ -7,8 +7,8 @@ const CONFIG = {
   HISTORY_LIMIT: 50,
   HANG_TIMEOUT: 10000,
   CONNECT_TIMEOUT: 3000,
-  VIRTUAL_SCROLL_THRESHOLD: 10,   // total entries before collapsing
-  VIRTUAL_SCROLL_KEEP: 5          // always show this many recent entries fully
+  VIRTUAL_SCROLL_THRESHOLD: 10,
+  VIRTUAL_SCROLL_KEEP: 5
 }
 
 // ICONS SVG
@@ -17,7 +17,6 @@ const ICONS = {
   delete: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>`
 }
 
-// ANIMATION CLASS NAMES (exported for animation.css)
 export const ANIM_CLASSES = {
   entryPulse: 'entry-pulse',
   entryDoneSuccess: 'entry-done-success',
@@ -25,7 +24,6 @@ export const ANIM_CLASSES = {
   entryStagger: 'entry-stagger'
 }
 
-// TOAST SYSTEM
 export const Toast = {
   container: null,
   icons: { success: '\u2713', error: '\u2717', info: '\u2139', warning: '\u26A0' },
@@ -40,7 +38,6 @@ export const Toast = {
     toast.className = `toast ${type}`
     toast.innerHTML = `<span class="toast-icon">${this.icons[type] || '\u2139'}</span><span>${esc(message)}</span>`
     this.container.appendChild(toast)
-
     setTimeout(() => {
       toast.classList.add('removing')
       toast.addEventListener('animationend', () => toast.remove())
@@ -48,22 +45,24 @@ export const Toast = {
   }
 }
 
-// STATUS BAR
 export const StatusBar = {
   startTime: Date.now(),
   cmdCount: 0,
   timer: null,
+  checkConnectionTimer: null,
 
-  init(intervalRef) {
+  init() {
     this.timer = setInterval(() => this.updateTime(), 1000)
     this.updateTime()
     this.checkConnection()
-    // FIX: Store interval reference for cleanup in app.js
-    const id = setInterval(() => this.checkConnection(), 15000)
-    if (intervalRef && typeof intervalRef === 'object') {
-      // Export the reference back to the caller
-      intervalRef.interval = id
-    }
+    this.checkConnectionTimer = setInterval(() => this.checkConnection(), 15000)
+  },
+
+  destroy() {
+    if (this.timer) clearInterval(this.timer)
+    if (this.checkConnectionTimer) clearInterval(this.checkConnectionTimer)
+    this.timer = null
+    this.checkConnectionTimer = null
   },
 
   updateTime() {
@@ -84,25 +83,21 @@ export const StatusBar = {
     const dot = document.getElementById('statusDot')
     const conn = document.getElementById('statusConnection')
     try {
-      // FIX Bug #5: Pake /api/health (ringan) bukan /api/files/list (scan seluruh direktori!)
       const res = await fetch('/api/health', {
         method: 'GET',
         signal: AbortSignal.timeout(CONFIG.CONNECT_TIMEOUT)
       })
       if (res.ok) {
-        dot.className = 'status-dot connected'
-        conn.textContent = 'CONNECTED'
-      } else {
-        throw new Error()
-      }
+        if (dot) dot.className = 'status-dot connected'
+        if (conn) conn.textContent = 'CONNECTED'
+      } else throw new Error()
     } catch {
-      dot.className = 'status-dot error'
-      conn.textContent = 'OFFLINE'
+      if (dot) dot.className = 'status-dot error'
+      if (conn) conn.textContent = 'OFFLINE'
     }
   }
 }
 
-// ENTRY ACTIONS HELPER
 export function bindEntryActions(entry) {
   const pre = entry.querySelector('pre')
   const copyBtn = entry.querySelector('.act-copy')
@@ -120,6 +115,10 @@ export function bindEntryActions(entry) {
 
   if (delBtn) {
     delBtn.onclick = () => {
+      if (entry._terminalController && !entry._terminalController.signal.aborted) {
+        entry._terminalController.abort()
+      }
+      if (entry._stopHangTimer) entry._stopHangTimer()
       entry.style.transition = 'opacity 0.2s, transform 0.2s'
       entry.style.opacity = '0'
       entry.style.transform = 'translateX(20px)'
@@ -127,39 +126,29 @@ export function bindEntryActions(entry) {
     }
   }
 
-  // FIX Bug #7: Rebind KILL button - inline onclick gak bisa akses module scope
   const killBtn = entry.querySelector('.hang-warning button')
   if (killBtn) {
     killBtn.onclick = () => Terminal.kill(killBtn)
   }
 
-  // Virtual scroll: click on collapsed entry to expand/collapse
   entry.addEventListener('click', (e) => {
-    // Don't toggle if clicking on action buttons
     if (e.target.closest('.output-actions') || e.target.closest('.hang-warning')) return
     entry.classList.toggle('collapsed')
   })
 }
 
-// ── Virtual scroll helper ─────────────────────────────────────────────────
 function applyVirtualScroll(area) {
+  if (!area) return
   const entries = area.querySelectorAll('.output-entry')
   if (entries.length <= CONFIG.VIRTUAL_SCROLL_THRESHOLD) return
-
-  // Mark entries older than the N most recent as collapsed
   const keepCount = CONFIG.VIRTUAL_SCROLL_KEEP
   entries.forEach((entry, idx) => {
-    if (idx < entries.length - keepCount) {
-      entry.classList.add('collapsed')
-    } else {
-      entry.classList.remove('collapsed')
-    }
+    if (idx < entries.length - keepCount) entry.classList.add('collapsed')
+    else entry.classList.remove('collapsed')
   })
 }
 
-// TERMINAL CORE
 export const Terminal = {
-  // FIX: Lazy-init DOM reference — avoids null if module evaluates before DOM is ready
   _area: null,
   get area() {
     if (!this._area) this._area = document.getElementById('outputArea')
@@ -168,9 +157,18 @@ export const Terminal = {
   history: [],
   idx: -1,
   activeCmd: '',
+  _clearTimeout: null,
 
   add(cmd) {
-    this.area.querySelector('.placeholder')?.remove()
+    const area = this.area
+    if (!area) throw new Error('outputArea not found')
+
+    if (this._clearTimeout) {
+      clearTimeout(this._clearTimeout)
+      this._clearTimeout = null
+    }
+
+    area.querySelector('.placeholder')?.remove()
 
     const entry = document.createElement('div')
     entry.className = 'output-entry running'
@@ -194,7 +192,6 @@ export const Terminal = {
         <button class="paper-btn small act-del">${ICONS.delete} DELETE</button>
       </div>`
 
-    // ── Animation: entry pulse on creation ──
     entry.classList.add(ANIM_CLASSES.entryPulse)
     entry.addEventListener('animationend', () => {
       entry.classList.remove(ANIM_CLASSES.entryPulse)
@@ -207,59 +204,64 @@ export const Terminal = {
     let hangTimer = null
     const controller = new AbortController()
 
-    const stopHangTimer = () => {
-      if (hangTimer) {
-        clearTimeout(hangTimer)
-        hangTimer = null
-      }
+    entry._terminalController = controller
+    entry._stopHangTimer = () => {
+      if (hangTimer) clearTimeout(hangTimer)
+      hangTimer = null
     }
 
     const resetHangTimer = () => {
-      stopHangTimer()
-      warning.classList.add('hidden')
-      hangTimer = setTimeout(() => warning.classList.remove('hidden'), CONFIG.HANG_TIMEOUT)
+      entry._stopHangTimer()
+      if (warning) warning.classList.add('hidden')
+      hangTimer = setTimeout(() => {
+        if (warning) warning.classList.remove('hidden')
+      }, CONFIG.HANG_TIMEOUT)
     }
 
     const setDone = (success, exitCode) => {
+      if (!entry.isConnected) return
       if (spinner) spinner.remove()
       entry.classList.remove('running')
       entry.classList.add(success ? 'success' : 'error')
-
-      // ── Animation: done state bump ──
       entry.classList.add(success ? ANIM_CLASSES.entryDoneSuccess : ANIM_CLASSES.entryDoneError)
       entry.addEventListener('animationend', () => {
         entry.classList.remove(ANIM_CLASSES.entryDoneSuccess, ANIM_CLASSES.entryDoneError)
       }, { once: true })
-
-      actions.classList.remove('hidden')
-
+      if (actions) actions.classList.remove('hidden')
       const badge = document.createElement('span')
       badge.className = `cmd-status-badge ${success ? 'success' : 'error'}`
       badge.textContent = success ? `\u2713 EXIT 0` : `\u2717 EXIT ${exitCode}`
-      entry.querySelector('.cmd-line > div').appendChild(badge)
+      const cmdDiv = entry.querySelector('.cmd-line > div')
+      if (cmdDiv) cmdDiv.appendChild(badge)
     }
 
     bindEntryActions(entry)
+    area.appendChild(entry)
 
-    this.area.appendChild(entry)
-    const entries = this.area.querySelectorAll('.output-entry')
-    if (entries.length > CONFIG.MAX_ENTRIES) entries[0].remove()
+    const entries = area.querySelectorAll('.output-entry')
+    if (entries.length > CONFIG.MAX_ENTRIES) {
+      const oldEntry = entries[0]
+      if (oldEntry._stopHangTimer) oldEntry._stopHangTimer()
+      if (oldEntry._terminalController && !oldEntry._terminalController.signal.aborted) {
+        oldEntry._terminalController.abort()
+      }
+      oldEntry.remove()
+    }
 
-    // ── Virtual scroll: collapse older entries ──
-    applyVirtualScroll(this.area)
-
-    this.area.scrollTop = this.area.scrollHeight
+    applyVirtualScroll(area)
+    area.scrollTop = area.scrollHeight
 
     this.history.push(cmd)
     if (this.history.length > CONFIG.HISTORY_LIMIT) this.history.shift()
     resetHangTimer()
     StatusBar.incrementCmd()
 
-    return { pre, resetHangTimer, stopHangTimer, controller, setDone }
+    return { pre, resetHangTimer, stopHangTimer: entry._stopHangTimer, controller, setDone }
   },
 
   async run() {
     const input = document.getElementById('cmdInput')
+    if (!input) return
     const cmd = input.value.trim()
     if (!cmd) return
 
@@ -268,12 +270,15 @@ export const Terminal = {
     this.activeCmd = cmd
 
     const btn = document.getElementById('sendBtn')
-    btn.classList.add('streaming')
-    btn.disabled = true
+    if (btn) {
+      btn.classList.add('streaming')
+      btn.disabled = true
+    }
     input.focus()
     this.idx = -1
 
-    document.getElementById('inputCharCount').textContent = '0 chars'
+    const charCount = document.getElementById('inputCharCount')
+    if (charCount) charCount.textContent = '0 chars'
 
     const { pre, resetHangTimer, stopHangTimer, controller, setDone } = this.add(cmd)
     let isError = false
@@ -287,10 +292,8 @@ export const Terminal = {
         signal: controller.signal
       })
 
-      // FIX: Handle 401 — redirect to login like api.request() does.
-      // Previously used raw fetch() without auth handling, so auth failures
-      // showed cryptic "STREAM ERROR: HTTP 401" instead of redirecting.
       if (res.status === 401) {
+        controller.abort()
         window.location.href = '/login'
         return
       }
@@ -303,33 +306,36 @@ export const Terminal = {
         const { done, value } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        pre.textContent += chunk
+        if (pre) pre.textContent += chunk
         resetHangTimer()
-        this.area.scrollTop = this.area.scrollHeight
+        const area = this.area
+        if (area) area.scrollTop = area.scrollHeight
         if (chunk.includes('[ERROR:')) isError = true
       }
 
-      const text = pre.textContent
+      const text = pre ? pre.textContent : ''
       const exitMatch = text.match(/\[EXIT_CODE:(\d+)\]/)
       if (exitMatch) {
-        exitCode = exitMatch[1]
-        isError = exitCode !== '0'
+        exitCode = parseInt(exitMatch[1], 10)
+        isError = exitCode !== 0
       }
-      pre.textContent = text.replace(/\[EXIT_CODE:\d+\]\n?/g, '').replace(/\[ERROR:.*?\]\n?/g, '')
+      if (pre) pre.textContent = text.replace(/\[EXIT_CODE:\d+\]\n?/g, '').replace(/\[ERROR:.*?\]\n?/g, '')
 
     } catch (err) {
       if (err.name === 'AbortError') {
-        api.post('/api/execute/kill')
+        await api.post('/api/execute/kill')
         Toast.show('Process terminated', 'warning')
         return
       }
-      pre.textContent = `STREAM ERROR: ${err.message}`
+      if (pre) pre.textContent = `STREAM ERROR: ${err.message}`
       isError = true
       exitCode = 1
     } finally {
       stopHangTimer()
-      btn.classList.remove('streaming')
-      btn.disabled = false
+      if (btn) {
+        btn.classList.remove('streaming')
+        btn.disabled = false
+      }
       Storage.save()
     }
 
@@ -338,14 +344,24 @@ export const Terminal = {
   },
 
   async kill(btnEl) {
+    if (!btnEl) return
     btnEl.textContent = 'KILLING...'
     await api.post('/api/execute/kill')
-    btnEl.closest('.hang-warning').innerHTML = 'Process terminated'
+    const warningDiv = btnEl.closest('.hang-warning')
+    if (warningDiv) warningDiv.innerHTML = 'Process terminated'
     Toast.show('Process terminated', 'warning')
   },
 
   log(message, isError = false) {
-    this.area.querySelector('.placeholder')?.remove()
+    const area = this.area
+    if (!area) return
+
+    if (this._clearTimeout) {
+      clearTimeout(this._clearTimeout)
+      this._clearTimeout = null
+    }
+
+    area.querySelector('.placeholder')?.remove()
     const entry = document.createElement('div')
     entry.className = `output-entry${isError ? ' error' : ' success'}`
     entry.innerHTML = `
@@ -359,45 +375,60 @@ export const Terminal = {
         <button class="paper-btn small act-del">${ICONS.delete} DELETE</button>
       </div>`
 
-    // ── Animation: entry pulse on creation ──
     entry.classList.add(ANIM_CLASSES.entryPulse)
     entry.addEventListener('animationend', () => {
       entry.classList.remove(ANIM_CLASSES.entryPulse)
     }, { once: true })
 
     bindEntryActions(entry)
-    this.area.appendChild(entry)
+    area.appendChild(entry)
 
-    const entries = this.area.querySelectorAll('.output-entry')
-    if (entries.length > CONFIG.MAX_ENTRIES) entries[0].remove()
+    const entries = area.querySelectorAll('.output-entry')
+    if (entries.length > CONFIG.MAX_ENTRIES) {
+      const oldEntry = entries[0]
+      if (oldEntry._stopHangTimer) oldEntry._stopHangTimer()
+      if (oldEntry._terminalController && !oldEntry._terminalController.signal.aborted) {
+        oldEntry._terminalController.abort()
+      }
+      oldEntry.remove()
+    }
 
-    // ── Virtual scroll: collapse older entries ──
-    applyVirtualScroll(this.area)
-
-    this.area.scrollTop = this.area.scrollHeight
+    applyVirtualScroll(area)
+    area.scrollTop = area.scrollHeight
     Storage.save()
   },
 
   clearAll() {
-    const entries = this.area.querySelectorAll('.output-entry')
+    const area = this.area
+    if (!area) return
+
+    const entries = area.querySelectorAll('.output-entry')
     if (entries.length === 0) return
 
-    // ── Animation: staggered fade-out ──
+    entries.forEach(e => {
+      if (e._stopHangTimer) e._stopHangTimer()
+      if (e._terminalController && !e._terminalController.signal.aborted) {
+        e._terminalController.abort()
+      }
+    })
+
     entries.forEach((e, i) => {
       e.classList.add(ANIM_CLASSES.entryStagger)
-      // Apply stagger delay via inline transition-delay
       e.style.transitionDelay = `${i * 40}ms`
     })
 
-    setTimeout(() => {
-      this.area.innerHTML = `
-        <div class="placeholder">
-          <div class="placeholder-icon">
-            <span class="placeholder-cursor">&gt;_</span>
-          </div>
-          <div class="placeholder-text">READY FOR COMMANDS</div>
-          <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
-        </div>`
+    this._clearTimeout = setTimeout(() => {
+      this._clearTimeout = null
+      if (area) {
+        area.innerHTML = `
+          <div class="placeholder">
+            <div class="placeholder-icon">
+              <span class="placeholder-cursor">&gt;_</span>
+            </div>
+            <div class="placeholder-text">READY FOR COMMANDS</div>
+            <div class="placeholder-hint">Ctrl+Enter to execute \u00B7 Extra keys below</div>
+          </div>`
+      }
       Toast.show('Terminal cleared', 'info')
     }, entries.length * 40 + 250)
   },
@@ -406,8 +437,10 @@ export const Terminal = {
     if (this.idx < this.history.length - 1) {
       this.idx++
       const input = document.getElementById('cmdInput')
-      input.value = this.history[this.history.length - 1 - this.idx]
-      input.dispatchEvent(new Event('input'))
+      if (input) {
+        input.value = this.history[this.history.length - 1 - this.idx]
+        input.dispatchEvent(new Event('input'))
+      }
     }
   },
 
@@ -415,18 +448,21 @@ export const Terminal = {
     if (this.idx > 0) {
       this.idx--
       const input = document.getElementById('cmdInput')
-      input.value = this.history[this.history.length - 1 - this.idx]
-      input.dispatchEvent(new Event('input'))
+      if (input) {
+        input.value = this.history[this.history.length - 1 - this.idx]
+        input.dispatchEvent(new Event('input'))
+      }
     } else if (this.idx === 0) {
       this.idx = -1
       const input = document.getElementById('cmdInput')
-      input.value = ''
-      input.dispatchEvent(new Event('input'))
+      if (input) {
+        input.value = ''
+        input.dispatchEvent(new Event('input'))
+      }
     }
   }
 }
 
-// COMMAND SUGGESTIONS
 export const Suggestions = {
   dropdown: null,
   input: null,
@@ -444,6 +480,7 @@ export const Suggestions = {
   },
 
   update() {
+    if (!this.dropdown || !this.input) return
     const val = this.input.value.trim().toLowerCase()
     if (val.length < 1 || Terminal.history.length === 0) {
       this.hide()
@@ -461,24 +498,28 @@ export const Suggestions = {
     }
 
     this.activeIndex = -1
-    this.dropdown.innerHTML = matches.map((m, i) => `
-      <div class="suggestion-item" data-index="${i}" data-value="${esc(m)}">
-        ${esc(m)}<span class="suggestion-hint">\u2191\u2193 enter</span>
-      </div>
-    `).join('')
-
-    this.dropdown.querySelectorAll('.suggestion-item').forEach(item => {
-      item.addEventListener('mousedown', (e) => {
+    this.dropdown.innerHTML = ''
+    matches.forEach((m, i) => {
+      const div = document.createElement('div')
+      div.className = 'suggestion-item'
+      div.dataset.index = i
+      div.dataset.value = m
+      div.textContent = m
+      const hint = document.createElement('span')
+      hint.className = 'suggestion-hint'
+      hint.textContent = '\u2191\u2193 enter'
+      div.appendChild(hint)
+      div.addEventListener('mousedown', (e) => {
         e.preventDefault()
-        this.select(item.dataset.value)
+        this.select(m)
       })
+      this.dropdown.appendChild(div)
     })
-
     this.show()
   },
 
   handleKey(e) {
-    if (!this.visible) return
+    if (!this.visible || !this.dropdown) return
     const items = this.dropdown.querySelectorAll('.suggestion-item')
     if (!items.length) return
 
@@ -490,7 +531,10 @@ export const Suggestions = {
       e.preventDefault()
       this.activeIndex = Math.max(this.activeIndex - 1, -1)
       this.highlight(items)
-      if (this.activeIndex === -1) Terminal.navUp()
+      if (this.activeIndex === -1) {
+        this.hide()
+        Terminal.navUp()
+      }
     } else if (e.key === 'Tab' || (e.key === 'Enter' && e.ctrlKey && this.activeIndex >= 0)) {
       if (this.activeIndex >= 0) {
         e.preventDefault()
@@ -504,6 +548,7 @@ export const Suggestions = {
   },
 
   select(value) {
+    if (!this.input) return
     this.input.value = value
     this.input.focus()
     this.hide()
@@ -511,13 +556,17 @@ export const Suggestions = {
   },
 
   show() {
-    this.dropdown.classList.remove('hidden')
-    this.visible = true
+    if (this.dropdown) {
+      this.dropdown.classList.remove('hidden')
+      this.visible = true
+    }
   },
 
   hide() {
-    this.dropdown.classList.add('hidden')
-    this.visible = false
-    this.activeIndex = -1
+    if (this.dropdown) {
+      this.dropdown.classList.add('hidden')
+      this.visible = false
+      this.activeIndex = -1
+    }
   }
 }

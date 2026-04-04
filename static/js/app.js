@@ -8,14 +8,10 @@ import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
-// Store interval references for cleanup
 let _cwdInterval = null
-// Use {} not null — typeof null === 'object' in JS, so StatusBar.init() would
-// try to set null.interval = id, which crashes in strict mode (ES modules).
 let _connectionInterval = {}
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Wrap each init in try-catch so one failure doesn't kill ALL event handlers.
   try { initSplash() } catch (e) { console.error('[initSplash]', e) }
   try { initInput() } catch (e) { console.error('[initInput]', e) }
   try { initModules() } catch (e) { console.error('[initModules]', e) }
@@ -32,9 +28,7 @@ function initAuth() {
   if (logoutBtn) {
     logoutBtn.style.display = ''
     logoutBtn.onclick = () => {
-      if (confirm('Logout? Session akan berakhir.')) {
-        Auth.logout()
-      }
+      if (confirm('Logout? Session akan berakhir.')) Auth.logout()
     }
   }
 }
@@ -44,6 +38,7 @@ function initSplash() {
   const barFill = splash?.querySelector('.splash-bar-fill')
   const splashStatus = splash?.querySelector('.splash-status')
   const container = document.querySelector('.paper-container')
+  if (!barFill) return
 
   const steps = [
     { pct: '30%', text: 'Loading modules...' },
@@ -51,40 +46,28 @@ function initSplash() {
     { pct: '85%', text: 'Connecting to server...' },
     { pct: '100%', text: 'Ready!' }
   ]
-
   let idx = 0
   const advance = () => {
     if (idx >= steps.length) return
-
     const step = steps[idx]
-    if (barFill) barFill.style.width = step.pct
+    barFill.style.width = step.pct
     if (splashStatus) splashStatus.textContent = step.text
     idx++
-
-    if (idx < steps.length) {
-      setTimeout(advance, 300 + Math.random() * 200)
-    } else {
-      setTimeout(() => {
-        splash?.classList.add('fade-out')
-        container?.classList.add('visible')
-        setTimeout(() => splash?.remove(), 600)
-      }, 300)
-    }
+    if (idx < steps.length) setTimeout(advance, 300 + Math.random() * 200)
+    else setTimeout(() => {
+      splash?.classList.add('fade-out')
+      container?.classList.add('visible')
+      setTimeout(() => splash?.remove(), 600)
+    }, 300)
   }
-
-  if (barFill) barFill.classList.add('animate')
+  barFill.classList.add('animate')
   setTimeout(advance, 200)
 }
 
 function initInput() {
-  // BUG FIX: Was missing null guards — if the element doesn't exist in the DOM
-  // (e.g. a template change or partial render), addEventListener() would throw
-  // "Cannot read properties of null", crashing the entire initInput() call and
-  // leaving the char-count display permanently broken.
   const cmdInput = document.getElementById('cmdInput')
   const charCount = document.getElementById('inputCharCount')
   if (!cmdInput || !charCount) return
-
   cmdInput.addEventListener('input', () => {
     cmdInput.style.height = '22px'
     cmdInput.style.height = Math.min(cmdInput.scrollHeight, 120) + 'px'
@@ -93,32 +76,30 @@ function initInput() {
 }
 
 function initTerminal() {
+  const sendBtn = document.getElementById('sendBtn')
+  const clearBtn = document.getElementById('clearAllBtn')
   const cmdInput = document.getElementById('cmdInput')
-  if (!cmdInput) return
-
-  document.getElementById('sendBtn').onclick = () => Terminal.run()
-  cmdInput.onkeydown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault()
-      Terminal.run()
+  if (sendBtn) sendBtn.onclick = () => Terminal.run()
+  if (clearBtn) clearBtn.onclick = () => Terminal.clearAll()
+  if (cmdInput) {
+    cmdInput.onkeydown = (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault()
+        Terminal.run()
+      }
     }
   }
-
-  document.getElementById('clearAllBtn').onclick = () => Terminal.clearAll()
-
   const updateCwd = async () => {
     try {
       const res = await fetch('/api/execute/cwd')
       if (res.ok) {
         const data = await res.json()
-        if (res.status !== 401) {
+        if (res.status !== 401 && data.success && data.display) {
           const el = document.getElementById('statusDir')
-          if (el && data.success && data.display) {
-            el.textContent = data.display
-          }
+          if (el) el.textContent = data.display
         }
       }
-    } catch { /* server might not be ready yet */ }
+    } catch { /* ignore */ }
   }
   updateCwd()
   _cwdInterval = setInterval(updateCwd, 2000)
@@ -128,18 +109,12 @@ function initFileManager() {
   const fileModal = document.getElementById('fileModal')
   const extraKeysPaper = document.getElementById('extraKeysPaper')
   const browser = document.getElementById('fileBrowser')
-
-  if (!fileModal || !browser) {
-    console.error('[initFileManager] Missing DOM elements')
-    return
-  }
+  if (!fileModal || !browser) return
 
   browser.addEventListener('click', (e) => {
     const item = e.target.closest('.file-item')
     if (!item) return
-
     const { path, type } = item.dataset
-
     if (e.target.closest('.file-del')) {
       e.stopPropagation()
       FileManager.deleteItem(path)
@@ -151,35 +126,37 @@ function initFileManager() {
     }
   })
 
-  document.getElementById('editFileBtn').onclick = () => {
-    try {
-      fileModal.showModal()
-    } catch (err) {
-      console.warn('[fileModal] showModal failed:', err)
-      fileModal.show?.() || (fileModal.hidden = false)
-    }
-    extraKeysPaper?.classList.add('hidden')
-    FileManager.load('')
-  }
-
-  document.getElementById('modalCancel').onclick = () => {
-    fileModal.close()
-    extraKeysPaper?.classList.remove('hidden')
-  }
-
-  document.getElementById('modalSave').onclick = () => FileManager.save()
-  document.getElementById('modalNewFile').onclick = () => FileManager.createNew()
-  document.getElementById('modalRename').onclick = () => FileManager.renameFile()
-  document.getElementById('refreshFileListBtn').onclick = () => FileManager.load(FileManager.dir)
-
+  const editBtn = document.getElementById('editFileBtn')
+  const modalCancel = document.getElementById('modalCancel')
+  const modalSave = document.getElementById('modalSave')
+  const modalNewFile = document.getElementById('modalNewFile')
+  const modalRename = document.getElementById('modalRename')
+  const refreshBtn = document.getElementById('refreshFileListBtn')
   const uploadInput = document.getElementById('uploadInput')
+
+  if (editBtn) {
+    editBtn.onclick = () => {
+      try { fileModal.showModal() } catch { fileModal.show?.() || (fileModal.hidden = false) }
+      extraKeysPaper?.classList.add('hidden')
+      FileManager.load('')
+    }
+  }
+  if (modalCancel) {
+    modalCancel.onclick = () => {
+      fileModal.close()
+      extraKeysPaper?.classList.remove('hidden')
+    }
+  }
+  if (modalSave) modalSave.onclick = () => FileManager.save()
+  if (modalNewFile) modalNewFile.onclick = () => FileManager.createNew()
+  if (modalRename) modalRename.onclick = () => FileManager.renameFile()
+  if (refreshBtn) refreshBtn.onclick = () => FileManager.load(FileManager.dir)
   if (uploadInput) {
     uploadInput.onchange = (e) => {
       if (e.target.files[0]) FileManager.uploadFile(e.target.files[0])
       e.target.value = ''
     }
   }
-
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
       fileModal.close()
@@ -190,40 +167,42 @@ function initFileManager() {
 
 function initGitHub() {
   GitHub.init()
-  document.getElementById('gitBtn')?.addEventListener('click', () => GitHub.open())
+  const gitBtn = document.getElementById('gitBtn')
+  if (gitBtn) gitBtn.addEventListener('click', () => GitHub.open())
 }
 
 function initPWA() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/service-worker.js').catch(() => {})
   }
-
   let deferredPrompt
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
     deferredPrompt = e
-    document.getElementById('pwaInstallPrompt')?.classList.remove('hidden')
+    const promptDiv = document.getElementById('pwaInstallPrompt')
+    if (promptDiv) promptDiv.classList.remove('hidden')
   })
-
   const installBtn = document.getElementById('pwaInstallBtn')
   if (installBtn) {
     installBtn.onclick = async () => {
       if (!deferredPrompt) return
       deferredPrompt.prompt()
       const { outcome } = await deferredPrompt.userChoice
-      document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
+      const promptDiv = document.getElementById('pwaInstallPrompt')
+      if (promptDiv) promptDiv.classList.add('hidden')
       deferredPrompt = null
       if (outcome === 'accepted') Toast.show('App installed!', 'success')
     }
   }
-
-  document.getElementById('pwaDismissBtn')?.addEventListener('click', () => {
-    document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
-  })
+  const dismissBtn = document.getElementById('pwaDismissBtn')
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
+    })
+  }
 }
 
 function initModules() {
-  // Initialize Toast FIRST — it is used by StatusBar and other modules
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
@@ -234,15 +213,8 @@ function initModules() {
   GlobalSearch.init()
 }
 
-// ── Keyboard Shortcuts ────────────────────────────────────────────────────
 function initShortcuts() {
   document.addEventListener('keydown', (e) => {
-    // BUG FIX: Was missing null checks — getElementById() returns null if the
-    // element doesn't exist. Accessing .value/.focus() on null throws a TypeError
-    // that, inside a 'keydown' listener, silently swallows the shortcut and can
-    // leave keyboard handling in a broken state for the rest of the session.
-
-    // Ctrl+K → Clear terminal input
     if (e.ctrlKey && e.key === 'k') {
       e.preventDefault()
       const input = document.getElementById('cmdInput')
@@ -254,30 +226,22 @@ function initShortcuts() {
       if (charCount) charCount.textContent = '0 chars'
       return
     }
-
-    // Ctrl+L → Clear terminal output
     if (e.ctrlKey && e.key === 'l') {
       e.preventDefault()
       Terminal.clearAll()
       document.getElementById('cmdInput')?.focus()
       return
     }
-
-    // Ctrl+F → Open FILES modal
     if (e.ctrlKey && e.key === 'f') {
       e.preventDefault()
       document.getElementById('editFileBtn')?.click()
       return
     }
-
-    // Ctrl+G → Open GIT modal
     if (e.ctrlKey && e.key === 'g') {
       e.preventDefault()
       document.getElementById('gitBtn')?.click()
       return
     }
-
-    // Ctrl+/ → Toggle extra keys panel
     if (e.ctrlKey && e.key === '/') {
       e.preventDefault()
       document.getElementById('extraKeysPaper')?.classList.toggle('hidden')
@@ -286,7 +250,6 @@ function initShortcuts() {
   })
 }
 
-// Cleanup intervals on page unload to prevent memory leaks
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
   if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)

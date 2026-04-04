@@ -1,8 +1,6 @@
 import { api, esc } from './api.js'
 import { Toast } from './terminal.js'
 
-// -- GITHUB / GIT PANEL --
-
 export const GitHub = {
   state: null,
   activeTab: 'status',
@@ -14,22 +12,17 @@ export const GitHub = {
     this._bindStaticEvents()
   },
 
-  // -- OPEN / CLOSE --
-
   async open() {
     const modal = document.getElementById('gitModal')
     if (!modal) return
-    // FIX: Wrap showModal in try-catch — throws if dialog already open
     try {
       modal.showModal()
     } catch (err) {
-      console.warn('[gitModal] showModal failed:', err)
       modal.show?.() || (modal.hidden = false)
     }
     document.getElementById('extraKeysPaper')?.classList.add('hidden')
     this.switchTab('status')
     await this.refresh()
-    // Pre-load config into settings tab
     this._loadConfig()
   },
 
@@ -37,8 +30,6 @@ export const GitHub = {
     document.getElementById('gitModal')?.close()
     document.getElementById('extraKeysPaper')?.classList.remove('hidden')
   },
-
-  // -- TABS --
 
   switchTab(tab) {
     this.activeTab = tab
@@ -51,8 +42,6 @@ export const GitHub = {
     if (tab === 'log') this._loadLog()
     if (tab === 'branches') this._loadBranches()
   },
-
-  // -- REFRESH STATUS --
 
   async refresh() {
     const btn = document.getElementById('gitRefreshBtn')
@@ -74,13 +63,10 @@ export const GitHub = {
     this._renderBranchBadge(data)
     this._renderStatusTab(data)
 
-    // Update commit tab hint
     const staged = data.staged?.length || 0
     const hint = document.getElementById('gitCommitHint')
     if (hint) hint.textContent = staged > 0 ? `${staged} file(s) staged` : 'No files staged'
   },
-
-  // -- RENDER HELPERS --
 
   _renderBranchBadge(data) {
     const badge = document.getElementById('gitBranchBadge')
@@ -173,28 +159,7 @@ export const GitHub = {
     }
 
     pane.innerHTML = html
-
-    // Bind delegated events on the pane
-    pane.addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-action],[data-bulk]')
-      if (!btn) return
-
-      const action = btn.dataset.action || btn.dataset.bulk
-      const file = btn.dataset.file
-
-      const actions = {
-        'stage': () => this._stageFile(file),
-        'unstage': () => this._unstageFile(file),
-        'discard': () => this._discardFile(file),
-        'stage-all': () => this.stageAll(),
-        'stage-modified': () => this.stageAll(),
-        'unstage-all': () => this.unstageAll(),
-      }
-      if (actions[action]) await actions[action]()
-    }, { once: true })   // re-bound on next render
   },
-
-  // -- FILE OPERATIONS --
 
   async _stageFile(file) {
     const { ok, data } = await api.post('/api/git/add', { files: [file] })
@@ -227,8 +192,6 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // -- COMMIT --
-
   async commit() {
     const msgEl = document.getElementById('gitCommitMsg')
     const message = msgEl?.value.trim()
@@ -252,8 +215,6 @@ export const GitHub = {
     }
   },
 
-  // -- SYNC (push / pull / fetch) --
-
   async push() {
     const btn = document.getElementById('gitPushBtn')
     const remote = document.getElementById('gitRemoteSelect')?.value || 'origin'
@@ -269,7 +230,6 @@ export const GitHub = {
       Toast.show('Pushed!', 'success')
       await this.refresh()
     } else if (data?.needs_upstream) {
-      // Auto-retry with --set-upstream
       const branch = this.state?.branch
       if (branch) {
         Toast.show('Setting upstream and pushing...', 'info')
@@ -319,8 +279,6 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // -- LOG --
-
   async _loadLog() {
     const pane = document.getElementById('gitLogPane')
     pane.innerHTML = '<div class="git-loading">Loading commits...</div>'
@@ -342,8 +300,6 @@ export const GitHub = {
         <div class="git-commit-author">${esc(c.author)}</div>
       </div>`).join('')
   },
-
-  // -- BRANCHES --
 
   async _loadBranches() {
     const pane = document.getElementById('gitBranchPane')
@@ -371,12 +327,6 @@ export const GitHub = {
         </div>`).join('')}`
 
     document.getElementById('gitNewBranchBtn')?.addEventListener('click', () => this.newBranch())
-
-    pane.addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-action="checkout"]')
-      if (!btn) return
-      await this._checkout(btn.dataset.branch)
-    }, { once: true })
   },
 
   async _checkout(branch) {
@@ -399,15 +349,11 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // -- INIT REPO --
-
   async initRepo() {
     const { ok, data } = await api.post('/api/git/init', {})
     ok && data?.success ? Toast.show('Repository initialized', 'success') : Toast.show(data?.error || 'Init failed', 'error')
     await this.refresh()
   },
-
-  // -- CONFIG --
 
   async _loadConfig() {
     const { ok, data } = await api.get('/api/git/config')
@@ -417,7 +363,6 @@ export const GitHub = {
     if (nameEl && data.name) nameEl.placeholder = data.name
     if (emailEl && data.email) emailEl.placeholder = data.email
 
-    // Pre-fill remotes
     const remotes = this.state?.remotes || []
     const remoteUrl = document.getElementById('gitRemoteUrl')
     if (remoteUrl && remotes.length > 0) remoteUrl.placeholder = remotes[0].url
@@ -442,45 +387,71 @@ export const GitHub = {
     await this.refresh()
   },
 
-  // -- STATIC EVENT BINDING --
-
   _bindStaticEvents() {
-    // Tab bar
-    document.getElementById('gitModal')?.addEventListener('click', (e) => {
+    const modal = document.getElementById('gitModal')
+    if (!modal) return
+
+    modal.addEventListener('click', (e) => {
       const tab = e.target.closest('.git-tab')
       if (tab?.dataset.tab) this.switchTab(tab.dataset.tab)
     })
 
-    // Header buttons
     document.getElementById('gitRefreshBtn')?.addEventListener('click', () => this.refresh())
     document.getElementById('gitCloseBtn')?.addEventListener('click', () => this.close())
 
-    // Commit tab
     document.getElementById('gitStageAllBtn')?.addEventListener('click', () => this.stageAll())
     document.getElementById('gitCommitBtn')?.addEventListener('click', () => this.commit())
 
-    // Quick commit with Ctrl+Enter in textarea
-    document.getElementById('gitCommitMsg')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); this.commit() }
-    })
+    const commitMsg = document.getElementById('gitCommitMsg')
+    if (commitMsg) {
+      commitMsg.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); this.commit() }
+      })
+    }
 
-    // Sync tab
     document.getElementById('gitPushBtn')?.addEventListener('click', () => this.push())
     document.getElementById('gitPullBtn')?.addEventListener('click', () => this.pull())
     document.getElementById('gitFetchBtn')?.addEventListener('click', () => this.fetch())
 
-    // Config tab
     document.getElementById('gitSaveConfigBtn')?.addEventListener('click', () => this.saveConfig())
     document.getElementById('gitSaveRemoteBtn')?.addEventListener('click', () => this.saveRemote())
 
-    // Close on backdrop click
-    document.getElementById('gitModal')?.addEventListener('click', (e) => {
-      if (e.target === document.getElementById('gitModal')) this.close()
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) this.close()
     })
 
-    // ESC
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && document.getElementById('gitModal')?.open) this.close()
+      if (e.key === 'Escape' && modal.open) this.close()
     })
+
+    // Permanent delegation for status pane actions
+    const statusPane = document.getElementById('gitStatusPane')
+    if (statusPane) {
+      statusPane.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action],[data-bulk]')
+        if (!btn) return
+        const action = btn.dataset.action || btn.dataset.bulk
+        const file = btn.dataset.file
+        const actions = {
+          'stage': () => this._stageFile(file),
+          'unstage': () => this._unstageFile(file),
+          'discard': () => this._discardFile(file),
+          'stage-all': () => this.stageAll(),
+          'stage-modified': () => this.stageAll(),
+          'unstage-all': () => this.unstageAll(),
+        }
+        if (actions[action]) await actions[action]()
+      })
+    }
+
+    // Permanent delegation for branches pane
+    const branchPane = document.getElementById('gitBranchPane')
+    if (branchPane) {
+      branchPane.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-action="checkout"]')
+        if (!btn) return
+        await this._checkout(btn.dataset.branch)
+      })
+    }
   }
 }
