@@ -2,14 +2,18 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="theme-color" content="#0D0D0D">
-    <!-- SECURITY: Strict CSP - removed unsafe-inline/unsafe-eval for scripts -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; worker-src 'self'; frame-ancestors 'none';">
+    
+    <!-- SECURITY: Strict CSP - Diperhalus untuk kompatibilitas JS modern -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:; worker-src 'self'; frame-ancestors 'none';">
     <meta name="referrer" content="no-referrer">
+    
     <title>Yuyutermux</title>
     <link rel="icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- CSS Files -->
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="/static/css/ui.css">
@@ -26,7 +30,7 @@
 <body>
 
 <!-- ====== SPLASH SCREEN ====== -->
-<div id="splashScreen" class="splash-screen">
+<div id="splashScreen" class="splash-screen" aria-hidden="true">
     <div class="splash-content">
         <div class="splash-logo">
             <div class="splash-cursor"></div>
@@ -40,7 +44,7 @@
 </div>
 
 <!-- ====== TOAST CONTAINER ====== -->
-<div id="toastContainer" class="toast-container"></div>
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
 <main class="paper-container">
 
@@ -56,13 +60,16 @@
             <div class="header-actions">
                 <button id="clearAllBtn" class="paper-btn ghost" title="Clear all">[ CLR ]</button>
                 <a href="/docs" class="paper-btn">[ DOCS ]</a>
-                <button id="gitBtn" class="paper-btn git-header-btn" title="Git / GitHub">[ GIT ]</button>
+                <button id="gitBtn" class="paper-btn git.header-btn" title="Git / GitHub">[ GIT ]</button>
                 <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
-                <button id="logoutBtn" class="paper-btn ghost" title="Logout" style="display:none">[ LOGOUT ]</button>
+                <!-- Fixed: Menggunakan class 'hidden' alih-alih inline style -->
+                <button id="logoutBtn" class="paper-btn ghost hidden" title="Logout">[ LOGOUT ]</button>
             </div>
         </div>
-        <div id="outputArea" class="terminal-paper">
-            <div class="placeholder">
+        
+        <!-- Fixed: Menambahkan aria-live untuk aksesibilitas terminal output -->
+        <div id="outputArea" class="terminal-paper" aria-live="polite" aria-atomic="false">
+            <div class="placeholder" id="terminalPlaceholder">
                 <div class="placeholder-icon">
                     <span class="placeholder-cursor">&gt;_</span>
                 </div>
@@ -73,7 +80,7 @@
     </section>
 
     <!-- STATUS BAR -->
-    <div class="status-bar" id="statusBar">
+    <div class="status-bar" id="statusBar" role="status" aria-live="polite">
         <div class="status-left">
             <span class="status-dot connected" id="statusDot"></span>
             <span id="statusConnection">CONNECTED</span>
@@ -100,10 +107,20 @@
                 <span class="prompt-prefix">$</span>
             </div>
             <div class="input-wrapper">
-                <textarea id="cmdInput" rows="1" placeholder="Enter command..." autocomplete="off" spellcheck="false"></textarea>
-                <div class="suggestions-dropdown hidden" id="suggestionsDropdown"></div>
+                <!-- Fixed: Autocomplete & autocorrect diperbaiki untuk mencegah saran browser -->
+                <textarea 
+                    id="cmdInput" 
+                    rows="1" 
+                    placeholder="Enter command..." 
+                    autocomplete="new-password" 
+                    autocorrect="off" 
+                    autocapitalize="off" 
+                    spellcheck="false"
+                    aria-label="Terminal command input"
+                ></textarea>
+                <div class="suggestions-dropdown hidden" id="suggestionsDropdown" role="listbox"></div>
             </div>
-            <button id="sendBtn" class="send-btn" title="Execute (Ctrl+Enter)">
+            <button id="sendBtn" class="send-btn" title="Execute (Ctrl+Enter)" aria-label="Execute command">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
         </div>
@@ -120,21 +137,21 @@
     <div class="modal-box" id="modalBox">
         <header class="modal-header">
             <h3 id="fileModalTitle"><span class="modal-icon">&#9776;</span> FILE MANAGER</h3>
-            <button id="modalCancel" class="paper-btn ghost">&times;</button>
+            <button id="modalCancel" class="paper-btn ghost" aria-label="Close file manager">&times;</button>
         </header>
-        <div class="breadcrumb" id="currentPathDisplay">~/Yuyutermux</div>
+        <div class="breadcrumb" id="currentPathDisplay" aria-label="Current directory path">~/Yuyutermux</div>
         <div class="file-toolbar">
-            <label for="uploadInput" id="uploadBtn" class="paper-btn small" style="cursor:pointer">
+            <label for="uploadInput" id="uploadBtn" class="paper-btn small" style="cursor:pointer" aria-label="Upload file">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                 UPLOAD
             </label>
-            <input type="file" id="uploadInput" style="position:fixed;left:-9999px;opacity:0;width:1px;height:1px;pointer-events:none">
-            <button id="refreshFileListBtn" class="paper-btn small">
+            <input type="file" id="uploadInput" style="position:fixed;left:-9999px;opacity:0;width:1px;height:1px;pointer-events:none" aria-hidden="true">
+            <button id="refreshFileListBtn" class="paper-btn small" aria-label="Refresh file list">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path></svg>
                 REFRESH
             </button>
             <div class="spacer"></div>
-            <button id="btn-global-search" class="paper-btn small accent">
+            <button id="btn-global-search" class="paper-btn small accent" aria-label="Search files">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 SEARCH
             </button>
@@ -147,7 +164,7 @@
             </div>
             <div class="editor-wrapper" id="editorWrapper">
                 <div class="line-numbers" id="lineNumbers">1</div>
-                <textarea id="modalContent" class="editor-paper" placeholder="Select a file to edit..." spellcheck="false"></textarea>
+                <textarea id="modalContent" class="editor-paper" placeholder="Select a file to edit..." spellcheck="false" aria-label="File editor content"></textarea>
             </div>
         </div>
         <footer class="modal-footer">
@@ -171,25 +188,27 @@
                 <span class="git-sync-badge hidden" id="gitSyncBadge"></span>
             </div>
             <div class="git-header-right">
-                <button id="gitRefreshBtn" class="paper-btn small ghost" title="Refresh">↺</button>
-                <button id="gitCloseBtn" class="paper-btn ghost">&times;</button>
+                <button id="gitRefreshBtn" class="paper-btn small ghost" title="Refresh" aria-label="Refresh git status">↺</button>
+                <button id="gitCloseBtn" class="paper-btn ghost" aria-label="Close git panel">&times;</button>
             </div>
         </header>
-        <nav class="git-tabs">
-            <button class="git-tab active" data-tab="status">STATUS</button>
-            <button class="git-tab" data-tab="commit">COMMIT</button>
-            <button class="git-tab" data-tab="sync">SYNC</button>
-            <button class="git-tab" data-tab="log">LOG</button>
-            <button class="git-tab" data-tab="branches">BRANCHES</button>
-            <button class="git-tab" data-tab="config">CONFIG</button>
+        <nav class="git-tabs" role="tablist">
+            <button class="git-tab active" data-tab="status" role="tab" aria-selected="true">STATUS</button>
+            <button class="git-tab" data-tab="commit" role="tab" aria-selected="false">COMMIT</button>
+            <button class="git-tab" data-tab="sync" role="tab" aria-selected="false">SYNC</button>
+            <button class="git-tab" data-tab="log" role="tab" aria-selected="false">LOG</button>
+            <button class="git-tab" data-tab="branches" role="tab" aria-selected="false">BRANCHES</button>
+            <button class="git-tab" data-tab="config" role="tab" aria-selected="false">CONFIG</button>
         </nav>
-        <div class="git-tab-pane" data-tab="status" id="gitStatusPane">
+        
+        <!-- Tab Panes -->
+        <div class="git-tab-pane" data-tab="status" id="gitStatusPane" role="tabpanel" aria-labelledby="status-tab">
             <div class="git-loading">Loading status...</div>
         </div>
-        <div class="git-tab-pane hidden" data-tab="commit">
+        <div class="git-tab-pane hidden" data-tab="commit" role="tabpanel" aria-labelledby="commit-tab">
             <div class="git-commit-area">
                 <div class="git-section-label">COMMIT MESSAGE</div>
-                <textarea id="gitCommitMsg" class="git-msg-input" placeholder="feat: describe your change...&#10;&#10;Ctrl+Enter to commit" rows="4"></textarea>
+                <textarea id="gitCommitMsg" class="git-msg-input" placeholder="feat: describe your change...&#10;&#10;Ctrl+Enter to commit" rows="4" aria-label="Commit message"></textarea>
                 <div class="git-commit-hint" id="gitCommitHint">No files staged</div>
                 <div class="git-commit-actions">
                     <button id="gitStageAllBtn" class="paper-btn secondary">STAGE ALL</button>
@@ -197,10 +216,10 @@
                 </div>
             </div>
         </div>
-        <div class="git-tab-pane hidden" data-tab="sync">
+        <div class="git-tab-pane hidden" data-tab="sync" role="tabpanel" aria-labelledby="sync-tab">
             <div class="git-sync-area">
                 <div class="git-section-label">REMOTE</div>
-                <select id="gitRemoteSelect" class="git-select">
+                <select id="gitRemoteSelect" class="git-select" aria-label="Select remote">
                     <option value="origin">origin</option>
                 </select>
                 <div class="git-sync-buttons">
@@ -215,21 +234,21 @@
                 </div>
             </div>
         </div>
-        <div class="git-tab-pane hidden" data-tab="log" id="gitLogPane">
+        <div class="git-tab-pane hidden" data-tab="log" id="gitLogPane" role="tabpanel" aria-labelledby="log-tab">
             <div class="git-loading">Loading...</div>
         </div>
-        <div class="git-tab-pane hidden" data-tab="branches" id="gitBranchPane">
+        <div class="git-tab-pane hidden" data-tab="branches" id="gitBranchPane" role="tabpanel" aria-labelledby="branches-tab">
             <div class="git-loading">Loading...</div>
         </div>
-        <div class="git-tab-pane hidden" data-tab="config">
+        <div class="git-tab-pane hidden" data-tab="config" role="tabpanel" aria-labelledby="config-tab">
             <div class="git-config-area">
                 <div class="git-section-label">IDENTITY (global)</div>
-                <input id="gitConfigName" class="git-input" type="text" placeholder="Your name">
-                <input id="gitConfigEmail" class="git-input" type="email" placeholder="your@email.com">
+                <input id="gitConfigName" class="git-input" type="text" placeholder="Your name" aria-label="Git user name">
+                <input id="gitConfigEmail" class="git-input" type="email" placeholder="your@email.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" aria-label="Git user email">
                 <button id="gitSaveConfigBtn" class="paper-btn primary" style="margin-top:8px">SAVE IDENTITY</button>
                 <div class="git-section-label" style="margin-top:20px">REMOTE</div>
-                <input id="gitRemoteName" class="git-input" type="text" placeholder="Remote name (default: origin)" value="origin">
-                <input id="gitRemoteUrl" class="git-input" type="text" placeholder="https://github.com/user/repo.git">
+                <input id="gitRemoteName" class="git-input" type="text" placeholder="Remote name (default: origin)" value="origin" aria-label="Remote name">
+                <input id="gitRemoteUrl" class="git-input" type="url" placeholder="https://github.com/user/repo.git" aria-label="Remote URL">
                 <div class="git-config-hint">
                     For GitHub auth, embed your PAT:<br>
                     <code>https://TOKEN@github.com/user/repo.git</code>
@@ -241,17 +260,17 @@
 </dialog>
 
 <!-- PWA INSTALL PROMPT -->
-<div id="pwaInstallPrompt" class="pwa-prompt hidden">
+<div id="pwaInstallPrompt" class="pwa-prompt hidden" role="alertdialog" aria-labelledby="pwaTitle" aria-describedby="pwaDesc">
     <div class="prompt-content">
         <div class="pwa-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
         </div>
         <div class="pwa-text">
-            <strong>Install Yuyutermux</strong>
-            <p>Add to home screen for app-like experience</p>
+            <strong id="pwaTitle">Install Yuyutermux</strong>
+            <p id="pwaDesc">Add to home screen for app-like experience</p>
         </div>
         <button id="pwaInstallBtn" class="paper-btn primary">INSTALL</button>
-        <button id="pwaDismissBtn" class="paper-btn ghost">&times;</button>
+        <button id="pwaDismissBtn" class="paper-btn ghost" aria-label="Dismiss install prompt">&times;</button>
     </div>
 </div>
 
