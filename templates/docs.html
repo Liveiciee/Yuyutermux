@@ -99,6 +99,16 @@
             display: block;
         }
 
+        .stat-value.loading {
+            color: var(--border);
+            animation: statPulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes statPulse {
+            0%, 100% { opacity: 0.35; }
+            50% { opacity: 0.7; }
+        }
+
         .stat-label {
             font: 0.625rem/1 var(--mono);
             color: var(--cement);
@@ -387,8 +397,14 @@
 
 <div class="docs-layout">
     <nav class="docs-nav">
-        <h1 class="docs-title">\u2312 Yuyutermux Documentation</h1>
-        <a href="/" class="nav-link">\u2190 Back</a>
+        <h1 class="docs-title">
+            <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px;flex-shrink:0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 8h12M6 4l-4 4 4 4"/></svg>
+            Yuyutermux Documentation
+        </h1>
+        <a href="/" class="nav-link">
+            <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px;display:inline-block" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+            Back
+        </a>
     </nav>
 
     <!-- TABLE OF CONTENTS -->
@@ -426,19 +442,19 @@
                     <span class="stat-label">Files</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">4</span>
+                    <span class="stat-value loading" id="cssCount">···</span>
                     <span class="stat-label">CSS Files</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">11</span>
+                    <span class="stat-value loading" id="jsCount">···</span>
                     <span class="stat-label">JS Modules</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">5</span>
+                    <span class="stat-value loading" id="pyRoutes">···</span>
                     <span class="stat-label">Py Routes</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">28+</span>
+                    <span class="stat-value loading" id="apiEndpoints">···</span>
                     <span class="stat-label">API Endpoints</span>
                 </div>
             </div>
@@ -478,7 +494,7 @@
                     <h3>Terminal</h3>
                     <p>Type any Linux/Termux command in the input field. Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or tap the send button to execute. Output streams in real-time via chunked transfer encoding (not SSE). The terminal handles <code>cd</code> natively in Python, so the working directory persists across commands without spawning a subshell. A hung process warning appears after 10 seconds of no output, with a <kbd>KILL</kbd> button that terminates the entire process group via <code>os.killpg()</code>. Each command entry shows a timestamp, exit code badge (green for 0, red for non-zero), and action buttons to copy output or delete the entry. The terminal keeps up to 30 entries visible on screen (older entries auto-collapse) and stores up to 50 commands in history. Commands have a maximum length of 10,000 characters and a process timeout of 5 minutes (300 seconds).</p>
                     <ul class="sub-list">
-                        <li><kbd>\u2191</kbd> / <kbd>\u2193</kbd> &mdash; Navigate command history</li>
+                        <li><kbd>↑</kbd> / <kbd>↓</kbd> &mdash; Navigate command history</li>
                         <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> &mdash; Execute command</li>
                         <li>Start typing to see live suggestions from previous commands (top 5 matches)</li>
                         <li>Hung process auto-detection after 10s with kill button</li>
@@ -502,7 +518,7 @@
                         <div class="key-item"><span class="key-label">$</span><span class="key-desc">Variable</span></div>
                         <div class="key-item"><span class="key-label">CTRL+C</span><span class="key-desc">Kill process</span></div>
                         <div class="key-item"><span class="key-label">ESC</span><span class="key-desc">Clear input</span></div>
-                        <div class="key-item"><span class="key-label">\u2191 \u2193</span><span class="key-desc">History nav</span></div>
+                        <div class="key-item"><span class="key-label">↑ ↓</span><span class="key-desc">History nav</span></div>
                     </div>
                 </article>
 
@@ -514,8 +530,8 @@
                         <li><kbd>[+ NEW FILE]</kbd> &mdash; Create empty file in current directory</li>
                         <li><kbd>[RENAME]</kbd> &mdash; Rename currently open file (read-write-delete sequence)</li>
                         <li><kbd>UPLOAD</kbd> &mdash; Upload file from device (max 50MB, duplicate-safe)</li>
-                        <li><kbd>\u2193</kbd> button on file &mdash; Download file to device</li>
-                        <li><kbd>\u00d7</kbd> button on file &mdash; Delete file or directory</li>
+                        <li><kbd>↓</kbd> button on file &mdash; Download file to device</li>
+                        <li><kbd>×</kbd> button on file &mdash; Delete file or directory</li>
                         <li>Click any file to open in editor with live syntax highlighting</li>
                         <li>Click <code>..</code> to navigate to parent directory</li>
                     </ul>
@@ -608,8 +624,8 @@
             <div class="shortcut-row"><span class="shortcut-action">Execute command</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Save file (in editor)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Commit (in Git message box)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>\u2191</kbd></span></div>
-            <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>\u2193</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>↑</kbd></span></div>
+            <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>↓</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Clear terminal input</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Clear terminal output</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
             <div class="shortcut-row"><span class="shortcut-action">Open Files modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span></div>
@@ -951,21 +967,88 @@
 </div>
 
 <script>
-    // Fetch project info and populate stats
+(function() {
+    // Helper: set stat value, remove loading state
+    function setStat(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = value;
+        el.classList.remove('loading');
+    }
+
+    // Helper: count file lines in tree ending with a given extension
+    function countExt(tree, ext) {
+        return tree.split('\n').filter(l => l.trim().endsWith(ext)).length;
+    }
+
+    // Helper: remove loading class from all stat-value elements
+    function unsetLoading() {
+        document.querySelectorAll('.stat-value.loading').forEach(el => {
+            el.textContent = '\u2014'; // em dash fallback
+            el.classList.remove('loading');
+        });
+    }
+
     (async function() {
         try {
+            // ── Phase 1: fetch project tree ──
             const res = await fetch('/api/project/info');
-            if (!res.ok) return;
+            if (!res.ok) { unsetLoading(); return; }
             const data = await res.json();
-            if (data.success) {
-                document.getElementById('treeOutput').textContent = data.tree || 'Error loading tree';
-                document.getElementById('folderCount').textContent = data.folders || 0;
-                document.getElementById('fileCount').textContent = data.files || 0;
+            if (!data.success) { unsetLoading(); return; }
+
+            const tree = data.tree || '';
+
+            document.getElementById('treeOutput').textContent = tree;
+            setStat('folderCount', data.folders || 0);
+            setStat('fileCount',   data.files  || 0);
+
+            // ── Phase 2: parse tree for CSS & JS file counts ──
+            setStat('cssCount', countExt(tree, '.css'));
+            setStat('jsCount',  countExt(tree, '.js'));
+
+            // ── Phase 3: fetch route directory listing ──
+            const routesRes = await fetch('/api/files/list?path=routes');
+            if (!routesRes.ok) { setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return; }
+            const routesData = await routesRes.json();
+            if (!routesData.success || !Array.isArray(routesData.files)) {
+                setStat('pyRoutes', '\u2014'); setStat('apiEndpoints', '\u2014'); return;
             }
+
+            // Filter to actual route modules (exclude __init__.py)
+            const routePyFiles = routesData.files.filter(f =>
+                f.name && f.name.endsWith('.py') && f.name !== '__init__.py'
+            );
+            setStat('pyRoutes', routePyFiles.length);
+
+            // ── Phase 4: read each route file, count @*.route( decorators ──
+            let totalEndpoints = 0;
+            const reads = routePyFiles.map(async (file) => {
+                try {
+                    const r = await fetch('/api/files/read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: 'routes/' + file.name })
+                    });
+                    if (!r.ok) return 0;
+                    const d = await r.json();
+                    if (d.success && typeof d.content === 'string') {
+                        return (d.content.match(/@\w+\.route\(/g) || []).length;
+                    }
+                } catch (e) { /* skip */ }
+                return 0;
+            });
+            const counts = await Promise.all(reads);
+            totalEndpoints = counts.reduce((a, b) => a + b, 0);
+            setStat('apiEndpoints', totalEndpoints);
+
         } catch (e) {
-            document.getElementById('treeOutput').textContent = 'Unable to load project info. Is the server running?';
+            document.getElementById('treeOutput').textContent =
+                'Unable to load project info. Is the server running?';
+            unsetLoading();
         }
     })();
+})();
 </script>
 
 </body>
