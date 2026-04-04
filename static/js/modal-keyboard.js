@@ -2,14 +2,18 @@ export const ModalKeyboard = {
   _ta: null,
   _box: null,
   _timeoutId: null,
+  _boundOnFocus: null,
+  _boundOnBlur: null,
 
   init() {
     this._ta = document.getElementById('modalContent')
     this._box = document.getElementById('modalBox')
     if (!this._ta || !this._box) return
 
-    this._ta.addEventListener('focus', this._onFocus.bind(this))
-    this._ta.addEventListener('blur', this._onBlur.bind(this))
+    this._boundOnFocus = this._onFocus.bind(this)
+    this._boundOnBlur = this._onBlur.bind(this)
+    this._ta.addEventListener('focus', this._boundOnFocus)
+    this._ta.addEventListener('blur', this._boundOnBlur)
   },
 
   _onFocus() {
@@ -28,11 +32,13 @@ export const ModalKeyboard = {
 
   destroy() {
     if (this._ta) {
-      this._ta.removeEventListener('focus', this._onFocus)
-      this._ta.removeEventListener('blur', this._onBlur)
+      if (this._boundOnFocus) this._ta.removeEventListener('focus', this._boundOnFocus)
+      if (this._boundOnBlur) this._ta.removeEventListener('blur', this._boundOnBlur)
     }
     if (this._timeoutId) clearTimeout(this._timeoutId)
     this._ta = null
     this._box = null
+    this._boundOnFocus = null
+    this._boundOnBlur = null
   }
 }

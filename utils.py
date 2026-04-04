@@ -108,7 +108,7 @@ def rate_limit(max_requests: int = 30, window: int = 60):
                 ]
 
                 # BUG FIX: Use > instead of >= for correct limit enforcement
-                if len(_rate_limit_store[key]) > max_requests:
+                if len(_rate_limit_store[key]) >= max_requests:
                     return jsonify({
                         "success": False,
                         "error": f"Rate limit exceeded ({max_requests}/{window}s)"

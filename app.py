@@ -1,4 +1,5 @@
 import os
+import secrets
 from flask import Flask, jsonify, request
 
 from utils import (
@@ -12,6 +13,7 @@ from routes.files import files_bp
 from routes.github import github_bp
 
 app = Flask(__name__, static_folder='static')
+app.secret_key = secrets.token_bytes(32)
 
 # ── SECURITY: Disable debug in production ────────────────────────────────────
 # NEVER run with debug=True in production — it exposes the Werkzeug debugger

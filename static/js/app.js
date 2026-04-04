@@ -9,7 +9,6 @@ import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
 let _cwdInterval = null
-let _connectionInterval = {}
 
 document.addEventListener('DOMContentLoaded', () => {
   try { initSplash() } catch (e) { console.error('[initSplash]', e) }
@@ -206,7 +205,7 @@ function initModules() {
   ModalKeyboard.init()
   ExtraKeys.init()
   Toast.init()
-  StatusBar.init(_connectionInterval)
+  StatusBar.init()
   Suggestions.init()
   Storage.load()
   Editor.init()
@@ -252,5 +251,5 @@ function initShortcuts() {
 
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
-  if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)
+  StatusBar.destroy()
 })

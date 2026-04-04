@@ -97,12 +97,12 @@ export function parseAnsi(text) {
   let result = ''
   let i = 0
   const len = text.length
+  let spanOpen = false
   while (i < len) {
     if (text[i] === '\x1b' && i+1 < len && text[i+1] === '[') {
       const end = text.indexOf('m', i+2)
       if (end === -1) { result += esc(text.slice(i)); break }
       const codes = text.slice(i+2, end).split(';')
-      // Update classes berdasarkan kode ANSI
       for (const code of codes) {
         if (code === '0') {
           classes = []
@@ -112,12 +112,12 @@ export function parseAnsi(text) {
         }
       }
       i = end + 1
-      // Tutup span sebelumnya, buka span baru dengan class gabungan
-      result += '</span>'
+      if (spanOpen) result += '</span>'
       if (classes.length) {
         result += `<span class="${esc(classes.join(' '))}">`
+        spanOpen = true
       } else {
-        result += '<span>'
+        spanOpen = false
       }
     } else {
       let start = i
@@ -125,11 +125,7 @@ export function parseAnsi(text) {
       result += esc(text.slice(start, i))
     }
   }
-  // Tutup span terakhir jika perlu
-  if (result.endsWith('</span>')) return result
-  const lastOpen = result.lastIndexOf('<span')
-  const lastClose = result.lastIndexOf('</span>')
-  if (lastOpen > lastClose) result += '</span>'
+  if (spanOpen) result += '</span>'
   return result
 }
 
