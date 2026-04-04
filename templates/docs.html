@@ -654,7 +654,7 @@
             <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <h2>Web-Based Terminal &amp; File Manager</h2>
-        <p>Full-featured terminal emulator, code editor with syntax highlighting, file manager, Git client, and global search — all accessible from your mobile browser.</p>
+        <p>Web-based command terminal, code editor with syntax highlighting, file manager, Git client, and global search — all accessible from your mobile browser.</p>
         <div class="hero-tags">
             <span class="hero-tag"><strong>Flask</strong> Backend</span>
             <span class="hero-tag"><strong>PWA</strong> Installable</span>
@@ -1209,12 +1209,12 @@
                 <li><strong>Security Headers</strong> &mdash; <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection: 1; mode=block</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy: camera=(), microphone=(), geolocation=()</code>, <code>Cache-Control: no-store, no-cache</code>, <code>Pragma: no-cache</code></li>
                 <li><strong>CSP + SRI</strong> &mdash; Content Security Policy in <code>index.html</code> (also in login.html). Subresource Integrity hashes on all CDN assets (highlight.js JS + CSS, Google Fonts).</li>
                 <li><strong>Rate Limiting</strong> &mdash; In-memory per-IP with periodic cleanup (every 2 min). Default 30 req/60s. Stricter 15 req/60s on command execution. 10 req/60s on file upload.</li>
-                <li><strong>Blocked Commands</strong> &mdash; 30+ commands blocked: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>node</code>, <code>chmod</code>, <code>env</code>, <code>exec</code>, <code>eval</code>, <code>source</code>, <code>busybox</code>, <code>xargs</code>, <code>nohup</code>, <code>find</code>, <code>awk</code>, <code>sed</code>, and more. Includes indirection vectors.</li>
+                <li><strong>Blocked Commands</strong> &mdash; 77 commands blocked: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>node</code>, <code>env</code>, <code>exec</code>, <code>eval</code>, <code>source</code>, <code>busybox</code>, <code>xargs</code>, <code>nohup</code>, <code>find</code>, <code>awk</code>, <code>sed</code>, and more. Includes indirection vectors, shell interpreters, and crypto tools.</li>
                 <li><strong>Path Traversal Guard</strong> &mdash; All file operations use <code>validate_path()</code> which rejects <code>..</code>, resolves symlinks via <code>os.path.realpath()</code>, and checks against <code>PROJECT_DIR</code>. Separate <code>validate_path_terminal()</code> for cd (restricted to home dir).</li>
                 <li><strong>Command Injection Prevention</strong> &mdash; Commands parsed via <code>shlex.split()</code>; <code>cd</code> handled natively in Python; no <code>shell=True</code> in file routes; search uses list args for grep.</li>
                 <li><strong>Process Isolation</strong> &mdash; Terminal processes created with <code>os.setsid()</code> for process group isolation. Killed via <code>os.killpg()</code> to prevent orphans. 5-minute max timeout per process.</li>
                 <li><strong>CSRF Mitigation</strong> &mdash; POST/PUT/DELETE require <code>application/json</code> or <code>multipart/form-data</code> Content-Type (415 rejected otherwise). Login/logout exempted.</li>
-                <li><strong>Protected Files</strong> &mdash; Write blocks: <code>.auth_token</code>, <code>.env</code>, <code>.htaccess</code>, <code>.bashrc</code>, <code>.bash_history</code>, <code>passwd</code>, <code>shadow</code>. Delete protects: <code>app.py</code>, <code>utils.py</code>, <code>run.sh</code>.</li>
+                <li><strong>Protected Files</strong> &mdash; Write blocks: <code>.auth_token</code>, <code>.env</code>, <code>.htaccess</code>, <code>.htpasswd</code>, <code>.bashrc</code>, <code>.bash_profile</code>, <code>.profile</code>, <code>.bash_history</code>, <code>passwd</code>, <code>shadow</code>. Also blocks writes to <code>.ssh/</code> paths. Delete protects (project root only): <code>app.py</code>, <code>utils.py</code>, <code>run.sh</code>, <code>.auth_token</code>.</li>
                 <li><strong>Output Sanitization</strong> &mdash; All API error messages sanitize filesystem paths. Git remote URLs mask tokens. Git commit messages/authors sanitized. Rate limit store auto-cleaned.</li>
                 <li><strong>Stored XSS Prevention</strong> &mdash; localStorage history sanitized on load: removes <code>&lt;script&gt;</code>, inline event handlers (<code>onclick</code>, etc.), and <code>javascript:</code> URLs. Version-based invalidation discards old data.</li>
             </ul>
@@ -1248,7 +1248,7 @@
                 </div>
                 <div class="spec-item">
                     <h4>api.js</h4>
-                    <p>HTTP client (api), auth management (Auth), HTML escaping (esc), ANSI color parser, file type icons. Auto-redirect to /login on 401. Cookie-based token storage with Bearer header fallback.</p>
+                    <p>HTTP client (api), auth management (Auth), HTML escaping (esc), ANSI color parser, file type icons. Backend auth uses HttpOnly <code>yuyu_token</code> cookie (auto-sent by browser, not readable by JS). Frontend UI state uses non-HttpOnly <code>yuyu_authed</code> marker cookie. Auto-redirect to /login on 401.</p>
                 </div>
                 <div class="spec-item">
                     <h4>storage.js</h4>
