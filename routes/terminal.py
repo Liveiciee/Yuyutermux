@@ -7,7 +7,7 @@ import threading
 import time
 from utils import (
     PROJECT_DIR, validate_path_terminal, json_ok, json_err,
-    rate_limit_execute, BLOCKED_COMMANDS, sanitize_error
+    rate_limit_execute, BLOCKED_COMMANDS, sanitize_error, _safe_env
 )
 
 terminal_bp = Blueprint('terminal', __name__)
@@ -16,13 +16,10 @@ terminal_bp = Blueprint('terminal', __name__)
 # requests don't stomp each other.
 _active_processes: dict = {}
 _proc_counter = 0
-# BUG FIX #8: Tambah lock terpisah untuk _active_processes — sebelumnya hanya
-#   _proc_counter_lock yang ada, tapi _active_processes diakses dari thread berbeda
-#   tanpa proteksi (generate() di thread response, kill() di thread request lain).
 _proc_lock = threading.Lock()
 _proc_counter_lock = threading.Lock()
 
-# FIX: Thread-safe current directory with lock
+# Thread-safe current directory with lock
 _cwd_lock = threading.Lock()
 _current_dir = PROJECT_DIR
 
@@ -52,7 +49,6 @@ def api_get_cwd():
     except Exception:
         display = '~'
         current_dir = PROJECT_DIR
-    # FIX: Only return display path, NOT the real filesystem path
     return jsonify({"success": True, "cwd": display, "display": display})
 
 
@@ -103,8 +99,15 @@ def api_execute_stream():
                     yield f"cd: restricted: cannot access that directory\n[EXIT_CODE:1]\n"
                 return Response(stream_with_context(_cd_blocked()), mimetype='text/plain')
 
-            if os.path.isdir(new_dir):
-                set_current_dir(new_dir)
+            # BUG FIX (CRITICAL): Previously used `new_dir` (the raw, unvalidated path)
+            # for both the isdir check AND set_current_dir. This meant a symlink pointing
+            # outside the allowed home dir would pass validation (validate_path_terminal
+            # returns the realpath which is inside home) but then set the cwd to the
+            # *symlink path* — which when later used as a base for further cd calls,
+            # could escape the home boundary step-by-step.
+            # Fix: always use `validated` (the realpath-resolved, bounds-checked path).
+            if os.path.isdir(validated):
+                set_current_dir(validated)
                 def _cd_ok():
                     yield f"\n[EXIT_CODE:0]\n"
                 return Response(stream_with_context(_cd_ok()), mimetype='text/plain')
@@ -117,11 +120,6 @@ def api_execute_stream():
             def _cd_exc():
                 yield f"cd: error: invalid arguments\n[EXIT_CODE:1]\n"
             return Response(stream_with_context(_cd_exc()), mimetype='text/plain')
-
-    # BUG FIX #9: Hapus redundant double-check BLOCKED_COMMANDS.
-    #   Baris 80 sudah check dan return jika blocked. Kode ini tidak pernah tercapai
-    #   karena cd handler di atas sudah return. Dead code yang membuang CPU cycle.
-    #   (Baris asli: if base_cmd in BLOCKED_COMMANDS: return ...)
 
     with _proc_counter_lock:
         _proc_counter += 1
@@ -138,17 +136,18 @@ def api_execute_stream():
                 bufsize=1,
                 cwd=get_current_dir(),
                 preexec_fn=os.setsid,  # Create process group for clean killing
+                # BUG FIX: Pass filtered env so YUYUTERMUX_TOKEN is not inherited
+                # by child processes (could be leaked via error output or env dumps).
+                env=_safe_env(),
             )
-            # BUG FIX #8: Gunakan _proc_lock untuk proteksi race condition
             with _proc_lock:
                 _active_processes[proc_id] = proc
 
-            # FIX: Enforce MAX_PROCESS_TIMEOUT — kill process after timeout
+            # Enforce MAX_PROCESS_TIMEOUT — kill process after timeout
             deadline = time.time() + MAX_PROCESS_TIMEOUT
 
             for line in iter(proc.stdout.readline, ''):
                 if line:
-                    # Check timeout
                     if time.time() > deadline:
                         try:
                             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
@@ -174,7 +173,6 @@ def api_execute_stream():
             # SECURITY: Don't leak exception details to client
             yield f"\n[ERROR:internal error]\n"
         finally:
-            # BUG FIX #8: Gunakan _proc_lock untuk proteksi race condition
             with _proc_lock:
                 _active_processes.pop(proc_id, None)
 
@@ -183,7 +181,6 @@ def api_execute_stream():
 
 @terminal_bp.route('/api/execute/kill', methods=['POST'])
 def api_execute_kill():
-    # BUG FIX #8: Gunakan _proc_lock untuk snapshot dict secara aman
     with _proc_lock:
         if not _active_processes:
             return jsonify({"success": False, "message": "No active process"})

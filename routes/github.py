@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 import subprocess
 import os
 import re
-from utils import PROJECT_DIR, rate_limit, sanitize_error
+from utils import PROJECT_DIR, rate_limit, sanitize_error, _safe_env
 
 github_bp = Blueprint('github', __name__)
 
@@ -23,9 +23,12 @@ def git_run(args: list, cwd: str = None, input_data: str = None) -> tuple:
             cwd=cwd or PROJECT_DIR,
             timeout=30,
             input=input_data,
+            # BUG FIX: Pass filtered env so YUYUTERMUX_TOKEN is not inherited.
+            # git can print env vars in error messages (e.g. GIT_TRACE output),
+            # and a compromised git hook could dump the full environment.
+            env=_safe_env(),
         )
         ok = result.returncode == 0
-        # SECURITY: Sanitize output — remove home path from error messages
         stdout = sanitize_error(result.stdout.strip())
         stderr = sanitize_error(result.stderr.strip())
         return ok, stdout, stderr
@@ -66,8 +69,14 @@ def git_status():
     for line in (porcelain or '').split('\n'):
         if not line:
             continue
+        # BUG FIX: Was `x, y, filepath = line[0], line[1], line[3:]` with no guard.
+        # git status --porcelain output is always ≥ 4 chars for modified/staged entries
+        # (XY + space + path), but an empty or malformed line (e.g. from a corrupt
+        # git index or a future git format change) would cause IndexError here.
+        # Guard: skip any line shorter than 4 characters.
+        if len(line) < 4:
+            continue
         x, y, filepath = line[0], line[1], line[3:]
-        # SECURITY: Sanitize filepath in output
         filepath = sanitize_error(filepath)
         if x == '?' and y == '?':
             untracked.append(filepath)
@@ -84,10 +93,8 @@ def git_status():
         if line and '(fetch)' in line:
             parts = line.split()
             if len(parts) >= 2 and parts[0] not in seen:
-                # SECURITY: Sanitize remote URL (may contain tokens)
                 url = parts[1]
                 if '@' in url:
-                    # Hide token in URL for display
                     try:
                         scheme_rest = url.split('://', 1)
                         if len(scheme_rest) == 2:
@@ -146,7 +153,6 @@ def git_log():
             continue
         parts = line.split('|', 4)
         if len(parts) == 5:
-            # SECURITY: Sanitize commit message
             commits.append({
                 'hash': parts[0], 'short': parts[1],
                 'message': sanitize_error(parts[2]),
@@ -197,7 +203,6 @@ def git_add():
     if isinstance(files, str):
         files = [files]
 
-    # SECURITY: Validate file paths
     for f in files:
         if '..' in str(f):
             return jsonify({"success": False, "error": "Invalid path"})
@@ -246,7 +251,6 @@ def git_commit():
     if not message:
         return jsonify({"success": False, "error": "Commit message required"})
 
-    # SECURITY: Limit commit message length
     if len(message) > 5000:
         return jsonify({"success": False, "error": "Commit message too long (max 5000 chars)"})
 
@@ -266,15 +270,12 @@ def git_push():
     branch = data.get('branch', '')
     force = data.get('force', False)
 
-    # SECURITY: Validate remote name
     if not REMOTE_NAME_RE.match(remote):
         return jsonify({"success": False, "error": "Invalid remote name"})
 
-    # SECURITY: Validate branch name
     if branch and not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name"})
 
-    # FIX: Build push args correctly — avoid duplicate remote/branch when set_upstream is true
     args = ['push']
     if force:
         args.append('--force')
@@ -290,7 +291,6 @@ def git_push():
     msg = out or err or 'Push successful'
     if ok:
         return jsonify({"success": True, "message": msg})
-    # Suggest --set-upstream if needed
     if 'no upstream branch' in err or 'set-upstream' in err:
         return jsonify({"success": False, "error": err, "needs_upstream": True})
     return jsonify({"success": False, "error": err or out})
@@ -335,14 +335,9 @@ def git_checkout():
     branch = data.get('branch', '').strip()
     create = data.get('create', False)
 
-    # BUG FIX #10: Cek kosong dulu SEBELUM validasi regex.
-    #   Sebelumnya: _validate_branch_name('') → False → error "Invalid branch name"
-    #   Padahal pesan yang benar adalah "Branch name required".
-    #   Urutan: empty check → validation → execution.
     if not branch:
         return jsonify({"success": False, "error": "Branch name required"})
 
-    # SECURITY: Validate branch name
     if not _validate_branch_name(branch):
         return jsonify({"success": False, "error": "Invalid branch name. Use only letters, numbers, dots, hyphens, underscores, and slashes."})
 
@@ -363,11 +358,9 @@ def git_remote():
     name = data.get('name', 'origin')
     url = data.get('url', '').strip()
 
-    # SECURITY: Validate remote name
     if not REMOTE_NAME_RE.match(name):
         return jsonify({"success": False, "error": "Invalid remote name"})
 
-    # SECURITY: Validate URL format
     if url and not re.match(r'^(https?://|git://|ssh://|git@)', url):
         return jsonify({"success": False, "error": "Invalid remote URL format"})
 
@@ -395,7 +388,6 @@ def git_config():
     if request.method == 'GET':
         _, name, _ = git_run(['config', '--global', 'user.name'])
         _, email, _ = git_run(['config', '--global', 'user.email'])
-        # SECURITY: Don't leak user info in response
         return jsonify({"success": True, "name": name[:100] if name else '', "email": email[:100] if email else ''})
 
     data = request.json or {}
@@ -403,10 +395,8 @@ def git_config():
 
     for key, val in [('user.name', data.get('name', '')), ('user.email', data.get('email', ''))]:
         if val:
-            # SECURITY: Validate config values
             if len(val) > 200:
                 return jsonify({"success": False, "error": f"{key.split('.')[1].title()} too long"})
-            # FIX: Reject control characters AND newline characters (prevents git config injection)
             if re.search(r'[\x00-\x1f\x7f\n\r]', val):
                 return jsonify({"success": False, "error": f"Invalid {key.split('.')[1].title()}"})
             ok, _, err = git_run(['config', '--global', key, val])
@@ -423,7 +413,6 @@ def git_config():
 @rate_limit(max_requests=20, window=60)
 def git_diff():
     filepath = request.args.get('file', '')
-    # SECURITY: Prevent path traversal in diff file arg
     if '..' in filepath:
         return jsonify({"success": False, "diff": ""})
 
@@ -434,6 +423,5 @@ def git_diff():
     if filepath:
         args.extend(['--', filepath])
     _, out, _ = git_run(args)
-    # SECURITY: Sanitize diff output
     out = sanitize_error(out)
     return jsonify({"success": True, "diff": out})

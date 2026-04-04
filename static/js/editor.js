@@ -12,7 +12,7 @@ export const Editor = {
   highlightLayer: null,
   currentLang: 'plaintext',
   _highlightTimer: null,
-  // FIX: Store handler references for cleanup — prevents memory leak
+  // Store handler references for cleanup — prevents memory leak on re-init
   _viewportHandler: null,
   _resizeHandler: null,
 
@@ -34,7 +34,7 @@ export const Editor = {
     this._initViewport()
   },
 
-  // FIX: Proper cleanup to prevent memory leaks
+  // Proper cleanup to prevent memory leaks
   destroy() {
     if (this._highlightTimer) {
       clearTimeout(this._highlightTimer)
@@ -82,22 +82,8 @@ export const Editor = {
       return
     }
 
-    // FIX: ROOT CAUSE of "syntax highlight mati warna" — replaced hljs.highlightElement()
-    // with hljs.highlight(). The old code used highlightElement() which sets
-    // code.dataset.highlighted = "yes" after the first successful call. On ALL
-    // subsequent calls, hljs checks this attribute and SKIPS highlighting entirely
-    // (returns early). Setting code.innerHTML or code.className does NOT clear
-    // dataset attributes, so the highlight layer was permanently frozen after
-    // the first render. User would see: colors on file open, then NO COLORS
-    // when typing. Additionally, the frozen highlight layer showed OLD content
-    // while the textarea showed NEW content → "teks dobel" (doubled text overlay).
-    //
-    // hljs.highlight() is a pure function — it takes text + language, returns
-    // highlighted HTML. No internal state mutation, no dataset check, always fresh.
-    // We also removed the redundant esc() call: esc(value) + code.innerHTML
-    // was a wasted round-trip because hljs.highlight() reads raw text and does
-    // its own HTML escaping internally.
-
+    // Use hljs.highlight() (pure function) instead of hljs.highlightElement()
+    // (which sets dataset.highlighted and then skips on subsequent calls).
     try {
       const result = hljs.highlight(value, {
         language: this.currentLang,
@@ -106,13 +92,11 @@ export const Editor = {
       code.innerHTML = result.value
       code.className = `language-${this.currentLang} hljs`
     } catch {
-      // Language not registered — try auto-detect as fallback
       try {
         const result = hljs.highlightAuto(value)
         code.innerHTML = result.value
         code.className = `${result.language} hljs`
       } catch {
-        // Both failed — show plain text
         code.textContent = value
         code.className = ''
       }
@@ -127,7 +111,7 @@ export const Editor = {
   },
 
   _initViewport() {
-    // FIX: Cleanup previous listeners before adding new ones
+    // Cleanup previous listeners before adding new ones to avoid duplicates
     this.destroy()
 
     if ('virtualKeyboard' in navigator) {
@@ -176,7 +160,6 @@ export const Editor = {
       const lineStart = val.lastIndexOf('\n', start - 1) + 1
       const currentLine = val.substring(lineStart, start)
       const indent = currentLine.match(/^\s*/)[0]
-      // FIX: Added auto-indent for common pairs: { } ( ) [ ] — not just Python ':'
       const extraIndent = currentLine.trimEnd().endsWith(':') ||
                           currentLine.trimEnd().endsWith('{') ||
                           currentLine.trimEnd().endsWith('(') ||
@@ -191,10 +174,11 @@ export const Editor = {
     }
   },
 
-  // FIX: insertAtCursor was breaking undo/redo — setting .value programmatically
-  // resets the browser's undo stack. After pressing Tab/Enter, Ctrl+Z would not
-  // undo the inserted text. Fix: use document.execCommand('insertText') which
-  // integrates with the browser's native undo history.
+  // insertAtCursor: uses execCommand('insertText') as primary path because it
+  // integrates with the browser's native undo/redo history. The fallback
+  // (direct .value assignment) breaks undo — it is a known limitation and
+  // only triggers on browsers that don't support execCommand in textareas
+  // (very rare in 2024+ Chromium-based browsers used in Termux/Brave).
   insertAtCursor(text) {
     this.ta.focus()
 
@@ -204,7 +188,7 @@ export const Editor = {
       return
     }
 
-    // Fallback for browsers where execCommand doesn't work in textarea
+    // Fallback: breaks undo stack but keeps editor functional
     const start = this.ta.selectionStart
     const end = this.ta.selectionEnd
     this.ta.value = this.ta.value.substring(0, start) + text + this.ta.value.substring(end)
@@ -213,15 +197,21 @@ export const Editor = {
     this._scheduleHighlight()
   },
 
-  // FIX: Added null guards — crashes if init() failed (elements missing)
-  // FIX: Removed duplicate _doHighlight() call — setLanguage() already calls it,
-  // so the old code was calling _doHighlight() TWICE per file load (wasteful).
   onLoad(lang) {
     if (!this.ta) return
 
     this.currentLang = lang || 'plaintext'
     this.updateGutter()
+
+    // BUG FIX: Was only resetting scrollTop, not the cursor position.
+    // When switching between files, the cursor stayed at its position from the
+    // previous file. If that position exceeded the new file's length, browsers
+    // clamp it silently — but visually the user expected the cursor at position 0.
+    // Resetting selectionStart/End to 0 places the cursor at the start consistently.
     this.ta.scrollTop = 0
+    this.ta.selectionStart = 0
+    this.ta.selectionEnd = 0
+
     if (this.gutter) this.gutter.scrollTop = 0
     if (this.highlightLayer) this.highlightLayer.scrollTop = 0
     this._doHighlight()

@@ -5,20 +5,35 @@ export const SERVER_HINT_TEXT = '\nServer-nya nyalakan dulu di terminal &#x1F60D
 
 export const esc = (s) => s ? s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) : ''
 
-// ── SECURITY: Auth token management (cookie-based) ───────────────────────────
+// ── SECURITY: Auth token management ──────────────────────────────────────────
+// The actual `yuyu_token` cookie is httponly (server-set, JS cannot read it).
+// The browser automatically sends it with every same-origin request, so all
+// API calls are authenticated via the cookie without JS touching the token.
+// `yuyu_authed=1` is a companion non-httponly marker cookie (no token value)
+// that lets JS know a session is active — used only for UI state checks.
 export const Auth = {
   getToken() {
+    // NOTE: yuyu_token is httponly — this always returns '' intentionally.
+    // Auth is handled server-side via the auto-sent httponly cookie.
+    // Do not use this for auth checks; use isAuthenticated() instead.
     const match = document.cookie.match(/(?:^|;\s*)yuyu_token=([^;]+)/)
     return match ? decodeURIComponent(match[1]) : ''
   },
 
   getHeaders() {
+    // yuyu_token is httponly → getToken() returns '' → no Bearer header sent.
+    // Auth still works because the browser automatically includes the httponly
+    // cookie in every same-origin fetch/XHR request. This is intentional.
     const token = this.getToken()
     return token ? { 'Authorization': `Bearer ${token}` } : {}
   },
 
+  // BUG FIX: Was `!!this.getToken()` — always returned false because yuyu_token
+  // is httponly and invisible to document.cookie. Now reads the non-httponly
+  // companion marker cookie `yuyu_authed=1` set by the server on login.
+  // This marker has no sensitive value; it only signals "session is active".
   isAuthenticated() {
-    return !!this.getToken()
+    return /(?:^|;\s*)yuyu_authed=1(?:;|$)/.test(document.cookie)
   },
 
   logout() {
@@ -70,13 +85,31 @@ const ANSI_CODES = {
   '96': 'ansi-cyan', '97': 'ansi-white'
 }
 
+// BUG FIX: Old version prepended `</span>` unconditionally on every ANSI escape,
+// producing an unmatched closing tag at the very start of the string (before any
+// opening <span> existed). This caused incorrect nesting in the DOM:
+//   "</span><span class='ansi-red'>foo</span>" — the leading </span> is orphaned.
+// Fix: track `spanOpen` state and only emit </span> when one is actually open.
+// Also now appends a final </span> when the text ends with an open span.
 export function parseAnsi(text) {
   if (!text) return ''
-  return text.replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
-    // SECURITY: Sanitize ANSI codes — only allow known codes
+  let spanOpen = false
+  const result = text.replace(/\x1b\[([0-9;]*)m/g, (match, codes) => {
     const safeCodes = codes.split(';').filter(c => c in ANSI_CODES || c === '').join(';')
-    return '</span>' + (safeCodes ? `<span class="${safeCodes.split(';').map(c => ANSI_CODES[c] || '').filter(Boolean).join(' ')}">` : '')
+    const classes = safeCodes
+      ? safeCodes.split(';').map(c => ANSI_CODES[c] || '').filter(Boolean).join(' ')
+      : ''
+
+    let out = spanOpen ? '</span>' : ''
+    spanOpen = false
+
+    if (classes) {
+      out += `<span class="${classes}">`
+      spanOpen = true
+    }
+    return out
   })
+  return spanOpen ? result + '</span>' : result
 }
 
 // FILE TYPE ICONS

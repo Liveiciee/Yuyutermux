@@ -118,11 +118,23 @@ export const FileManager = {
   },
 
   downloadFile(path) {
+    // BUG FIX: Old version used `window.location.href = /api/files/download?path=...`
+    // which navigates the current page to the download URL. If the server returns
+    // a non-file response (e.g. 401 login page HTML), it replaces the entire app UI
+    // with an HTML document. Using a temporary hidden <a download> element instead:
+    //   1. Triggers a download dialog, not a page navigation
+    //   2. If the response is not a file (401, 404), the browser handles it gracefully
+    //      without disrupting the current app state
+    //   3. The httponly cookie is automatically included (same-origin navigation)
+    const a = document.createElement('a')
+    a.href = `/api/files/download?path=${encodeURIComponent(path)}`
+    a.download = path.split('/').pop() || 'download'
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    // Small delay before removal so the browser has time to initiate the download
+    setTimeout(() => document.body.removeChild(a), 200)
     Toast.show('Downloading...', 'info')
-    // FIX: Use api request with auth headers for download, not raw window.location
-    // Since send_from_directory redirects, use a hidden link approach with cookie auth
-    // Cookie is now HttpOnly but still sent with navigation requests automatically
-    window.location.href = `/api/files/download?path=${encodeURIComponent(path)}`
   },
 
   async deleteItem(path) {
@@ -208,7 +220,7 @@ export const FileManager = {
     const parent = this.file.substring(0, this.file.lastIndexOf('/'))
     const newPath = parent + '/' + newName
     
-    // Read, write new, delete old
+    // Read → write new → delete old (non-atomic; known limitation)
     const { ok: readOk, data: readData } = await api.post('/api/files/read', { path: this.file })
     if (!readOk || readData?.error) {
       Toast.show('Failed to read file', 'error')
@@ -239,7 +251,8 @@ export const FileManager = {
     formData.append('file', file)
     formData.append('path', this.dir)
     
-    // FIX: uploadBtn is now a <label>, not a <button> — labels don't have .disabled
+    // uploadBtn is a <label> element, not a <button> — use pointer-events/opacity
+    // instead of .disabled (which has no effect on labels)
     const btn = document.getElementById('uploadBtn')
     const originalText = btn?.innerHTML
     
@@ -250,9 +263,12 @@ export const FileManager = {
     }
     
     try {
+      // NOTE: Do NOT set Content-Type header for FormData — the browser must set
+      // it automatically with the correct multipart boundary. Setting it manually
+      // omits the boundary and causes the server to reject the upload.
+      // The httponly cookie is sent automatically (same-origin request).
       const res = await fetch('/api/files/upload', { method: 'POST', body: formData })
 
-      // FIX: Handle 401 — redirect to login (same pattern as api.request)
       if (res.status === 401) {
         window.location.href = '/login'
         return
@@ -270,7 +286,6 @@ export const FileManager = {
     } catch {
       Toast.show('Connection failed', 'error')
     } finally {
-      // FIX: Restore label state (not .disabled, which labels don't have)
       if (btn) {
         btn.innerHTML = originalText
         btn.style.pointerEvents = ''
@@ -306,12 +321,9 @@ export const FileManager = {
     
     this.content = data.content || ''
     editor.value = this.content
-    // FIX: Was Editor.updateGutter() — only updates line numbers, does NOT activate
-    // syntax highlighting (setLanguage, _doHighlight, etc). Files opened via global
-    // search / click showed raw unhighlighted text.
     Editor.onLoad(LANG_MAP[ext] || ext || '')
     
-    // Scroll to line (after highlight renders)
+    // Scroll to target line (after highlight renders)
     setTimeout(() => {
       const lines = editor.value.split('\n')
       if (targetLine < 1 || targetLine > lines.length) return
@@ -328,10 +340,8 @@ export const FileManager = {
       editor.focus()
       editor.setSelectionRange(startPos, endPos)
       
-      // FIX: Highlight flash — apply to editorWrapper, NOT editor directly.
-      // When .highlighting-on is active, textarea has background: transparent !important,
-      // so setting editor.style.backgroundColor is invisible (the !important overrides it).
-      // Applying to the wrapper ensures the flash is visible regardless of highlight state.
+      // Highlight flash — apply to editorWrapper, not editor directly
+      // (textarea has background: transparent !important when highlighting-on is active)
       const wrapper = document.getElementById('editorWrapper')
       if (wrapper) {
         wrapper.style.background = 'rgba(255,107,53,0.15)'

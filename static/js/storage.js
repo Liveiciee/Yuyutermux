@@ -27,10 +27,10 @@ export const Storage = {
 
     const html = localStorage.getItem(this.KEY)
     if (html) {
-      // SECURITY: Basic XSS sanitization — remove script tags and event handlers
+      // SECURITY: Sanitize stored HTML before injecting into DOM
       const sanitized = this._sanitizeHtml(html)
       if (sanitized !== html) {
-        // If sanitization changed anything, discard old data
+        // If sanitization changed anything, discard old data entirely
         this.clear()
         return
       }
@@ -49,15 +49,51 @@ export const Storage = {
     }
   },
 
-  // SECURITY: Sanitize stored HTML to prevent stored XSS
+  // SECURITY: Sanitize stored HTML to prevent stored XSS.
+  // BUG FIX: Old version only stripped <script> tags and onclick= style handlers.
+  // Missing vectors that could still execute JS:
+  //   - src="javascript:..." on <img>, <iframe>, <script> etc.
+  //   - href="javascript:..." (was only fixed for href, not src/action/formaction)
+  //   - srcdoc= attribute on <iframe> (can embed full HTML documents)
+  //   - formaction= on <button>/<input> (overrides form action)
+  //   - <base href=...> (can redirect all relative URLs to attacker-controlled origin)
+  //   - <iframe>, <object>, <embed>, <link rel=import> (content injection)
+  //   - Unquoted event handlers: onerror=alert(1) (no quotes — old regex missed these)
   _sanitizeHtml(html) {
-    // Remove <script> tags
-    let clean = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Remove inline event handlers (onclick, onerror, onload, etc.)
-    clean = clean.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '')
-    clean = clean.replace(/\s+on\w+\s*=\s*\S+/gi, '')
-    // Remove javascript: URLs
-    clean = clean.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"')
+    let clean = html
+
+    // 1. Remove dangerous block-level elements entirely (with their content)
+    clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    clean = clean.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    clean = clean.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    clean = clean.replace(/<embed\b[^>]*>/gi, '')
+    clean = clean.replace(/<base\b[^>]*>/gi, '')  // Prevents base-href hijacking
+    clean = clean.replace(/<link\b[^>]*>/gi, '')   // Prevents stylesheet/import injection
+
+    // 2. Remove ALL inline event handlers (quoted and unquoted variants)
+    //    Old regex: /\s+on\w+=\s*["'][^"']*["']/ — missed unquoted, multi-word, etc.
+    //    New: strip any on* attribute regardless of quoting style.
+    clean = clean.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+
+    // 3. Strip javascript: URI scheme from ALL attributes that accept URLs.
+    //    Old version only fixed href="javascript:...". Any attribute can carry it:
+    //    src=, action=, formaction=, xlink:href=, data=, etc.
+    clean = clean.replace(
+      /((?:href|src|action|formaction|data|xlink:href)\s*=\s*["'])\s*javascript:[^"']*/gi,
+      '$1#'
+    )
+    // Also catch unquoted variant: src=javascript:alert(1)
+    clean = clean.replace(
+      /((?:href|src|action|formaction|data)\s*=\s*)javascript:\S*/gi,
+      '$1#'
+    )
+
+    // 4. Strip srcdoc= (iframe content injection — iframe removed above but belt+suspenders)
+    clean = clean.replace(/\s+srcdoc\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+
+    // 5. Strip formaction= (overrides <form action> — allows redirecting POST requests)
+    clean = clean.replace(/\s+formaction\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+
     return clean
   },
 

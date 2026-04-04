@@ -22,6 +22,16 @@ if not AUTH_TOKEN:
 # Always print token on startup — run.sh will grep this line
 print(f"[YUYU-TOKEN] {AUTH_TOKEN}", flush=True)
 
+# ── SECURITY: Env filtering for subprocess calls ──────────────────────────────
+# BUG FIX: subprocess.Popen/run inherits the full process environment, which
+# includes YUYUTERMUX_TOKEN. A compromised child process or verbose git error
+# could expose the token. _safe_env() strips secrets before spawning children.
+_ENV_BLOCKLIST = frozenset({'YUYUTERMUX_TOKEN'})
+
+def _safe_env() -> dict:
+    """Return a filtered copy of os.environ with secrets removed."""
+    return {k: v for k, v in os.environ.items() if k not in _ENV_BLOCKLIST}
+
 
 def check_auth() -> bool:
     """Check Bearer token authentication. Returns True if valid."""
@@ -29,7 +39,7 @@ def check_auth() -> bool:
         return True  # No token configured = skip auth (dangerous but backward compat)
 
     auth_header = request.headers.get('Authorization', '')
-    # Also check cookie for browser-based access
+    # Also check cookie for browser-based access (httponly cookie auto-sent by browser)
     auth_cookie = request.cookies.get('yuyu_token', '')
 
     token = ''
@@ -115,8 +125,6 @@ def rate_limit_execute(max_requests: int = 10, window: int = 60):
 # ── SECURITY: Path validation (hardened) ──────────────────────────────────────
 
 # Commands that are explicitly DANGEROUS - never allow these
-# BUG FIX #2: Hapus chmod, chown dari BLOCKED — user butuh manage permission file.
-# BUG FIX #2: Hapus duplikat 'perl' (ada di baris 125 dan 129).
 BLOCKED_COMMANDS = {
     'rm', 'rmdir', 'mkfs', 'dd', 'fdisk', 'parted', 'mkswap',
     'shutdown', 'reboot', 'halt', 'poweroff', 'init',
@@ -125,7 +133,7 @@ BLOCKED_COMMANDS = {
     'iptables', 'nft', 'ufw', 'firewalld',
     'curl', 'wget', 'nc', 'ncat', 'netcat',  # network exfil prevention
     'python3', 'python', 'node', 'ruby', 'perl', 'php',  # code exec prevention
-    # FIX: Block indirection vectors that can bypass command blocklist
+    # Block indirection vectors that can bypass command blocklist
     'env', 'exec', 'eval', 'source', 'busybox', 'xargs',
     'nohup', 'setsid', 'unshare', 'nsenter',
     'find', 'awk', 'sed',  # can execute commands
@@ -135,7 +143,6 @@ BLOCKED_COMMANDS = {
 # NOTE: This set is NOT actively enforced in the terminal command check.
 #       BLOCKED_COMMANDS is checked first via os.path.basename(cmd_parts[0]).
 #       Commands NOT in BLOCKED_COMMANDS are implicitly allowed.
-# BUG FIX #3: Bersihkan konflik — hapus entry yang juga ada di BLOCKED_COMMANDS.
 ALLOWED_GNU_COREUTILS = {
     'ls', 'cat', 'head', 'tail', 'less', 'more', 'wc', 'sort',
     'uniq', 'grep', 'diff', 'file', 'stat', 'which', 'whoami',
@@ -191,12 +198,14 @@ def validate_path_terminal(user_path: str) -> Optional[str]:
     if '..' in user_path:
         return None
 
-    base = user_path if os.path.isabs(user_path) else os.path.join(os.path.expanduser('~'), user_path)
+    # BUG FIX: Was computing os.path.expanduser('~') locally. Use the module-level
+    # HOME_DIR constant for consistency — avoids subtle divergence if the home
+    # directory mapping ever changes at runtime (e.g., under test environments).
+    base = user_path if os.path.isabs(user_path) else os.path.join(HOME_DIR, user_path)
     resolved = os.path.realpath(base)
 
-    home = os.path.expanduser('~')
     # Only allow navigation within home directory
-    if not (resolved.startswith(home + os.sep) or resolved == home):
+    if not (resolved.startswith(HOME_DIR + os.sep) or resolved == HOME_DIR):
         return None
 
     return resolved

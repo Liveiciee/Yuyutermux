@@ -17,10 +17,8 @@
 
 /* ── Mobile responsive ── */
 @media (max-width: 640px) {
-  /* FIX: Added @supports fallback for env(keyboard-inset-height).
-     Browsers that don't support env() may ignore the entire calc() expression,
-     leaving the modal without a valid height. The @supports blocks ensure
-     a safe fallback for Firefox < 123 and older WebKit versions. */
+  /* @supports fallback for env(keyboard-inset-height) — safe for Firefox < 123
+     and older WebKit versions that don't support this env variable. */
   @supports (height: env(keyboard-inset-height)) {
     .modal-box {
       height: calc(90vh - env(keyboard-inset-height, 0px));
@@ -36,11 +34,6 @@
     }
   }
 
-  /* FIX: Was height:150px; min-height:150px (fixed) — this caused the modal footer
-     (SAVE/RENAME buttons) to be pushed off-screen when the keyboard is open.
-     The fixed 150px didn't shrink when modal height decreased due to keyboard-inset-height,
-     so footer got clipped by overflow:hidden on .modal-box.
-     Using flex + max-height instead ensures textarea adapts to available space. */
   .textarea-container {
     flex: 1;
     min-height: 80px;
@@ -83,9 +76,6 @@
    TERMINAL ENTRY ANIMATIONS
    ══════════════════════════════════════════════════════════════════ */
 
-/* FIX: Replaced hardcoded rgba(255,107,53,...) with color-mix() so animations
-   automatically follow the --accent theme color. Previously if you changed
-   --accent to blue/purple, these glow/shadow effects stayed orange. */
 @keyframes entryPulse {
   0%   { border-left-color: var(--accent); box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 40%, transparent); }
   70%  { border-left-color: var(--accent); box-shadow: -2px 0 8px color-mix(in srgb, var(--accent) 15%, transparent); }
@@ -124,10 +114,18 @@
 }
 
 /* Virtual scroll: collapsed entries */
+/* BUG FIX: The ::after pseudo-element uses `position: absolute` to overlay
+   the "··· tap to expand" text at the bottom of the collapsed content area.
+   For `position: absolute` to anchor to .output-content (its nearest intended
+   parent), that parent needs `position: relative`. Without it, the absolute
+   positioning climbs up the DOM to the nearest positioned ancestor — which
+   could be the #outputArea container or even <body> — placing the overlay
+   text at completely the wrong position on screen.
+   Fix: add `position: relative` to the collapsed .output-content rule. */
 .output-entry.collapsed .output-content {
+  position: relative;
   max-height: calc(3 * 1.55em + 2em);
   overflow: hidden;
-  position: relative;
 }
 .output-entry.collapsed .output-content::after {
   content: '··· tap to expand';
@@ -145,9 +143,8 @@
   background: linear-gradient(transparent, var(--bg));
 }
 
-/* FIX: Override collapsed gradient for error entries — .error has background
-   var(--danger-dim), but the gradient faded to var(--surface), creating a
-   visible color jump at the fade boundary. Now matches the parent background. */
+/* Override collapsed gradient for error entries — .error has background
+   var(--danger-dim), so the gradient must match to avoid a color jump. */
 .output-entry.error.collapsed .output-content::after {
   background: linear-gradient(transparent, var(--danger-dim));
 }
@@ -176,7 +173,6 @@
   transition-duration: 0.08s;
 }
 
-/* FIX: Replaced hardcoded rgba(255,107,53,...) with color-mix() */
 @keyframes keyRipple {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
   100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
@@ -240,10 +236,10 @@
    TOAST ANIMATION
    ══════════════════════════════════════════════════════════════════ */
 
-.toast {
-  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes toastSlideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
+/* BUG FIX: This file previously duplicated `.toast { animation: toastSlideIn }` and
+   `@keyframes toastSlideIn` — a conflict with the canonical toast animation system
+   in base.css (`toastIn` / `toastOut` / `.toast.removing`). Since animation.css is
+   loaded LAST, its `.toast` rule silently overrode base.css, making `toastIn` a dead
+   keyframe. The `toastSlideIn` animation was visually identical to `toastIn` so the
+   bug was invisible, but it orphaned the base.css declaration and made the codebase
+   misleading. Removed the duplicate — base.css owns the full toast animation system. */

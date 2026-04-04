@@ -8,17 +8,14 @@ import { GlobalSearch } from './global-search.js'
 import { GitHub } from './github.js'
 import { Auth } from './api.js'
 
-// FIX: Store interval references for cleanup
+// Store interval references for cleanup
 let _cwdInterval = null
-// FIX: Use {} not null — typeof null === 'object' in JS, so StatusBar.init() would
-// try to set null.interval = id, which crashes in strict mode (ES modules),
-// killing Editor.init() and every init after it.
+// Use {} not null — typeof null === 'object' in JS, so StatusBar.init() would
+// try to set null.interval = id, which crashes in strict mode (ES modules).
 let _connectionInterval = {}
 
 document.addEventListener('DOMContentLoaded', () => {
-  // FIX: Wrap each init in try-catch so one failure doesn't kill ALL event handlers.
-  // Previously, if initModules() threw, initTerminal/initFileManager/initGitHub never ran —
-  // making ALL buttons (send, git modal, file upload) appear completely dead.
+  // Wrap each init in try-catch so one failure doesn't kill ALL event handlers.
   try { initSplash() } catch (e) { console.error('[initSplash]', e) }
   try { initInput() } catch (e) { console.error('[initInput]', e) }
   try { initModules() } catch (e) { console.error('[initModules]', e) }
@@ -60,7 +57,7 @@ function initSplash() {
     if (idx >= steps.length) return
 
     const step = steps[idx]
-    barFill.style.width = step.pct
+    if (barFill) barFill.style.width = step.pct
     if (splashStatus) splashStatus.textContent = step.text
     idx++
 
@@ -80,8 +77,13 @@ function initSplash() {
 }
 
 function initInput() {
+  // BUG FIX: Was missing null guards — if the element doesn't exist in the DOM
+  // (e.g. a template change or partial render), addEventListener() would throw
+  // "Cannot read properties of null", crashing the entire initInput() call and
+  // leaving the char-count display permanently broken.
   const cmdInput = document.getElementById('cmdInput')
   const charCount = document.getElementById('inputCharCount')
+  if (!cmdInput || !charCount) return
 
   cmdInput.addEventListener('input', () => {
     cmdInput.style.height = '22px'
@@ -92,6 +94,7 @@ function initInput() {
 
 function initTerminal() {
   const cmdInput = document.getElementById('cmdInput')
+  if (!cmdInput) return
 
   document.getElementById('sendBtn').onclick = () => Terminal.run()
   cmdInput.onkeydown = (e) => {
@@ -103,10 +106,6 @@ function initTerminal() {
 
   document.getElementById('clearAllBtn').onclick = () => Terminal.clearAll()
 
-  // BUG FIX #11: CWD status bar update — sebelumnya poll /api/health yang TIDAK punya
-  //   field "display" di response-nya (hanya {"status":"ok","service":"yuyutermux"}),
-  //   jadi kondisi `if (el && data.display)` SELALU false → CWD tidak pernah update.
-  //   Fix: poll /api/execute/cwd yang return {"cwd":"~","display":"~"}.
   const updateCwd = async () => {
     try {
       const res = await fetch('/api/execute/cwd')
@@ -122,7 +121,6 @@ function initTerminal() {
     } catch { /* server might not be ready yet */ }
   }
   updateCwd()
-  // FIX: Store interval reference for cleanup
   _cwdInterval = setInterval(updateCwd, 2000)
 }
 
@@ -157,8 +155,6 @@ function initFileManager() {
     try {
       fileModal.showModal()
     } catch (err) {
-      // FIX: If dialog already open or browser doesn't support showModal,
-      // fall back to removing [hidden] attribute
       console.warn('[fileModal] showModal failed:', err)
       fileModal.show?.() || (fileModal.hidden = false)
     }
@@ -176,13 +172,12 @@ function initFileManager() {
   document.getElementById('modalRename').onclick = () => FileManager.renameFile()
   document.getElementById('refreshFileListBtn').onclick = () => FileManager.load(FileManager.dir)
 
-  // FIX: Upload uses <label for="uploadInput"> in HTML — no JS click handler needed.
-  // The label's for="uploadInput" attribute natively triggers the file picker on all platforms,
-  // including mobile browsers where hidden input .click() often fails.
   const uploadInput = document.getElementById('uploadInput')
-  uploadInput.onchange = (e) => {
-    if (e.target.files[0]) FileManager.uploadFile(e.target.files[0])
-    e.target.value = ''
+  if (uploadInput) {
+    uploadInput.onchange = (e) => {
+      if (e.target.files[0]) FileManager.uploadFile(e.target.files[0])
+      e.target.value = ''
+    }
   }
 
   document.addEventListener('keydown', (e) => {
@@ -195,7 +190,6 @@ function initFileManager() {
 
 function initGitHub() {
   GitHub.init()
-
   document.getElementById('gitBtn')?.addEventListener('click', () => GitHub.open())
 }
 
@@ -208,30 +202,32 @@ function initPWA() {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault()
     deferredPrompt = e
-    document.getElementById('pwaInstallPrompt').classList.remove('hidden')
+    document.getElementById('pwaInstallPrompt')?.classList.remove('hidden')
   })
 
-  document.getElementById('pwaInstallBtn').onclick = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    document.getElementById('pwaInstallPrompt').classList.add('hidden')
-    deferredPrompt = null
-    // FIX: Toast is now initialized before initPWA runs
-    if (outcome === 'accepted') Toast.show('App installed!', 'success')
+  const installBtn = document.getElementById('pwaInstallBtn')
+  if (installBtn) {
+    installBtn.onclick = async () => {
+      if (!deferredPrompt) return
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
+      deferredPrompt = null
+      if (outcome === 'accepted') Toast.show('App installed!', 'success')
+    }
   }
 
-  document.getElementById('pwaDismissBtn').onclick = () => {
-    document.getElementById('pwaInstallPrompt').classList.add('hidden')
-  }
+  document.getElementById('pwaDismissBtn')?.addEventListener('click', () => {
+    document.getElementById('pwaInstallPrompt')?.classList.add('hidden')
+  })
 }
 
 function initModules() {
-  // FIX: Initialize these FIRST — especially Toast which is used by other modules
+  // Initialize Toast FIRST — it is used by StatusBar and other modules
   ModalKeyboard.init()
   ExtraKeys.init()
-  Toast.init()     // Must be before StatusBar.init() and other modules that use Toast
-  StatusBar.init(_connectionInterval)  // FIX: Pass reference for cleanup
+  Toast.init()
+  StatusBar.init(_connectionInterval)
   Suggestions.init()
   Storage.load()
   Editor.init()
@@ -241,18 +237,25 @@ function initModules() {
 // ── Keyboard Shortcuts ────────────────────────────────────────────────────
 function initShortcuts() {
   document.addEventListener('keydown', (e) => {
-    // Ctrl+K → Clear terminal input (same as ESC extra key)
+    // BUG FIX: Was missing null checks — getElementById() returns null if the
+    // element doesn't exist. Accessing .value/.focus() on null throws a TypeError
+    // that, inside a 'keydown' listener, silently swallows the shortcut and can
+    // leave keyboard handling in a broken state for the rest of the session.
+
+    // Ctrl+K → Clear terminal input
     if (e.ctrlKey && e.key === 'k') {
       e.preventDefault()
       const input = document.getElementById('cmdInput')
-      if (input && document.activeElement !== input) input.focus()
+      const charCount = document.getElementById('inputCharCount')
+      if (!input) return
+      if (document.activeElement !== input) input.focus()
       input.value = ''
       input.style.height = '22px'
-      document.getElementById('inputCharCount').textContent = '0 chars'
+      if (charCount) charCount.textContent = '0 chars'
       return
     }
 
-    // Ctrl+L → Focus terminal and clear output (same as CLR button)
+    // Ctrl+L → Clear terminal output
     if (e.ctrlKey && e.key === 'l') {
       e.preventDefault()
       Terminal.clearAll()
@@ -260,31 +263,30 @@ function initShortcuts() {
       return
     }
 
-    // Ctrl+F → Open FILES modal (same as FILES button)
+    // Ctrl+F → Open FILES modal
     if (e.ctrlKey && e.key === 'f') {
       e.preventDefault()
       document.getElementById('editFileBtn')?.click()
       return
     }
 
-    // Ctrl+G → Open GIT modal (same as GIT button)
+    // Ctrl+G → Open GIT modal
     if (e.ctrlKey && e.key === 'g') {
       e.preventDefault()
       document.getElementById('gitBtn')?.click()
       return
     }
 
-    // Ctrl+/ → Toggle extra keys panel visibility
+    // Ctrl+/ → Toggle extra keys panel
     if (e.ctrlKey && e.key === '/') {
       e.preventDefault()
-      const panel = document.getElementById('extraKeysPaper')
-      if (panel) panel.classList.toggle('hidden')
+      document.getElementById('extraKeysPaper')?.classList.toggle('hidden')
       return
     }
   })
 }
 
-// FIX: Cleanup intervals on page unload to prevent memory leaks
+// Cleanup intervals on page unload to prevent memory leaks
 window.addEventListener('beforeunload', () => {
   if (_cwdInterval) clearInterval(_cwdInterval)
   if (_connectionInterval?.interval) clearInterval(_connectionInterval.interval)

@@ -18,10 +18,12 @@ files_bp = Blueprint('files', __name__)
 def api_files_list():
     path = validate_path(get_req_path())
     if not path:
-        return json_err("Invalid path", 403, files=[])
+        # BUG FIX: Was `files=[]` — inconsistent with json_ok which uses `items`.
+        # Consistent key name aids debugging even though !ok path in JS never reads it.
+        return json_err("Invalid path", 403, items=[])
 
     if not os.path.exists(path):
-        return json_err("Path not found", 404, files=[])
+        return json_err("Path not found", 404, items=[])
 
     try:
         items = []
@@ -41,7 +43,7 @@ def api_files_list():
                     else:
                         size_str = f"{size/1024/1024:.1f}M"
 
-                # FIX: Compute relative path instead of leaking absolute filesystem path
+                # Compute relative path instead of leaking absolute filesystem path
                 if path == PROJECT_DIR:
                     rel_path = entry.name
                 else:
@@ -49,7 +51,6 @@ def api_files_list():
 
                 items.append({
                     "name": entry.name,
-                    # FIX: Use relative path, not entry.path (which is absolute)
                     "path": rel_path,
                     "type": "directory" if is_dir else "file",
                     "size": size_str,
@@ -69,11 +70,10 @@ def api_files_list():
         return json_ok(current_path=display, items=items)
 
     except Exception:
-        return json_err("Failed to list directory", 500, files=[])
+        return json_err("Failed to list directory", 500, items=[])
 
 
 @files_bp.route('/api/files/read', methods=['POST'])
-# BUG FIX #7: Tambah rate_limit — tanpa rate limit, bisa dipakai DoS
 @rate_limit(max_requests=30, window=60)
 def api_files_read():
     path = validate_path(get_req_path())
@@ -88,7 +88,6 @@ def api_files_read():
 
     try:
         with open(path, 'r', encoding='utf-8', errors='replace') as f:
-            # BUG FIX #4: Jangan leak full filesystem path — gunakan relative path
             rel_path = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
             return json_ok(path=rel_path, content=f.read())
     except Exception:
@@ -113,9 +112,6 @@ def api_files_write():
         return json_err("Content too large (>5MB)", 413)
 
     # SECURITY: Block writing to sensitive file patterns
-    # BUG FIX #6: Pisahkan check antara filename-only patterns dan path patterns.
-    #   Sebelumnya semua di-cek via os.path.basename(path) jadi pattern '.ssh/'
-    #   dan 'ssh/' (yang berisi '/') tidak pernah match.
     filename = os.path.basename(path)
     rel_to_project = path.replace(PROJECT_DIR + os.sep, '', 1) if path != PROJECT_DIR else ''
 
@@ -146,7 +142,6 @@ def api_files_write():
 
 
 @files_bp.route('/api/files/delete', methods=['POST'])
-# BUG FIX #7: Tambah rate_limit — delete tanpa limit = vector DoS/abuse
 @rate_limit(max_requests=20, window=60)
 def api_files_delete():
     path = validate_path(get_req_path())
@@ -161,7 +156,6 @@ def api_files_delete():
 
     try:
         if os.path.isdir(path):
-            # SECURITY: Use shutil.rmtree for non-empty dirs, but limit depth
             import shutil
             shutil.rmtree(path)
         else:
@@ -172,7 +166,6 @@ def api_files_delete():
 
 
 @files_bp.route('/api/files/create', methods=['POST'])
-# BUG FIX #7: Tambah rate_limit — tanpa limit bisa spam file creation
 @rate_limit(max_requests=20, window=60)
 def api_files_create():
     data = request.json or {}
@@ -199,14 +192,18 @@ def api_files_create():
         return json_err("File already exists", 409)
 
     try:
-        open(new_path, 'w').close()
+        # BUG FIX: Was `open(new_path, 'w').close()` — file object not guaranteed
+        # to be closed if .close() itself raises (unlikely but possible under EINTR
+        # or if the OS fd table is exhausted). Using a context manager ensures
+        # the file descriptor is always released via __exit__.
+        with open(new_path, 'w', encoding='utf-8') as f:
+            pass
         return json_ok(message=f"Created: {os.path.basename(new_path)}")
     except Exception:
         return json_err("Failed to create file")
 
 
 @files_bp.route('/api/files/download')
-# BUG FIX #7: Tambah rate_limit — tanpa limit bisa dipakai DoS
 @rate_limit(max_requests=30, window=60)
 def api_files_download():
     path = validate_path(get_req_path())
@@ -256,8 +253,7 @@ def api_files_upload():
     if not save_path.startswith(PROJECT_DIR):
         return json_err("Invalid upload path", 403)
 
-    # SECURITY: Check if file already exists (prevent overwrite)
-    # FIX: Use loop to handle race condition on timestamp collision
+    # Handle name collision — use timestamped name to prevent overwrite
     if os.path.exists(save_path):
         name, ext = os.path.splitext(safe_filename)
         for attempt in range(10):
@@ -273,7 +269,11 @@ def api_files_upload():
 
     try:
         file.save(save_path)
-        return json_ok(message=f"Uploaded: {safe_filename}", path=save_path)
+        # BUG FIX: Was `path=save_path` which leaks the absolute filesystem path
+        # (e.g. "/data/data/com.termux/files/home/Yuyutermux/uploads/foo.txt").
+        # Return only the relative path from PROJECT_DIR root instead.
+        rel_path = os.path.relpath(save_path, PROJECT_DIR)
+        return json_ok(message=f"Uploaded: {safe_filename}", path=rel_path)
     except Exception:
         return json_err("Upload failed")
 
@@ -295,10 +295,8 @@ def search_files():
 
     case_sensitive = request.args.get('case', '0') == '1'
 
-    # BUG FIX #5: Gunakan grep -F (fixed string) bukan regex untuk mencegah ReDoS.
-    #   Sebelumnya query user di-pass langsung sebagai regex pattern ke grep,
-    #   memungkinkan crafted query seperti "(a+)+$" menyebabkan catastrophic backtracking.
-    grep_flags = ['-rn', '-F',  # -F = fixed strings (no regex)
+    # BUG FIX: Use grep -F (fixed string) not regex to prevent ReDoS.
+    grep_flags = ['-rn', '-F',
                   '--include=*.py', '--include=*.js', '--include=*.ts',
                   '--include=*.html', '--include=*.css', '--include=*.json',
                   '--include=*.md', '--include=*.txt', '--include=*.sh',
@@ -306,6 +304,9 @@ def search_files():
                   '--include=*.cfg',
                   '--exclude-dir=node_modules', '--exclude-dir=.git',
                   '--exclude-dir=__pycache__', '--exclude-dir=dist']
+
+    if not case_sensitive:
+        grep_flags.append('-i')
 
     grep_flags.extend(['--', q, folder])
 
@@ -335,7 +336,6 @@ def search_files():
             continue
         filepath, lineno, text = match.groups()
         rel = filepath[len(folder):].lstrip('/') if filepath.startswith(folder) else filepath
-        # SECURITY: Sanitize paths in output
         rel = sanitize_error(rel)
         text = text[:500]  # Truncate long match lines
         if rel not in file_map:

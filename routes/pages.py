@@ -5,6 +5,7 @@ from utils import AUTH_TOKEN, check_auth
 pages_bp = Blueprint('pages', __name__)
 
 _COOKIE_NAME = 'yuyu_token'
+_MARKER_COOKIE = 'yuyu_authed'   # Non-httponly auth presence marker for JS
 _COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 
 
@@ -34,7 +35,6 @@ def docs():
 def login():
     if check_auth():
         return redirect('/')
-    # FIX: Use generic error to prevent token enumeration
     error = request.args.get('error', '')
     return render_template('login.html', error=error)
 
@@ -45,11 +45,9 @@ def auth_login():
     token = (data.get('token') or '').strip()
 
     if not token:
-        # FIX: Uniform error message — don't reveal if token is empty vs wrong
         return redirect('/login?error=Authentication+failed')
 
     if not AUTH_TOKEN or not secrets.compare_digest(token, AUTH_TOKEN):
-        # FIX: Uniform error message
         return redirect('/login?error=Authentication+failed')
 
     resp = make_response(redirect('/'))
@@ -57,8 +55,21 @@ def auth_login():
         _COOKIE_NAME,
         token,
         max_age=_COOKIE_MAX_AGE,
-        # FIX: Set httponly=True to prevent XSS token theft
-        httponly=True,
+        httponly=True,        # Protects token from XSS — JS cannot read it
+        samesite='Strict',
+        path='/'
+    )
+    # BUG FIX: Auth.getToken() in api.js reads document.cookie, which cannot
+    # see httponly cookies. This means Auth.isAuthenticated() always returned
+    # false even when the user was logged in, causing misleading UI state.
+    # Fix: set a companion non-httponly marker cookie `yuyu_authed=1` that
+    # carries NO sensitive data — only signals "you have a valid session".
+    # JS reads this for isAuthenticated(); the actual token stays httponly.
+    resp.set_cookie(
+        _MARKER_COOKIE,
+        '1',
+        max_age=_COOKIE_MAX_AGE,
+        httponly=False,       # Intentionally readable by JS (no token value)
         samesite='Strict',
         path='/'
     )
@@ -69,4 +80,5 @@ def auth_login():
 def auth_logout():
     resp = make_response(redirect('/login'))
     resp.delete_cookie(_COOKIE_NAME, path='/')
+    resp.delete_cookie(_MARKER_COOKIE, path='/')
     return resp
