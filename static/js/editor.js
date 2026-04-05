@@ -51,8 +51,9 @@ export const Editor = {
     layer.style.whiteSpace = styles.whiteSpace
     layer.style.tabSize = styles.tabSize
     // Adjust left position based on gutter width (line numbers)
+    // offsetWidth already includes border (box-sizing: border-box), no +1 needed
     const gutterWidth = this.gutter.offsetWidth
-    layer.style.left = `${gutterWidth + 1}px` // +1 for border
+    layer.style.left = `${gutterWidth}px`
   },
 
   destroy() {
@@ -104,30 +105,50 @@ export const Editor = {
     const code = this.highlightLayer.querySelector('code')
     if (!code) return
     const value = this.ta.value
+
     if (typeof hljs === 'undefined') {
-      code.textContent = value
+      // hljs not loaded — hide the layer so textarea text is visible normally
+      this.highlightLayer.style.visibility = 'hidden'
       this.ta.classList.remove('highlighting-on')
+      this.ta.style.color = ''
+      this.ta.style.background = ''
+      this.ta.style.webkitTextFillColor = ''
       return
     }
+
+    // hljs available — ensure layer is visible
+    this.highlightLayer.style.visibility = ''
+
+    let highlighted = false
     try {
       const result = hljs.highlight(value, { language: this.currentLang, ignoreIllegals: true })
       code.innerHTML = result.value
       code.className = `language-${this.currentLang} hljs`
+      highlighted = true
     } catch {
       try {
         const result = hljs.highlightAuto(value)
         code.innerHTML = result.value
-        code.className = `${result.language} hljs`
+        code.className = `${result.language || ''} hljs`
+        highlighted = true
       } catch {
-        code.textContent = value
-        code.className = ''
+        // Both hljs attempts failed — hide layer, show textarea text as-is
+        this.highlightLayer.style.visibility = 'hidden'
+        this.ta.classList.remove('highlighting-on')
+        this.ta.style.color = ''
+        this.ta.style.background = ''
+        this.ta.style.webkitTextFillColor = ''
+        return
       }
     }
-    this.ta.classList.add('highlighting-on')
-    // Force textarea transparent
-    this.ta.style.color = 'transparent'
-    this.ta.style.background = 'transparent'
-    this.ta.style.webkitTextFillColor = 'transparent'
+
+    if (highlighted) {
+      this.ta.classList.add('highlighting-on')
+      // Force textarea transparent so colored layer shows through
+      this.ta.style.color = 'transparent'
+      this.ta.style.background = 'transparent'
+      this.ta.style.webkitTextFillColor = 'transparent'
+    }
     this.syncScroll()
   },
 

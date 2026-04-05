@@ -190,7 +190,7 @@
 .editor-highlight-layer {
   position: absolute;
   top: 0;
-  left: 37px; /* 36px line-numbers + 1px border */
+  left: 36px; /* 36px line-numbers (border-box, border already included) */
   right: 0;
   bottom: 0;
   padding: 12px 12px 12px 10px;
