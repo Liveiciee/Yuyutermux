@@ -158,8 +158,11 @@
             <span class="fullscreen-filename" id="fullscreenFileName"></span>
             <span class="fullscreen-lang" id="fullscreenLang"></span>
             <div style="display:flex;gap:4px;align-items:center">
-                <button id="fullscreenModeToggle" class="paper-btn small ghost">[MODE]</button>
-                <button id="fullscreenExitBtn" class="paper-btn small accent">[EXIT FULL]</button>
+                <div class="block-mode-toggle" id="fullscreenModeToggle" aria-label="Editor mode">
+                    <button class="active" data-mode="text">TEXT</button>
+                    <button data-mode="block">BLOCK</button>
+                </div>
+                <button id="fullscreenExitBtn" class="paper-btn small accent">[EXIT]</button>
             </div>
         </div>
         <div class="textarea-container" id="textareaContainer">

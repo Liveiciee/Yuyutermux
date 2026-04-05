@@ -187,16 +187,14 @@ function initFileManager() {
     Toast.show(`Block mode not supported for ${e.detail.lang}`, 'warning')
   })
 
-  // Fullscreen editor toggle
+  // Fullscreen editor — uses Fullscreen API (hides browser address bar & nav)
   const modalBox = document.getElementById('modalBox')
+  const fileModal = document.getElementById('fileModal')
   const fullscreenBtn = document.getElementById('editorFullscreenBtn')
-  const fullscreenBar = document.getElementById('fullscreenBar')
   const fullscreenExitBtn = document.getElementById('fullscreenExitBtn')
   const fullscreenModeToggle = document.getElementById('fullscreenModeToggle')
-  let isFullscreen = false
 
   function enterFullscreen() {
-    if (!modalBox) return
     // Sync file info to fullscreen bar
     const fnEl = document.getElementById('fullscreenFileName')
     const langEl = document.getElementById('fullscreenLang')
@@ -206,28 +204,61 @@ function initFileManager() {
     if (langEl && origLang) langEl.textContent = origLang.textContent
 
     modalBox.classList.add('fullscreen-editor')
-    isFullscreen = true
+
+    // Use Fullscreen API to hide browser UI (address bar, nav bar)
+    const el = fileModal || modalBox
+    if (el && el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {})
+    } else if (el && el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen()
+    }
   }
 
   function exitFullscreen() {
-    if (!modalBox) return
     modalBox.classList.remove('fullscreen-editor')
-    isFullscreen = false
+
+    // Exit browser fullscreen
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    } else if (document.webkitFullscreenElement) {
+      document.webkitExitFullscreen()
+    }
   }
 
-  function toggleFullscreen() {
-    if (isFullscreen) exitFullscreen()
-    else enterFullscreen()
+  function isFullscreenActive() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement)
   }
 
-  if (fullscreenBtn) fullscreenBtn.onclick = () => toggleFullscreen()
+  if (fullscreenBtn) fullscreenBtn.onclick = () => enterFullscreen()
   if (fullscreenExitBtn) fullscreenExitBtn.onclick = () => exitFullscreen()
-  if (fullscreenModeToggle) fullscreenModeToggle.onclick = () => Editor.toggleMode()
+
+  // Fullscreen TEXT/BLOCK toggle — same logic as editor header toggle
+  const fsModeToggle = document.getElementById('fullscreenModeToggle')
+  if (fsModeToggle) {
+    fsModeToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-mode]')
+      if (!btn) return
+      const targetMode = btn.dataset.mode
+      if (targetMode === Editor.mode) return
+      Editor.toggleMode()
+    })
+  }
+
+  // Listen for native fullscreen exit (user pressed Escape or swipe)
+  document.addEventListener('fullscreenchange', () => {
+    if (!isFullscreenActive()) {
+      modalBox?.classList.remove('fullscreen-editor')
+    }
+  })
+  document.addEventListener('webkitfullscreenchange', () => {
+    if (!isFullscreenActive()) {
+      modalBox?.classList.remove('fullscreen-editor')
+    }
+  })
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
-      if (isFullscreen) {
-        e.preventDefault()
+      if (isFullscreenActive()) {
         exitFullscreen()
         return
       }
