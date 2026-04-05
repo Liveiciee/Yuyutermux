@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="theme-color" content="#0D0D0D">
     
-    <!-- SECURITY: Strict CSP - Diperhalus untuk kompatibilitas JS modern -->
+    <!-- SECURITY: Strict CSP - adjusted for CDN -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:; worker-src 'self'; frame-ancestors 'none';">
     <meta name="referrer" content="no-referrer">
     
@@ -24,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Syntax Highlighting Theme (local, replaces atom-one-dark CDN) -->
+    <!-- Syntax Highlighting Theme (local, overrides CDN styles) -->
     <link rel="stylesheet" href="/static/css/global-syntax.css">
 </head>
 <body>
@@ -62,12 +62,10 @@
                 <a href="/docs" class="paper-btn">[ DOCS ]</a>
                 <button id="gitBtn" class="paper-btn git.header-btn" title="Git / GitHub">[ GIT ]</button>
                 <button id="editFileBtn" class="paper-btn">[ FILES ]</button>
-                <!-- Fixed: Menggunakan class 'hidden' alih-alih inline style -->
                 <button id="logoutBtn" class="paper-btn ghost hidden" title="Logout">[ LOGOUT ]</button>
             </div>
         </div>
         
-        <!-- Fixed: Menambahkan aria-live untuk aksesibilitas terminal output -->
         <div id="outputArea" class="terminal-paper" aria-live="polite" aria-atomic="false">
             <div class="placeholder" id="terminalPlaceholder">
                 <div class="placeholder-icon">
@@ -107,7 +105,6 @@
                 <span class="prompt-prefix">$</span>
             </div>
             <div class="input-wrapper">
-                <!-- Fixed: Autocomplete & autocorrect diperbaiki untuk mencegah saran browser -->
                 <textarea 
                     id="cmdInput" 
                     rows="1" 
@@ -201,7 +198,6 @@
             <button class="git-tab" data-tab="config" role="tab" aria-selected="false">CONFIG</button>
         </nav>
         
-        <!-- Tab Panes -->
         <div class="git-tab-pane" data-tab="status" id="gitStatusPane" role="tabpanel" aria-labelledby="status-tab">
             <div class="git-loading">Loading status...</div>
         </div>
@@ -274,10 +270,18 @@
     </div>
 </div>
 
-<!-- Scripts: defer, integrity, and module -->
+<!-- highlight.js core and languages -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha384-1kN8cZ8qo0S26r21w1Urh09x9w3SJ4TLH2tic7cw3a7Gwk0WxNJFuU45CbP7S1m4" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js" integrity="sha384-VmpM1z6TlER2c9WHBpZSP5N8pW6tT7YK1pN3CLMEK1C3f3/f4Mp4hMxszmF2tGEM" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js" integrity="sha384-2YVwHnIyiZwodIT+GJNul6V2kR6+khB0xI7ta+U+lEYQAYK4QdzGpBfF/8/yTXuU" crossorigin="anonymous"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js" integrity="sha384-wL4oBv3w0mjfKBGwTHZ8YzdqStoy5LvE3YLCP8VMEj/ZG3i5Gb7GB8q6Ap6ehQiK" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js" integrity="sha384-JN8W+uK1e1Vx0tTauAK1fU0fYgHn0G1xtqR7UjEOP8+xi0gGHLj9/efVKYTC8VdO" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js" integrity="sha384-Bt70qRudNF9hDkSlJcFbNmtP5dPzE8MFR22F2QC3zKsz+Qk/bydaXOTvAOY7M3sR" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js" integrity="sha384-1yDnX3jYxUMcKxRJz8JfPHi6Tl4qSaLs/Jg0/fiD5CWE6dwWqUdfIH6r7kL6W3rr" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js" integrity="sha384-B6fXc//eWEj5UCLy9DVv8u2MURp2lU+FFL5MOTG+2eBPZChMOr2+bq0tOqyECF+W" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/yaml.min.js" integrity="sha384-hfQnEoP95QcEdoM6XJcfnLz28BnhEWT2yVgK20ZRks5Q4aZRj6LbO+/mAz8C+zjR" crossorigin="anonymous"></script>
+
+<!-- Main app module (includes fixed editor.js) -->
 <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
