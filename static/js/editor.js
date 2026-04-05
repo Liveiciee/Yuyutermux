@@ -4,13 +4,16 @@ const LANG_MAP = {
   yml: 'yaml', toml: 'toml', cfg: 'ini'
 }
 
+function mapLanguage(lang) {
+  return LANG_MAP[lang] || lang || 'plaintext'
+}
+
 export const Editor = {
   ta: null,
   gutter: null,
   highlightLayer: null,
   currentLang: 'plaintext',
   _highlightTimer: null,
-  _viewportHandler: null,
   _resizeHandler: null,
   _taInputHandler: null,
   _taScrollHandler: null,
@@ -22,7 +25,7 @@ export const Editor = {
     if (!this.ta || !this.gutter) return
 
     this._createHighlightLayer()
-    this._syncLayerStyles() // 🔧 FIX: sync styles immediately
+    this._syncLayerStyles()
 
     this._taInputHandler = () => {
       this.updateGutter()
@@ -35,35 +38,50 @@ export const Editor = {
     this.ta.addEventListener('scroll', this._taScrollHandler)
     this.ta.addEventListener('keydown', this._taKeydownHandler)
 
+    this._resizeHandler = () => this._syncLayerStyles()
+    window.addEventListener('resize', this._resizeHandler)
+
     this.updateGutter()
-    this._initViewport()
   },
 
-  // 🔧 NEW: synchronize highlight layer styles with textarea
   _syncLayerStyles() {
-    if (!this.ta || !this.highlightLayer || !this.gutter) return
+    if (!this.ta || !this.highlightLayer) return
     const styles = window.getComputedStyle(this.ta)
     const layer = this.highlightLayer
+
     layer.style.fontFamily = styles.fontFamily
     layer.style.fontSize = styles.fontSize
     layer.style.lineHeight = styles.lineHeight
     layer.style.padding = styles.padding
     layer.style.whiteSpace = styles.whiteSpace
     layer.style.tabSize = styles.tabSize
-    // Adjust left position based on gutter width (line numbers)
-    // offsetWidth already includes border (box-sizing: border-box), no +1 needed
-    const gutterWidth = this.gutter.offsetWidth
-    layer.style.left = `${gutterWidth}px`
+    layer.style.letterSpacing = styles.letterSpacing
+    layer.style.wordSpacing = styles.wordSpacing
+    layer.style.boxSizing = styles.boxSizing
+    layer.style.border = styles.border
+
+    layer.style.position = 'absolute'
+    layer.style.top = `${this.ta.offsetTop}px`
+    layer.style.left = `${this.ta.offsetLeft}px`
+    layer.style.width = `${this.ta.offsetWidth}px`
+    layer.style.height = `${this.ta.offsetHeight}px`
+    layer.style.margin = '0'
+
+    layer.style.zIndex = '1'
+    layer.style.pointerEvents = 'none'
+    layer.style.overflow = 'auto'
+    layer.style.scrollbarWidth = 'none'
+    layer.style.msOverflowStyle = 'none'
+
+    this.ta.style.position = 'relative'
+    this.ta.style.zIndex = '2'
+    this.ta.style.caretColor = 'var(--syntax-cursor, #528bff)'
   },
 
   destroy() {
     if (this._highlightTimer) {
       clearTimeout(this._highlightTimer)
       this._highlightTimer = null
-    }
-    if (this._viewportHandler) {
-      window.visualViewport?.removeEventListener('resize', this._viewportHandler)
-      this._viewportHandler = null
     }
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler)
@@ -87,6 +105,11 @@ export const Editor = {
     if (this.highlightLayer) return
     const wrapper = document.getElementById('editorWrapper')
     if (!wrapper) return
+
+    if (window.getComputedStyle(wrapper).position === 'static') {
+      wrapper.style.position = 'relative'
+    }
+
     this.highlightLayer = document.createElement('pre')
     this.highlightLayer.className = 'editor-highlight-layer'
     this.highlightLayer.setAttribute('aria-hidden', 'true')
@@ -104,10 +127,10 @@ export const Editor = {
     if (!this.highlightLayer || !this.ta) return
     const code = this.highlightLayer.querySelector('code')
     if (!code) return
+
     const value = this.ta.value
 
     if (typeof hljs === 'undefined') {
-      // hljs not loaded — hide the layer so textarea text is visible normally
       this.highlightLayer.style.visibility = 'hidden'
       this.ta.classList.remove('highlighting-on')
       this.ta.style.color = ''
@@ -116,7 +139,6 @@ export const Editor = {
       return
     }
 
-    // hljs available — ensure layer is visible
     this.highlightLayer.style.visibility = ''
 
     let highlighted = false
@@ -132,7 +154,6 @@ export const Editor = {
         code.className = `${result.language || ''} hljs`
         highlighted = true
       } catch {
-        // Both hljs attempts failed — hide layer, show textarea text as-is
         this.highlightLayer.style.visibility = 'hidden'
         this.ta.classList.remove('highlighting-on')
         this.ta.style.color = ''
@@ -144,7 +165,6 @@ export const Editor = {
 
     if (highlighted) {
       this.ta.classList.add('highlighting-on')
-      // Force textarea transparent so colored layer shows through
       this.ta.style.color = 'transparent'
       this.ta.style.background = 'transparent'
       this.ta.style.webkitTextFillColor = 'transparent'
@@ -153,37 +173,19 @@ export const Editor = {
   },
 
   setLanguage(lang) {
-    this.currentLang = lang || 'plaintext'
+    this.currentLang = mapLanguage(lang)
     this._doHighlight()
-  },
-
-  _initViewport() {
-    if (this._viewportHandler) {
-      window.visualViewport?.removeEventListener('resize', this._viewportHandler)
-      window.removeEventListener('resize', this._resizeHandler)
-    }
-    if ('virtualKeyboard' in navigator) {
-      navigator.virtualKeyboard.overlaysContent = false
-    }
-    this._viewportHandler = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight
-      document.documentElement.style.setProperty('--vvh', `${Math.round(h)}px`)
-    }
-    this._resizeHandler = this._viewportHandler
-    this._viewportHandler()
-    window.visualViewport?.addEventListener('resize', this._viewportHandler)
-    window.addEventListener('resize', this._resizeHandler)
   },
 
   updateGutter() {
     if (!this.ta || !this.gutter) return
-    const lineCount = this.ta.value.split('\n').length
+    const text = this.ta.value
+    const lineCount = text.length === 0 ? 1 : (text.match(/\n/g)?.length || 0) + 1
     if (lineCount <= 1) {
       this.gutter.textContent = '1'
     } else {
       this.gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n')
     }
-    // 🔧 FIX: re-sync layer position after gutter changes width
     this._syncLayerStyles()
   },
 
@@ -225,7 +227,6 @@ export const Editor = {
   insertAtCursor(text) {
     if (!this.ta) return
     this.ta.focus()
-    // Use setRangeText to preserve undo stack
     const start = this.ta.selectionStart
     const end = this.ta.selectionEnd
     this.ta.setRangeText(text, start, end, 'end')
@@ -235,7 +236,7 @@ export const Editor = {
   onLoad(lang, content) {
     if (!this.ta) return
     if (content !== undefined) this.ta.value = content
-    this.currentLang = lang || 'plaintext'
+    this.currentLang = mapLanguage(lang)
     this.updateGutter()
     this.ta.scrollTop = 0
     this.ta.selectionStart = 0
