@@ -88,7 +88,8 @@ function initTerminal() {
   const updateCwd = async () => {
     try {
       const res = await fetch('/api/execute/cwd', {
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        signal: AbortSignal.timeout(5000)
       })
       if (res.ok) {
         const data = await res.json()
