@@ -125,8 +125,7 @@ export const FileManager = {
     }
     
     this.content = data.content || ''
-    editorEl.value = this.content
-    Editor.onLoad(LANG_MAP[ext] || ext || '')
+    Editor.onLoad(LANG_MAP[ext] || ext || '', this.content)
     this.load(this.dir)
   },
 
@@ -334,8 +333,7 @@ export const FileManager = {
     }
     
     this.content = data.content || ''
-    editor.value = this.content
-    Editor.onLoad(LANG_MAP[ext] || ext || '')
+    Editor.onLoad(LANG_MAP[ext] || ext || '', this.content)
     
     setTimeout(() => {
       const lines = editor.value.split('\n')

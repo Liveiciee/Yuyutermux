@@ -1137,10 +1137,12 @@
 
 .block-mode-toggle {
   display: inline-flex;
-  gap: 2px;
+  gap: 3px;
   background: var(--dark);
   border: 1px solid var(--border);
-  padding: 2px;
+  padding: 3px;
+  touch-action: manipulation;
+  border-radius: 4px;
 }
 
 .block-mode-toggle button {
@@ -1149,14 +1151,27 @@
   color: var(--cement);
   font: 700 9px/1 var(--mono);
   letter-spacing: 0.08em;
-  padding: 3px 7px;
+  padding: 8px 12px;
   cursor: pointer;
   text-transform: uppercase;
+  min-height: 36px;
+  min-width: 48px;
+  border-radius: 3px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.block-mode-toggle button:active {
+  transform: scale(0.93);
 }
 
 .block-mode-toggle button.active {
   background: var(--accent);
   color: var(--bg);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .block-mode-container {
@@ -1293,6 +1308,14 @@
    ================================================================ */
 
 /* Fullscreen API styles — applied when <dialog> is in fullscreen */
+#fileModal:fullscreen,
+#fileModal:-webkit-full-screen {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+}
+
 #fileModal:fullscreen .modal-box,
 #fileModal:-webkit-full-screen .modal-box {
   height: 100vh;
@@ -1330,6 +1353,8 @@
   flex: 1;
   border-top: none;
   border-bottom: none;
+  min-height: 0;
+  max-height: none;
 }
 
 .modal-fullscreen-bar {

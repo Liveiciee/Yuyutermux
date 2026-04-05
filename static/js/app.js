@@ -190,7 +190,6 @@ function initFileManager() {
 
   // Fullscreen editor — uses Fullscreen API (hides browser address bar & nav)
   const modalBox = document.getElementById('modalBox')
-  const fileModal = document.getElementById('fileModal')
   const fullscreenBtn = document.getElementById('editorFullscreenBtn')
   const fullscreenExitBtn = document.getElementById('fullscreenExitBtn')
   const fullscreenModeToggle = document.getElementById('fullscreenModeToggle')

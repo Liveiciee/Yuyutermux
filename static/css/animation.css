@@ -39,6 +39,21 @@
     max-height: 35vh;
   }
 
+  /* Fullscreen editor overrides — must come after mobile rules to win */
+  .modal-box.fullscreen-editor {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  .modal-box.fullscreen-editor .textarea-container {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+  .modal-box.fullscreen-editor .block-mode-container {
+    max-height: none;
+  }
+
   .file-toolbar {
     flex-wrap: wrap;
   }

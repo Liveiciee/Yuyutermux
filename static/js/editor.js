@@ -56,6 +56,9 @@ export const Editor = {
     const styles = window.getComputedStyle(this.ta)
     const layer = this.highlightLayer
 
+    // Only sync font metrics — position/size is handled by CSS
+    // (top:0; left:36px; right:0; bottom:0) so the layer always
+    // fills the editor-wrapper correctly regardless of layout timing.
     layer.style.fontFamily = styles.fontFamily
     layer.style.fontSize = styles.fontSize
     layer.style.lineHeight = styles.lineHeight
@@ -64,21 +67,14 @@ export const Editor = {
     layer.style.tabSize = styles.tabSize
     layer.style.letterSpacing = styles.letterSpacing
     layer.style.wordSpacing = styles.wordSpacing
-    layer.style.boxSizing = styles.boxSizing
-    layer.style.border = styles.border
 
-    layer.style.position = 'absolute'
-    layer.style.top = `${this.ta.offsetTop}px`
-    layer.style.left = `${this.ta.offsetLeft}px`
-    layer.style.width = `${this.ta.offsetWidth}px`
-    layer.style.height = `${this.ta.offsetHeight}px`
-    layer.style.margin = '0'
-
-    layer.style.zIndex = '1'
-    layer.style.pointerEvents = 'none'
-    layer.style.overflow = 'auto'
-    layer.style.scrollbarWidth = 'none'
-    layer.style.msOverflowStyle = 'none'
+    // Clear any leftover inline position/size from older code paths
+    layer.style.position = ''
+    layer.style.top = ''
+    layer.style.left = ''
+    layer.style.width = ''
+    layer.style.height = ''
+    layer.style.margin = ''
 
     this.ta.style.position = 'relative'
     this.ta.style.zIndex = '2'
@@ -89,6 +85,10 @@ export const Editor = {
     if (this._highlightTimer) {
       clearTimeout(this._highlightTimer)
       this._highlightTimer = null
+    }
+    if (this._onLoadRAF) {
+      cancelAnimationFrame(this._onLoadRAF)
+      this._onLoadRAF = null
     }
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler)
@@ -127,7 +127,10 @@ export const Editor = {
 
   _scheduleHighlight() {
     if (this._highlightTimer) clearTimeout(this._highlightTimer)
-    this._highlightTimer = setTimeout(() => this._doHighlight(), 100)
+    this._highlightTimer = setTimeout(() => {
+      this._doHighlight()
+      if (this.highlightLayer) this.highlightLayer.style.visibility = ''
+    }, 100)
   },
 
   _doHighlight() {
@@ -246,7 +249,14 @@ export const Editor = {
       this._exitBlockMode()
     }
     if (!this.ta) return
+
+    // 1. Set content immediately (single source of truth)
     if (content !== undefined) this.ta.value = content
+
+    // 2. Hide highlight layer during transition to prevent flash
+    if (this.highlightLayer) this.highlightLayer.style.visibility = 'hidden'
+
+    // 3. Update gutter + sync font metrics synchronously
     this.currentLang = mapLanguage(lang)
     this.blocks = []
     this.updateGutter()
@@ -255,14 +265,29 @@ export const Editor = {
     this.ta.selectionEnd = 0
     if (this.gutter) this.gutter.scrollTop = 0
     if (this.highlightLayer) this.highlightLayer.scrollTop = 0
-    this._doHighlight()
+
+    // 4. Render highlight in next animation frame — ensures browser
+    //    has completed layout with the new content before we measure
+    //    and paint. Prevents partial render / content flash.
+    if (this._onLoadRAF) cancelAnimationFrame(this._onLoadRAF)
+    this._onLoadRAF = requestAnimationFrame(() => {
+      this._onLoadRAF = null
+      this._doHighlight()
+      // Show highlight layer only after content is fully rendered
+      if (this.highlightLayer) this.highlightLayer.style.visibility = ''
+    })
   },
 
   toggleMode() {
-    if (this.mode === 'text') {
-      this._enterBlockMode()
-    } else {
-      this._exitBlockMode()
+    try {
+      if (this.mode === 'text') {
+        this._enterBlockMode()
+      } else {
+        this._exitBlockMode()
+      }
+    } catch (err) {
+      console.error('[Editor] toggleMode failed:', err)
+      document.dispatchEvent(new CustomEvent('editor:blockmode-error', { detail: { error: err.message } }))
     }
   },
 
@@ -274,10 +299,23 @@ export const Editor = {
     }
 
     const content = this.ta?.value ?? ''
+    if (!content.trim()) {
+      document.dispatchEvent(new CustomEvent('editor:blockmode-error', { detail: { error: 'No content to parse' } }))
+      return
+    }
+
     this.blocks = parseToBlocks(content, lang)
 
+    if (!this.blocks || this.blocks.length === 0) {
+      document.dispatchEvent(new CustomEvent('editor:blockmode-error', { detail: { error: 'Parser returned no blocks' } }))
+      return
+    }
+
     const container = document.getElementById('blockModeContainer')
-    if (!container) return
+    if (!container) {
+      console.error('[Editor] blockModeContainer not found in DOM')
+      return
+    }
     this._blockContainer = container
 
     const wrapper = document.getElementById('editorWrapper')
@@ -285,6 +323,7 @@ export const Editor = {
     container.classList.remove('hidden')
 
     BlockRenderer.render(this.blocks, lang, container)
+
     this.mode = 'block'
     this._updateToggleUI()
   },
@@ -292,13 +331,17 @@ export const Editor = {
   _exitBlockMode() {
     if (!this._blockContainer) return
 
-    BlockRenderer.syncFromDOM(this.blocks)
-    const text = BlockRenderer.blocksToText(this.blocks)
-    if (this.ta) this.ta.value = text
+    try {
+      BlockRenderer.syncFromDOM(this.blocks)
+      const text = BlockRenderer.blocksToText(this.blocks)
+      if (this.ta) this.ta.value = text
+    } catch (err) {
+      console.error('[Editor] _exitBlockMode sync failed:', err)
+    }
 
     const wrapper = document.getElementById('editorWrapper')
     if (wrapper) wrapper.classList.remove('hidden')
-    this._blockContainer.classList.add('hidden')
+    if (this._blockContainer) this._blockContainer.classList.add('hidden')
     this._blockContainer = null
 
     this.mode = 'text'
@@ -316,10 +359,11 @@ export const Editor = {
   },
 
   _updateToggleUI() {
-    const toggle = document.getElementById('editorModeToggle')
-    if (!toggle) return
-    toggle.querySelectorAll('button').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.mode === this.mode)
+    // Update ALL mode toggles (editor header + fullscreen bar)
+    document.querySelectorAll('.block-mode-toggle').forEach(toggle => {
+      toggle.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === this.mode)
+      })
     })
   }
 }
