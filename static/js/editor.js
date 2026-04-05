@@ -1,3 +1,6 @@
+import { parseToBlocks } from './block-parser.js'
+import { BlockRenderer } from './block-renderer.js'
+
 const LANG_MAP = {
   py: 'python', js: 'javascript', ts: 'typescript', sh: 'bash', html: 'html',
   htm: 'html', css: 'css', json: 'json', md: 'markdown', yaml: 'yaml',
@@ -18,6 +21,10 @@ export const Editor = {
   _taInputHandler: null,
   _taScrollHandler: null,
   _taKeydownHandler: null,
+  mode: 'text',
+  blocks: [],
+  _blockContainer: null,
+  BLOCK_LANGS: new Set(['python', 'javascript', 'css']),
 
   init() {
     this.ta = document.getElementById('modalContent')
@@ -235,9 +242,13 @@ export const Editor = {
   },
 
   onLoad(lang, content) {
+    if (this.mode === 'block') {
+      this._exitBlockMode()
+    }
     if (!this.ta) return
     if (content !== undefined) this.ta.value = content
     this.currentLang = mapLanguage(lang)
+    this.blocks = []
     this.updateGutter()
     this.ta.scrollTop = 0
     this.ta.selectionStart = 0
@@ -245,5 +256,70 @@ export const Editor = {
     if (this.gutter) this.gutter.scrollTop = 0
     if (this.highlightLayer) this.highlightLayer.scrollTop = 0
     this._doHighlight()
+  },
+
+  toggleMode() {
+    if (this.mode === 'text') {
+      this._enterBlockMode()
+    } else {
+      this._exitBlockMode()
+    }
+  },
+
+  _enterBlockMode() {
+    const lang = this.currentLang
+    if (!this.BLOCK_LANGS.has(lang)) {
+      document.dispatchEvent(new CustomEvent('editor:blockmode-unsupported', { detail: { lang } }))
+      return
+    }
+
+    const content = this.ta?.value ?? ''
+    this.blocks = parseToBlocks(content, lang)
+
+    const container = document.getElementById('blockModeContainer')
+    if (!container) return
+    this._blockContainer = container
+
+    const wrapper = document.getElementById('editorWrapper')
+    if (wrapper) wrapper.classList.add('hidden')
+    container.classList.remove('hidden')
+
+    BlockRenderer.render(this.blocks, lang, container)
+    this.mode = 'block'
+    this._updateToggleUI()
+  },
+
+  _exitBlockMode() {
+    if (!this._blockContainer) return
+
+    BlockRenderer.syncFromDOM(this.blocks)
+    const text = BlockRenderer.blocksToText(this.blocks)
+    if (this.ta) this.ta.value = text
+
+    const wrapper = document.getElementById('editorWrapper')
+    if (wrapper) wrapper.classList.remove('hidden')
+    this._blockContainer.classList.add('hidden')
+    this._blockContainer = null
+
+    this.mode = 'text'
+    this._updateToggleUI()
+
+    this.updateGutter()
+    this._doHighlight()
+  },
+
+  syncBlocksToTextarea() {
+    if (this.mode !== 'block' || !this.blocks.length) return
+    BlockRenderer.syncFromDOM(this.blocks)
+    const text = BlockRenderer.blocksToText(this.blocks)
+    if (this.ta) this.ta.value = text
+  },
+
+  _updateToggleUI() {
+    const toggle = document.getElementById('editorModeToggle')
+    if (!toggle) return
+    toggle.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === this.mode)
+    })
   }
 }

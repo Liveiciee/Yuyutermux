@@ -154,15 +154,29 @@
             </button>
         </div>
         <div id="fileBrowser" class="file-list-paper" role="listbox" aria-label="File browser"></div>
-        <div class="textarea-container">
+        <div class="modal-fullscreen-bar hidden" id="fullscreenBar">
+            <span class="fullscreen-filename" id="fullscreenFileName"></span>
+            <span class="fullscreen-lang" id="fullscreenLang"></span>
+            <div style="display:flex;gap:4px;align-items:center">
+                <button id="fullscreenModeToggle" class="paper-btn small ghost">[MODE]</button>
+                <button id="fullscreenExitBtn" class="paper-btn small accent">[EXIT FULL]</button>
+            </div>
+        </div>
+        <div class="textarea-container" id="textareaContainer">
             <div class="editor-header" id="editorHeader">
                 <span id="editorFileName">No file selected</span>
+                <div class="block-mode-toggle" id="editorModeToggle" aria-label="Editor mode">
+                    <button class="active" data-mode="text">TEXT</button>
+                    <button data-mode="block">BLOCK</button>
+                </div>
                 <span id="editorLang">—</span>
+                <button id="editorFullscreenBtn" class="paper-btn small ghost" title="Fullscreen editor" aria-label="Toggle fullscreen editor" style="font-size:12px">⛶</button>
             </div>
             <div class="editor-wrapper" id="editorWrapper">
                 <div class="line-numbers" id="lineNumbers">1</div>
                 <textarea id="modalContent" class="editor-paper" placeholder="Select a file to edit..." spellcheck="false" aria-label="File editor content"></textarea>
             </div>
+            <div id="blockModeContainer" class="block-mode-container hidden"></div>
         </div>
         <footer class="modal-footer">
             <button id="modalNewFile" class="paper-btn secondary">+ NEW FILE</button>

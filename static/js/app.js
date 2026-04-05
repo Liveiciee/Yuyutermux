@@ -152,7 +152,10 @@ function initFileManager() {
     }
   }
 
-  if (modalSave) modalSave.onclick = () => FileManager.save()
+  if (modalSave) modalSave.onclick = () => {
+    Editor.syncBlocksToTextarea()
+    FileManager.save()
+  }
   if (modalNewFile) modalNewFile.onclick = () => FileManager.createNew()
   if (modalRename) modalRename.onclick = () => FileManager.renameFile()
   if (refreshBtn) refreshBtn.onclick = () => FileManager.load(FileManager.dir)
@@ -167,8 +170,67 @@ function initFileManager() {
   const globalSearchBtn = document.getElementById('btn-global-search')
   if (globalSearchBtn) globalSearchBtn.onclick = () => GlobalSearch.show()
 
+  // Block mode toggle
+  const modeToggle = document.getElementById('editorModeToggle')
+  if (modeToggle) {
+    modeToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-mode]')
+      if (!btn) return
+      const targetMode = btn.dataset.mode
+      if (targetMode === Editor.mode) return
+      Editor.toggleMode()
+    })
+  }
+
+  // Handle unsupported language event
+  document.addEventListener('editor:blockmode-unsupported', (e) => {
+    Toast.show(`Block mode not supported for ${e.detail.lang}`, 'warning')
+  })
+
+  // Fullscreen editor toggle
+  const modalBox = document.getElementById('modalBox')
+  const fullscreenBtn = document.getElementById('editorFullscreenBtn')
+  const fullscreenBar = document.getElementById('fullscreenBar')
+  const fullscreenExitBtn = document.getElementById('fullscreenExitBtn')
+  const fullscreenModeToggle = document.getElementById('fullscreenModeToggle')
+  let isFullscreen = false
+
+  function enterFullscreen() {
+    if (!modalBox) return
+    // Sync file info to fullscreen bar
+    const fnEl = document.getElementById('fullscreenFileName')
+    const langEl = document.getElementById('fullscreenLang')
+    const origFn = document.getElementById('editorFileName')
+    const origLang = document.getElementById('editorLang')
+    if (fnEl && origFn) fnEl.textContent = origFn.textContent
+    if (langEl && origLang) langEl.textContent = origLang.textContent
+
+    modalBox.classList.add('fullscreen-editor')
+    isFullscreen = true
+  }
+
+  function exitFullscreen() {
+    if (!modalBox) return
+    modalBox.classList.remove('fullscreen-editor')
+    isFullscreen = false
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen) exitFullscreen()
+    else enterFullscreen()
+  }
+
+  if (fullscreenBtn) fullscreenBtn.onclick = () => toggleFullscreen()
+  if (fullscreenExitBtn) fullscreenExitBtn.onclick = () => exitFullscreen()
+  if (fullscreenModeToggle) fullscreenModeToggle.onclick = () => Editor.toggleMode()
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && fileModal.open) {
+      if (isFullscreen) {
+        e.preventDefault()
+        exitFullscreen()
+        return
+      }
       fileModal.close()
       extraKeysPaper?.classList.remove('hidden')
     }
@@ -213,6 +275,13 @@ function initShortcuts() {
       input.value = ''
       input.style.height = '22px'
       if (charCount) charCount.textContent = '0 chars'
+    }
+    if (e.ctrlKey && e.key === 'b') {
+      const fileModal = document.getElementById('fileModal')
+      if (fileModal?.open) {
+        e.preventDefault()
+        Editor.toggleMode()
+      }
     }
   })
 }

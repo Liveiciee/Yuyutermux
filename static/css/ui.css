@@ -402,6 +402,15 @@
   flex-direction: column;
   margin: 0 auto;
   overflow: hidden;
+  transition: max-width 0.2s ease, max-height 0.2s ease;
+}
+
+.modal-box.fullscreen-editor {
+  max-width: 100%;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
 }
 
 .breadcrumb {
@@ -1120,4 +1129,219 @@
 .git-config-hint code {
   color: var(--success);
   word-break: break-all;
+}
+
+/* ================================================================
+   BLOCK MODE
+   ================================================================ */
+
+.block-mode-toggle {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  padding: 2px;
+}
+
+.block-mode-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--cement);
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.block-mode-toggle button.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.block-mode-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--dark);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.block-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent-dim);
+  flex-shrink: 0;
+}
+
+.block-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.block-type-label {
+  font: 700 9px/1 var(--mono);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.block-card-header .paper-btn {
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.block-card-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.block-card.collapsed .block-card-body {
+  display: none;
+}
+
+.block-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.block-field-label {
+  font: 9px/1 var(--mono);
+  color: var(--cement);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.block-input {
+  width: 100%;
+  padding: 5px 8px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: 11px/1.4 var(--mono);
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.block-input:focus {
+  border-color: var(--accent);
+}
+
+.block-body {
+  min-height: 60px;
+  max-height: 200px;
+  resize: vertical;
+  overflow-y: auto;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.block-props-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.block-prop-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.block-prop-row .block-input {
+  flex: 1;
+}
+
+.block-prop-del {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--danger);
+  font: 12px/1 var(--mono);
+  padding: 4px 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.block-prop-add {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 10px;
+}
+
+.block-raw-label {
+  font: 9px/1 var(--mono);
+  color: var(--cement);
+  padding: 0 0 2px 0;
+  text-transform: uppercase;
+}
+
+/* ================================================================
+   FULLSCREEN EDITOR MODE
+   ================================================================ */
+
+.modal-box.fullscreen-editor .modal-header,
+.modal-box.fullscreen-editor .breadcrumb,
+.modal-box.fullscreen-editor .file-toolbar,
+.modal-box.fullscreen-editor .file-list-paper,
+.modal-box.fullscreen-editor .modal-footer {
+  display: none !important;
+}
+
+.modal-box.fullscreen-editor .modal-fullscreen-bar {
+  display: flex !important;
+}
+
+.modal-box.fullscreen-editor .editor-header {
+  display: none !important;
+}
+
+.modal-box.fullscreen-editor .textarea-container {
+  flex: 1;
+  border-top: none;
+  border-bottom: none;
+}
+
+.modal-fullscreen-bar {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--light);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.fullscreen-filename {
+  font: 10px/1 var(--mono);
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fullscreen-lang {
+  font: 9px/1 var(--mono);
+  color: var(--cement);
+  opacity: 0.5;
+}
+
+.modal-box.fullscreen-editor #editorFullscreenBtn {
+  display: none !important;
 }
