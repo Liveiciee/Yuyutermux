@@ -179,7 +179,7 @@ export const GlobalSearch = {
     const rawText = match?.text ?? ''
     const lineNum = match?.line ?? 0
     const highlighted = highlightMatch(rawText, q, this.caseSensitive)
-      .replace('<mark>', '<mark style="background:rgba(255,107,53,.15);color:var(--accent);padding:0 2px">')
+      .replace(/<mark>/g, '<mark style="background:rgba(255,107,53,.15);color:var(--accent);padding:0 2px">')
     
     return `
       <div class="gs-match" data-file="${esc(file)}" data-line="${lineNum}" style="display:flex;gap:8px;padding:3px 12px 3px 28px;cursor:pointer">

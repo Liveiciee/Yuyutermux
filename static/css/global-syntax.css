@@ -40,6 +40,7 @@
   /* -- Semantic color tokens ----------------------------------- */
   --syntax-keyword: #c678dd;
   --syntax-keyword-weight: 700;
+  --syntax-keyword-style: normal;
 
   --syntax-type: #e5c07b;
   --syntax-type-weight: 400;
@@ -762,13 +763,18 @@ code.code-viewer ::selection {
   color: var(--syntax-tag) !important;
 }
 
-/* -- Title / section (Markdown headings) ---------------------- */
+/* -- Title (function/method/class names in code) -------------- */
 .editor-highlight-layer .hljs-title,
-.editor-highlight-layer .hljs-section,
-.hljs-title,
-.hljs-section {
+.hljs-title {
   color: var(--syntax-function) !important;
   font-weight: var(--syntax-function-weight) !important;
+}
+
+/* -- Section (Markdown headings) ------------------------------ */
+.editor-highlight-layer .hljs-section,
+.hljs-section {
+  color: var(--syntax-heading) !important;
+  font-weight: var(--syntax-heading-weight) !important;
 }
 
 /* -- CSS selector (.class, #id, :pseudo, tag) ---------------- */
