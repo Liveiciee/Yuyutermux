@@ -4,17 +4,17 @@
  * A single, universal syntax highlighting stylesheet using CSS variables.
  * Maps semantic roles to named color tokens so future tweaks are localized.
  *
- * All colors pass WCAG AA (≥ 4.5:1 contrast ratio) against #131313.
+ * All colors pass WCAG AA (>= 4.5:1 contrast ratio) against #131313.
  * Palette is designed for accessibility across common forms of color blindness
  * by combining hue, luminance, and font-style/font-weight differentiation.
  *
  * Contains:
- *   1. Design Tokens  — CSS custom properties for all semantic roles
- *   2. Code Viewer     — base styles for .code-viewer containers
- *   3. Utility Classes — .syn-* classes for manual markup
- *   4. Markup Classes  — heading, link, bold, italic, strikethrough, diff
- *   5. HLJS Bridge     — maps .hljs-* classes → --syntax-* tokens
- *   6. Integration     — helper classes and print styles
+ *   1. Design Tokens  -- CSS custom properties for all semantic roles
+ *   2. Code Viewer     -- base styles for .code-viewer containers
+ *   3. Utility Classes -- .syn-* classes for manual markup
+ *   4. Markup Classes  -- heading, link, bold, italic, strikethrough, diff
+ *   5. HLJS Bridge     -- maps .hljs-* classes -> --syntax-* tokens
+ *   6. Integration     -- helper classes and print styles
  */
 
 
@@ -23,7 +23,7 @@
    ================================================================ */
 
 :root {
-  /* ── Editor chrome ─────────────────────────────────────────── */
+  /* -- Editor chrome ------------------------------------------- */
   --syntax-bg: #131313;
   --syntax-fg: #e5e5e5;
   --syntax-line-highlight: #1e1e2e;
@@ -37,7 +37,7 @@
   --syntax-scrollbar: rgba(71, 71, 71, 0.4);
   --syntax-scrollbar-hover: #474747;
 
-  /* ── Semantic color tokens ─────────────────────────────────── */
+  /* -- Semantic color tokens ----------------------------------- */
   --syntax-keyword: #c678dd;
   --syntax-keyword-weight: 700;
 
@@ -61,7 +61,7 @@
   --syntax-string-weight: 400;
   --syntax-string-style: normal;
 
-  --syntax-string-escape: #d19a66;
+  --syntax-string-escape: #56b6c2;
   --syntax-string-escape-weight: 400;
   --syntax-string-escape-style: normal;
 
@@ -109,11 +109,11 @@
   --syntax-builtin-weight: 400;
   --syntax-builtin-style: italic;
 
-  --syntax-parameter: #e5e5e5;
+  --syntax-parameter: #abb2bf;
   --syntax-parameter-weight: 400;
   --syntax-parameter-style: italic;
 
-  --syntax-property: #e5e5e5;
+  --syntax-property: #e06c75;
   --syntax-property-weight: 400;
   --syntax-property-style: normal;
 
@@ -157,12 +157,12 @@
   --syntax-shell-cmd-weight: 400;
   --syntax-shell-cmd-style: normal;
 
-  /* ── Special variable tokens ───────────────────────────────── */
+  /* -- Special variable tokens --------------------------------- */
   --syntax-this: #e06c75;
   --syntax-this-weight: 400;
   --syntax-this-style: italic;
 
-  /* ── Markup tokens ─────────────────────────────────────────── */
+  /* -- Markup tokens ------------------------------------------- */
   --syntax-heading: #61afef;
   --syntax-heading-weight: 700;
   --syntax-heading-style: normal;
@@ -263,7 +263,7 @@ code.code-viewer ::selection {
    3. SYNTAX UTILITY CLASSES
    ================================================================ */
 
-/* ── Keyword ─────────────────────────────────────────────────── */
+/* -- Keyword -------------------------------------------------- */
 .syn-keyword,
 .syn-kw {
   color: var(--syntax-keyword);
@@ -271,7 +271,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-keyword-style, normal);
 }
 
-/* ── Type / Class / Struct / Enum ────────────────────────────── */
+/* -- Type / Class / Struct / Enum ----------------------------- */
 .syn-type,
 .syn-tp {
   color: var(--syntax-type);
@@ -279,7 +279,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-type-style);
 }
 
-/* ── Storage / Declaration ───────────────────────────────────── */
+/* -- Storage / Declaration ------------------------------------- */
 .syn-storage,
 .syn-st {
   color: var(--syntax-storage);
@@ -287,7 +287,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-storage-style);
 }
 
-/* ── Function / Method ───────────────────────────────────────── */
+/* -- Function / Method ---------------------------------------- */
 .syn-function,
 .syn-fn {
   color: var(--syntax-function);
@@ -295,7 +295,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-function-style);
 }
 
-/* ── Variable / Identifier ───────────────────────────────────── */
+/* -- Variable / Identifier ------------------------------------ */
 .syn-variable,
 .syn-var {
   color: var(--syntax-variable);
@@ -303,7 +303,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-variable-style);
 }
 
-/* ── String ──────────────────────────────────────────────────── */
+/* -- String --------------------------------------------------- */
 .syn-string,
 .syn-str {
   color: var(--syntax-string);
@@ -311,7 +311,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-string-style);
 }
 
-/* ── String Escape ───────────────────────────────────────────── */
+/* -- String Escape -------------------------------------------- */
 .syn-string-escape,
 .syn-stre {
   color: var(--syntax-string-escape);
@@ -319,7 +319,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-string-escape-style);
 }
 
-/* ── Number ──────────────────────────────────────────────────── */
+/* -- Number --------------------------------------------------- */
 .syn-number,
 .syn-num {
   color: var(--syntax-number);
@@ -327,7 +327,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-number-style);
 }
 
-/* ── Boolean / Null / Undefined ──────────────────────────────── */
+/* -- Boolean / Null / Undefined -------------------------------- */
 .syn-boolean,
 .syn-bool {
   color: var(--syntax-boolean);
@@ -335,7 +335,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-boolean-style);
 }
 
-/* ── Constant ────────────────────────────────────────────────── */
+/* -- Constant ------------------------------------------------- */
 .syn-constant,
 .syn-cst {
   color: var(--syntax-constant);
@@ -343,7 +343,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-constant-style);
 }
 
-/* ── Comment ─────────────────────────────────────────────────── */
+/* -- Comment -------------------------------------------------- */
 .syn-comment,
 .syn-cmt {
   color: var(--syntax-comment);
@@ -351,7 +351,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-comment-style);
 }
 
-/* ── Operator ────────────────────────────────────────────────── */
+/* -- Operator ------------------------------------------------- */
 .syn-operator,
 .syn-op {
   color: var(--syntax-operator);
@@ -359,7 +359,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-operator-style);
 }
 
-/* ── Punctuation / Delimiter ─────────────────────────────────── */
+/* -- Punctuation / Delimiter ---------------------------------- */
 .syn-punctuation,
 .syn-punc {
   color: var(--syntax-punctuation);
@@ -367,7 +367,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-punctuation-style);
 }
 
-/* ── Decorator / Annotation ──────────────────────────────────── */
+/* -- Decorator / Annotation ----------------------------------- */
 .syn-decorator,
 .syn-dec {
   color: var(--syntax-decorator);
@@ -375,7 +375,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-decorator-style);
 }
 
-/* ── Tag (HTML/XML/JSX) ─────────────────────────────────────── */
+/* -- Tag (HTML/XML/JSX) --------------------------------------- */
 .syn-tag,
 .syn-tg {
   color: var(--syntax-tag);
@@ -383,7 +383,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-tag-style);
 }
 
-/* ── Attribute Name ──────────────────────────────────────────── */
+/* -- Attribute Name ------------------------------------------- */
 .syn-attribute,
 .syn-attr {
   color: var(--syntax-attribute);
@@ -391,7 +391,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-attribute-style);
 }
 
-/* ── Attribute Value ─────────────────────────────────────────── */
+/* -- Attribute Value ------------------------------------------ */
 .syn-attribute-value,
 .syn-atv {
   color: var(--syntax-attribute-value);
@@ -399,7 +399,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-attribute-value-style);
 }
 
-/* ── Built-in / Native ───────────────────────────────────────── */
+/* -- Built-in / Native ---------------------------------------- */
 .syn-builtin,
 .syn-bi {
   color: var(--syntax-builtin);
@@ -407,7 +407,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-builtin-style);
 }
 
-/* ── Function Parameter ──────────────────────────────────────── */
+/* -- Function Parameter --------------------------------------- */
 .syn-parameter,
 .syn-param {
   color: var(--syntax-parameter);
@@ -415,7 +415,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-parameter-style);
 }
 
-/* ── Property / Key Access ───────────────────────────────────── */
+/* -- Property / Key Access ------------------------------------ */
 .syn-property,
 .syn-prop {
   color: var(--syntax-property);
@@ -423,7 +423,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-property-style);
 }
 
-/* ── Regular Expression ──────────────────────────────────────── */
+/* -- Regular Expression --------------------------------------- */
 .syn-regexp,
 .syn-re {
   color: var(--syntax-regexp);
@@ -431,7 +431,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-regexp-style);
 }
 
-/* ── Label ───────────────────────────────────────────────────── */
+/* -- Label ---------------------------------------------------- */
 .syn-label,
 .syn-lbl {
   color: var(--syntax-label);
@@ -439,7 +439,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-label-style);
 }
 
-/* ── Preprocessor Directive ──────────────────────────────────── */
+/* -- Preprocessor Directive ----------------------------------- */
 .syn-preprocessor,
 .syn-pp {
   color: var(--syntax-preprocessor);
@@ -447,7 +447,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-preprocessor-style);
 }
 
-/* ── CSS Selector ────────────────────────────────────────────── */
+/* -- CSS Selector --------------------------------------------- */
 .syn-css-selector,
 .syn-css-sel {
   color: var(--syntax-css-selector);
@@ -455,7 +455,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-css-selector-style);
 }
 
-/* ── CSS Property ────────────────────────────────────────────── */
+/* -- CSS Property --------------------------------------------- */
 .syn-css-property,
 .syn-css-prop {
   color: var(--syntax-css-property);
@@ -463,7 +463,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-css-property-style);
 }
 
-/* ── CSS Value ───────────────────────────────────────────────── */
+/* -- CSS Value ------------------------------------------------ */
 .syn-css-value,
 .syn-css-val {
   color: var(--syntax-css-value);
@@ -471,7 +471,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-css-value-style);
 }
 
-/* ── CSS Unit ────────────────────────────────────────────────── */
+/* -- CSS Unit ------------------------------------------------- */
 .syn-css-unit,
 .syn-css-u {
   color: var(--syntax-css-unit);
@@ -479,7 +479,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-css-unit-style);
 }
 
-/* ── JSON Key ────────────────────────────────────────────────── */
+/* -- JSON Key ------------------------------------------------- */
 .syn-json-key,
 .syn-jk {
   color: var(--syntax-json-key);
@@ -487,7 +487,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-json-key-style);
 }
 
-/* ── YAML Key ────────────────────────────────────────────────── */
+/* -- YAML Key ------------------------------------------------- */
 .syn-yaml-key,
 .syn-yk {
   color: var(--syntax-yaml-key);
@@ -495,7 +495,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-yaml-key-style);
 }
 
-/* ── Shell Command ───────────────────────────────────────────── */
+/* -- Shell Command -------------------------------------------- */
 .syn-shell-cmd,
 .syn-sh {
   color: var(--syntax-shell-cmd);
@@ -503,7 +503,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-shell-cmd-style);
 }
 
-/* ── Special: this / self / super ────────────────────────────── */
+/* -- Special: this / self / super ----------------------------- */
 .syn-this {
   color: var(--syntax-this);
   font-weight: var(--syntax-this-weight);
@@ -515,7 +515,7 @@ code.code-viewer ::selection {
    4. MARKUP / RICH TEXT UTILITY CLASSES
    ================================================================ */
 
-/* ── Heading ─────────────────────────────────────────────────── */
+/* -- Heading -------------------------------------------------- */
 .syn-heading,
 .syn-h {
   color: var(--syntax-heading);
@@ -523,7 +523,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-heading-style);
 }
 
-/* ── Link ────────────────────────────────────────────────────── */
+/* -- Link ----------------------------------------------------- */
 .syn-link,
 .syn-a {
   color: var(--syntax-link);
@@ -532,7 +532,7 @@ code.code-viewer ::selection {
   text-underline-offset: 2px;
 }
 
-/* ── Bold ────────────────────────────────────────────────────── */
+/* -- Bold ----------------------------------------------------- */
 .syn-bold,
 .syn-b {
   color: var(--syntax-bold);
@@ -540,7 +540,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-bold-style);
 }
 
-/* ── Italic ──────────────────────────────────────────────────── */
+/* -- Italic --------------------------------------------------- */
 .syn-italic,
 .syn-i {
   color: var(--syntax-italic);
@@ -548,14 +548,14 @@ code.code-viewer ::selection {
   font-style: var(--syntax-italic-style);
 }
 
-/* ── Strikethrough ───────────────────────────────────────────── */
+/* -- Strikethrough -------------------------------------------- */
 .syn-strikethrough,
 .syn-s {
   color: var(--syntax-strikethrough);
   text-decoration: var(--syntax-strikethrough-decoration);
 }
 
-/* ── Diff — Inserted ─────────────────────────────────────────── */
+/* -- Diff -- Inserted ----------------------------------------- */
 .syn-inserted,
 .syn-diff-add {
   color: var(--syntax-inserted);
@@ -563,7 +563,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-inserted-style);
 }
 
-/* ── Diff — Deleted ──────────────────────────────────────────── */
+/* -- Diff -- Deleted ------------------------------------------ */
 .syn-deleted,
 .syn-diff-del {
   color: var(--syntax-deleted);
@@ -571,7 +571,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-deleted-style);
 }
 
-/* ── Diff — Changed ──────────────────────────────────────────── */
+/* -- Diff -- Changed ------------------------------------------ */
 .syn-changed,
 .syn-diff-chg {
   color: var(--syntax-changed);
@@ -579,7 +579,7 @@ code.code-viewer ::selection {
   font-style: var(--syntax-changed-style);
 }
 
-/* ── Invalid / Error ─────────────────────────────────────────── */
+/* -- Invalid / Error ------------------------------------------ */
 .syn-invalid,
 .syn-err {
   color: var(--syntax-invalid);
@@ -589,238 +589,273 @@ code.code-viewer ::selection {
 
 
 /* ================================================================
-   5. HIGHLIGHT.JS BRIDGE  (v2 — NO duplicates, each class once)
+   5. HIGHLIGHT.JS BRIDGE (FIXED)
    ================================================================
-   Maps .hljs-* classes from highlight.js output → --syntax-* tokens.
-   Scoped to .editor-highlight-layer only (Yuyutermux code editor).
-   Replace atom-one-dark CDN — load this CSS AFTER hljs core.
-
-   CRITICAL: Each .hljs-* class appears in EXACTLY ONE rule block.
-   Adding a class to multiple blocks causes CSS cascade conflicts
-   where only the last declaration wins.
+   Maps .hljs-* classes generated by highlight.js to --syntax-* tokens.
+   
+   IMPORTANT: No duplicate selectors. Each .hljs-* class mapped ONCE.
+   Uses !important on color/font-weight/font-style to guarantee
+   override of animation.css defaults and any browser edge cases.
    ================================================================ */
 
-/* ── Base: reset hljs container ──────────────────────────────── */
+/* -- Base: reset hljs background/padding ---------------------- */
+.editor-highlight-layer .hljs,
+.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.editor-highlight-layer code,
 .editor-highlight-layer .hljs {
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  color: var(--syntax-fg);
+  background: transparent !important;
+  padding: 0 !important;
 }
 
-/* ── Keyword: if, for, return, import, def, class, etc. ──────── */
-.editor-highlight-layer .hljs-keyword {
-  color: var(--syntax-keyword);
-  font-weight: var(--syntax-keyword-weight);
+/* -- Keyword / control flow ----------------------------------- */
+.editor-highlight-layer .hljs-keyword,
+.hljs-keyword {
+  color: var(--syntax-keyword) !important;
+  font-weight: var(--syntax-keyword-weight) !important;
 }
 
-/* ── Built-in: print, len, range, console, Math, Object, etc. ─ */
-.editor-highlight-layer .hljs-built_in {
-  color: var(--syntax-builtin);
-  font-style: var(--syntax-builtin-style);
+/* -- Built-in functions (Python print, JS console, etc.) ----- */
+.editor-highlight-layer .hljs-built_in,
+.hljs-built_in {
+  color: var(--syntax-builtin) !important;
+  font-weight: var(--syntax-builtin-weight) !important;
+  font-style: var(--syntax-builtin-style) !important;
 }
 
-/* ── Type: type annotations, generics ───────────────────────── */
-.editor-highlight-layer .hljs-type {
-  color: var(--syntax-type);
-  font-style: var(--syntax-type-style);
+/* -- Type / class name ---------------------------------------- */
+.editor-highlight-layer .hljs-type,
+.editor-highlight-layer .hljs-class,
+.hljs-type,
+.hljs-class {
+  color: var(--syntax-type) !important;
+  font-style: var(--syntax-type-style) !important;
 }
 
-/* ── Class context (e.g. CSS .hljs-class) ───────────────────── */
-.editor-highlight-layer .hljs-class {
-  color: var(--syntax-type);
-  font-style: var(--syntax-type-style);
+/* -- Function / method name ----------------------------------- */
+.editor-highlight-layer .hljs-title.function_,
+.editor-highlight-layer .hljs-function,
+.hljs-title.function_,
+.hljs-function {
+  color: var(--syntax-function) !important;
 }
 
-/* ── Title — function name (specificity > generic title) ─────── */
-.editor-highlight-layer .hljs-title.function_ {
-  color: var(--syntax-function);
+/* -- String / quoted text ------------------------------------- */
+.editor-highlight-layer .hljs-string,
+.editor-highlight-layer .hljs-symbol,
+.hljs-string,
+.hljs-symbol {
+  color: var(--syntax-string) !important;
 }
 
-/* ── Title — class name (specificity > generic title) ────────── */
-.editor-highlight-layer .hljs-title.class_,
-.editor-highlight-layer .hljs-title.class_.inherited__ {
-  color: var(--syntax-type);
-  font-style: var(--syntax-type-style);
+/* -- String escape sequences ---------------------------------- */
+.editor-highlight-layer .hljs-string .hljs-subst,
+.editor-highlight-layer .hljs-template-tag,
+.hljs-string .hljs-subst,
+.hljs-template-tag {
+  color: var(--syntax-string-escape) !important;
 }
 
-/* ── Title — generic fallback (no .function_ / .class_) ─────── */
-.editor-highlight-layer .hljs-title {
-  color: var(--syntax-function);
+/* -- Number / numeric literal --------------------------------- */
+.editor-highlight-layer .hljs-number,
+.hljs-number {
+  color: var(--syntax-number) !important;
+  font-weight: var(--syntax-number-weight) !important;
 }
 
-/* ── Section: markdown headings ─────────────────────────────── */
-.editor-highlight-layer .hljs-section {
-  color: var(--syntax-heading);
-  font-weight: var(--syntax-heading-weight);
+/* -- Boolean / literal (true, false, null) ------------------- */
+.editor-highlight-layer .hljs-literal,
+.hljs-literal {
+  color: var(--syntax-boolean) !important;
+  font-weight: var(--syntax-boolean-weight) !important;
 }
 
-/* ── Function: .hljs-function class (used by some languages) ── */
-.editor-highlight-layer .hljs-function {
-  color: var(--syntax-function);
-}
-
-/* ── Params: function parameters ─────────────────────────────── */
-.editor-highlight-layer .hljs-params {
-  color: var(--syntax-parameter);
-  font-style: var(--syntax-parameter-style);
-}
-
-/* ── Comment, doctag, quote ─────────────────────────────────── */
+/* -- Comment -------------------------------------------------- */
 .editor-highlight-layer .hljs-comment,
 .editor-highlight-layer .hljs-doctag,
-.editor-highlight-layer .hljs-quote {
-  color: var(--syntax-comment);
-  font-style: var(--syntax-comment-style);
+.editor-highlight-layer .hljs-quote,
+.hljs-comment,
+.hljs-doctag,
+.hljs-quote {
+  color: var(--syntax-comment) !important;
+  font-style: var(--syntax-comment-style) !important;
 }
 
-/* ── String, symbol ─────────────────────────────────────────── */
-.editor-highlight-layer .hljs-string,
-.editor-highlight-layer .hljs-symbol {
-  color: var(--syntax-string);
+/* -- Operator (+, -, ==, etc.) -------------------------------- */
+.editor-highlight-layer .hljs-operator,
+.hljs-operator {
+  color: var(--syntax-operator) !important;
 }
 
-/* ── String interpolation: ${var} inside template literals ──── */
-.editor-highlight-layer .hljs-template-variable,
-.editor-highlight-layer .hljs-string .hljs-subst {
-  color: var(--syntax-string-escape);
+/* -- Punctuation (braces, semicolons, dots) ------------------ */
+.editor-highlight-layer .hljs-punctuation,
+.hljs-punctuation {
+  color: var(--syntax-punctuation) !important;
 }
 
-/* ── Template tag: the ${ delimiter in JS template literals ── */
-.editor-highlight-layer .hljs-template-tag {
-  color: var(--syntax-punctuation);
+/* -- Function parameters -------------------------------------- */
+.editor-highlight-layer .hljs-params,
+.editor-highlight-layer .hljs-title.class_,
+.editor-highlight-layer .hljs-title.class_.inherited__,
+.hljs-params,
+.hljs-title.class_,
+.hljs-title.class_.inherited__ {
+  color: var(--syntax-parameter) !important;
+  font-style: var(--syntax-parameter-style) !important;
 }
 
-/* ── Substitution: general template substitution ────────────── */
-.editor-highlight-layer .hljs-subst {
-  color: var(--syntax-variable);
+/* -- Variable ------------------------------------------------- */
+.editor-highlight-layer .hljs-variable,
+.editor-highlight-layer .hljs-subst,
+.hljs-variable,
+.hljs-subst {
+  color: var(--syntax-variable) !important;
 }
 
-/* ── Number ──────────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-number {
-  color: var(--syntax-number);
+/* -- Special: this, self, super -------------------------------- */
+.editor-highlight-layer .hljs-variable.language_,
+.hljs-variable.language_ {
+  color: var(--syntax-this) !important;
+  font-style: var(--syntax-this-style) !important;
 }
 
-/* ── RegExp ──────────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-regexp {
-  color: var(--syntax-regexp);
+/* -- Property / object key access (obj.key, dict[key]) ------- */
+.editor-highlight-layer .hljs-property,
+.hljs-property {
+  color: var(--syntax-property) !important;
 }
 
-/* ── Literal: True, False, None, null, undefined, NaN ───────── */
-.editor-highlight-layer .hljs-literal {
-  color: var(--syntax-boolean);
-  font-weight: var(--syntax-boolean-weight);
-}
-
-/* ── Variable ────────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-variable {
-  color: var(--syntax-variable);
-}
-
-/* ── Language variable: this, self, super ────────────────────── */
-.editor-highlight-layer .hljs-variable.language_ {
-  color: var(--syntax-this);
-  font-style: var(--syntax-this-style);
-}
-
-/* ── Meta: decorators, annotations, @tag, YAML ──────────────── */
-.editor-highlight-layer .hljs-meta {
-  color: var(--syntax-decorator);
-  font-style: var(--syntax-decorator-style);
-}
-
-/* ── Meta + keyword: the @ symbol in Python decorators ───────── */
-.editor-highlight-layer .hljs-meta .hljs-keyword {
-  color: var(--syntax-decorator);
-  font-style: var(--syntax-decorator-style);
-}
-
-/* ── Operator ────────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-operator {
-  color: var(--syntax-operator);
-}
-
-/* ── Punctuation ────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-punctuation {
-  color: var(--syntax-punctuation);
-}
-
-/* ── Attribute: HTML/XML attr names, JSON keys ──────────────── */
+/* -- Attribute name (HTML: href=, CSS: color:) --------------- */
 .editor-highlight-layer .hljs-attr,
-.editor-highlight-layer .hljs-attribute {
-  color: var(--syntax-attribute);
+.editor-highlight-layer .hljs-attribute,
+.hljs-attr,
+.hljs-attribute {
+  color: var(--syntax-attribute) !important;
 }
 
-/* ── Property: object property / dictionary key ──────────────── */
-.editor-highlight-layer .hljs-property {
-  color: var(--syntax-attribute);
+/* -- Decorator / annotation (@decorator, @Override) ----------- */
+.editor-highlight-layer .hljs-meta .hljs-keyword,
+.hljs-meta .hljs-keyword {
+  color: var(--syntax-decorator) !important;
+  font-style: var(--syntax-decorator-style) !important;
 }
 
-/* ── Tag name: HTML/XML/JSX tag names ────────────────────────── */
+/* -- Meta (YAML ---, CSS @media, etc.) ------------------------ */
+.editor-highlight-layer .hljs-meta,
+.hljs-meta {
+  color: var(--syntax-comment) !important;
+  font-style: var(--syntax-comment-style) !important;
+}
+
+/* -- Tag name (HTML: <div>, XML: <node>) ---------------------- */
 .editor-highlight-layer .hljs-tag,
-.editor-highlight-layer .hljs-name {
-  color: var(--syntax-tag);
+.hljs-tag {
+  color: var(--syntax-tag) !important;
 }
 
-/* ── CSS selectors ──────────────────────────────────────────── */
-.editor-highlight-layer .hljs-selector-tag,
+/* -- Tag / element name (HTML: div in <div>) ----------------- */
+.editor-highlight-layer .hljs-name,
+.hljs-name {
+  color: var(--syntax-tag) !important;
+}
+
+/* -- Title / section (Markdown headings) ---------------------- */
+.editor-highlight-layer .hljs-title,
+.editor-highlight-layer .hljs-section,
+.hljs-title,
+.hljs-section {
+  color: var(--syntax-function) !important;
+  font-weight: var(--syntax-function-weight) !important;
+}
+
+/* -- CSS selector (.class, #id, :pseudo, tag) ---------------- */
 .editor-highlight-layer .hljs-selector-class,
 .editor-highlight-layer .hljs-selector-id,
+.editor-highlight-layer .hljs-selector-tag,
 .editor-highlight-layer .hljs-selector-attr,
-.editor-highlight-layer .hljs-selector-pseudo {
-  color: var(--syntax-css-selector);
+.editor-highlight-layer .hljs-selector-pseudo,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-tag,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--syntax-css-selector) !important;
 }
 
-/* ── Diff: addition ─────────────────────────────────────────── */
-.editor-highlight-layer .hljs-addition {
-  color: var(--syntax-inserted);
+/* -- Regexp --------------------------------------------------- */
+.editor-highlight-layer .hljs-regexp,
+.hljs-regexp {
+  color: var(--syntax-regexp) !important;
 }
 
-/* ── Diff: deletion ─────────────────────────────────────────── */
-.editor-highlight-layer .hljs-deletion {
-  color: var(--syntax-deleted);
-}
-
-/* ── Diff: change ───────────────────────────────────────────── */
-.editor-highlight-layer .hljs-change {
-  color: var(--syntax-changed);
-}
-
-/* ── Link / URL ─────────────────────────────────────────────── */
+/* -- Link / URL ----------------------------------------------- */
 .editor-highlight-layer .hljs-link,
-.editor-highlight-layer .hljs-url {
-  color: var(--syntax-link);
-  text-decoration: var(--syntax-link-decoration);
+.editor-highlight-layer .hljs-url,
+.hljs-link,
+.hljs-url {
+  color: var(--syntax-link) !important;
+  text-decoration: var(--syntax-link-decoration) !important;
 }
 
-/* ── Strong (markdown bold) ─────────────────────────────────── */
-.editor-highlight-layer .hljs-strong {
-  font-weight: 700;
+/* -- Bullet / list item --------------------------------------- */
+.editor-highlight-layer .hljs-bullet,
+.hljs-bullet {
+  color: var(--syntax-operator) !important;
 }
 
-/* ── Emphasis (markdown italic) ─────────────────────────────── */
-.editor-highlight-layer .hljs-emphasis {
-  font-style: italic;
+/* -- Code / inline code in markdown -------------------------- */
+.editor-highlight-layer .hljs-code,
+.hljs-code {
+  color: var(--syntax-string) !important;
 }
 
-/* ── Inline code (markdown) ─────────────────────────────────── */
-.editor-highlight-layer .hljs-code {
-  color: var(--syntax-string);
+/* -- Emphasis bold in markdown -------------------------------- */
+.editor-highlight-layer .hljs-strong,
+.hljs-strong {
+  color: var(--syntax-bold) !important;
+  font-weight: var(--syntax-bold-weight) !important;
 }
 
-/* ── Formula ────────────────────────────────────────────────── */
-.editor-highlight-layer .hljs-formula {
-  color: var(--syntax-function);
+/* -- Emphasis italic in markdown ------------------------------ */
+.editor-highlight-layer .hljs-emphasis,
+.hljs-emphasis {
+  color: var(--syntax-italic) !important;
+  font-style: var(--syntax-italic-style) !important;
 }
 
-/* ── Bullet (list item marker) ──────────────────────────────── */
-.editor-highlight-layer .hljs-bullet {
-  color: var(--syntax-operator);
+/* -- Deleted (diff) ------------------------------------------- */
+.editor-highlight-layer .hljs-deletion,
+.hljs-deletion {
+  color: var(--syntax-deleted) !important;
+  background-color: rgba(224, 108, 117, 0.1) !important;
 }
 
-/* ── Variable inside template tag ───────────────────────────── */
-.editor-highlight-layer .hljs-template-tag .hljs-name {
-  color: var(--syntax-variable);
+/* -- Inserted (diff) ------------------------------------------ */
+.editor-highlight-layer .hljs-addition,
+.hljs-addition {
+  color: var(--syntax-inserted) !important;
+  background-color: rgba(152, 195, 121, 0.1) !important;
+}
+
+/* -- Formulas ------------------------------------------------- */
+.editor-highlight-layer .hljs-formula,
+.hljs-formula {
+  color: var(--syntax-function) !important;
+}
+
+/* -- Template variable in strings ----------------------------- */
+.editor-highlight-layer .hljs-template-variable,
+.hljs-template-variable {
+  color: var(--syntax-variable) !important;
+}
+
+/* -- Meta string (e.g., regex in meta context) ---------------- */
+.editor-highlight-layer .hljs-meta .hljs-string,
+.hljs-meta .hljs-string {
+  color: var(--syntax-regexp) !important;
 }
 
 
