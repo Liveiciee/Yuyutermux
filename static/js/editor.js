@@ -131,7 +131,6 @@ export const Editor = {
     const value = this.ta.value
 
     if (typeof hljs === 'undefined') {
-      // Fallback: show plain text with line breaks
       code.textContent = value
       this.highlightLayer.style.visibility = 'visible'
       this.ta.classList.remove('highlighting-on')
