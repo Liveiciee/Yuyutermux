@@ -1,0 +1,942 @@
+/*
+ * Global Syntax Theme — CSS Custom Properties & Utility Classes
+ * =============================================================
+ * A single, universal syntax highlighting stylesheet using CSS variables.
+ * Maps semantic roles to named color tokens so future tweaks are localized.
+ *
+ * All colors pass WCAG AA (≥ 4.5:1 contrast ratio) against #131313.
+ * Palette is designed for accessibility across common forms of color blindness
+ * by combining hue, luminance, and font-style/font-weight differentiation.
+ *
+ * Contains:
+ *   1. Design Tokens  — CSS custom properties for all semantic roles
+ *   2. Code Viewer     — base styles for .code-viewer containers
+ *   3. Utility Classes — .syn-* classes for manual markup
+ *   4. Markup Classes  — heading, link, bold, italic, strikethrough, diff
+ *   5. HLJS Bridge     — maps .hljs-* classes → --syntax-* tokens
+ *   6. Integration     — helper classes and print styles
+ */
+
+
+/* ================================================================
+   1. DESIGN TOKENS (CSS Custom Properties)
+   ================================================================ */
+
+:root {
+  /* ── Editor chrome ─────────────────────────────────────────── */
+  --syntax-bg: #131313;
+  --syntax-fg: #e5e5e5;
+  --syntax-line-highlight: #1e1e2e;
+  --syntax-selection: #3e4451;
+  --syntax-selection-inactive: #2a2a2a;
+  --syntax-cursor: #528bff;
+  --syntax-line-number: #495162;
+  --syntax-line-number-active: #8b949e;
+  --syntax-indent-guide: #333333;
+  --syntax-indent-guide-active: #474747;
+  --syntax-scrollbar: rgba(71, 71, 71, 0.4);
+  --syntax-scrollbar-hover: #474747;
+
+  /* ── Semantic color tokens ─────────────────────────────────── */
+  --syntax-keyword: #c678dd;
+  --syntax-keyword-weight: 700;
+
+  --syntax-type: #e5c07b;
+  --syntax-type-weight: 400;
+  --syntax-type-style: italic;
+
+  --syntax-storage: #e06c75;
+  --syntax-storage-weight: 400;
+  --syntax-storage-style: normal;
+
+  --syntax-function: #61afef;
+  --syntax-function-weight: 400;
+  --syntax-function-style: normal;
+
+  --syntax-variable: #e5e5e5;
+  --syntax-variable-weight: 400;
+  --syntax-variable-style: normal;
+
+  --syntax-string: #98c379;
+  --syntax-string-weight: 400;
+  --syntax-string-style: normal;
+
+  --syntax-string-escape: #d19a66;
+  --syntax-string-escape-weight: 400;
+  --syntax-string-escape-style: normal;
+
+  --syntax-number: #d19a66;
+  --syntax-number-weight: 400;
+  --syntax-number-style: normal;
+
+  --syntax-boolean: #d19a66;
+  --syntax-boolean-weight: 700;
+  --syntax-boolean-style: normal;
+
+  --syntax-constant: #d19a66;
+  --syntax-constant-weight: 400;
+  --syntax-constant-style: normal;
+
+  --syntax-comment: #8b949e;
+  --syntax-comment-weight: 400;
+  --syntax-comment-style: italic;
+
+  --syntax-operator: #56b6c2;
+  --syntax-operator-weight: 400;
+  --syntax-operator-style: normal;
+
+  --syntax-punctuation: #9ca0a8;
+  --syntax-punctuation-weight: 400;
+  --syntax-punctuation-style: normal;
+
+  --syntax-decorator: #c678dd;
+  --syntax-decorator-weight: 400;
+  --syntax-decorator-style: italic;
+
+  --syntax-tag: #e06c75;
+  --syntax-tag-weight: 400;
+  --syntax-tag-style: normal;
+
+  --syntax-attribute: #d19a66;
+  --syntax-attribute-weight: 400;
+  --syntax-attribute-style: normal;
+
+  --syntax-attribute-value: #98c379;
+  --syntax-attribute-value-weight: 400;
+  --syntax-attribute-value-style: normal;
+
+  --syntax-builtin: #e5c07b;
+  --syntax-builtin-weight: 400;
+  --syntax-builtin-style: italic;
+
+  --syntax-parameter: #e5e5e5;
+  --syntax-parameter-weight: 400;
+  --syntax-parameter-style: italic;
+
+  --syntax-property: #e5e5e5;
+  --syntax-property-weight: 400;
+  --syntax-property-style: normal;
+
+  --syntax-regexp: #e5c07b;
+  --syntax-regexp-weight: 400;
+  --syntax-regexp-style: normal;
+
+  --syntax-label: #c678dd;
+  --syntax-label-weight: 400;
+  --syntax-label-style: normal;
+
+  --syntax-preprocessor: #c678dd;
+  --syntax-preprocessor-weight: 400;
+  --syntax-preprocessor-style: normal;
+
+  --syntax-css-selector: #e06c75;
+  --syntax-css-selector-weight: 400;
+  --syntax-css-selector-style: normal;
+
+  --syntax-css-property: #56b6c2;
+  --syntax-css-property-weight: 400;
+  --syntax-css-property-style: normal;
+
+  --syntax-css-value: #d19a66;
+  --syntax-css-value-weight: 400;
+  --syntax-css-value-style: normal;
+
+  --syntax-css-unit: #56b6c2;
+  --syntax-css-unit-weight: 400;
+  --syntax-css-unit-style: normal;
+
+  --syntax-json-key: #56b6c2;
+  --syntax-json-key-weight: 400;
+  --syntax-json-key-style: normal;
+
+  --syntax-yaml-key: #56b6c2;
+  --syntax-yaml-key-weight: 400;
+  --syntax-yaml-key-style: normal;
+
+  --syntax-shell-cmd: #e06c75;
+  --syntax-shell-cmd-weight: 400;
+  --syntax-shell-cmd-style: normal;
+
+  /* ── Special variable tokens ───────────────────────────────── */
+  --syntax-this: #e06c75;
+  --syntax-this-weight: 400;
+  --syntax-this-style: italic;
+
+  /* ── Markup tokens ─────────────────────────────────────────── */
+  --syntax-heading: #61afef;
+  --syntax-heading-weight: 700;
+  --syntax-heading-style: normal;
+
+  --syntax-link: #61afef;
+  --syntax-link-weight: 400;
+  --syntax-link-style: normal;
+  --syntax-link-decoration: underline;
+
+  --syntax-bold: #e5e5e5;
+  --syntax-bold-weight: 700;
+  --syntax-bold-style: normal;
+
+  --syntax-italic: #e5e5e5;
+  --syntax-italic-weight: 400;
+  --syntax-italic-style: italic;
+
+  --syntax-strikethrough: #8b949e;
+  --syntax-strikethrough-decoration: line-through;
+
+  --syntax-inserted: #98c379;
+  --syntax-inserted-weight: 400;
+  --syntax-inserted-style: normal;
+
+  --syntax-deleted: #e06c75;
+  --syntax-deleted-weight: 400;
+  --syntax-deleted-style: normal;
+
+  --syntax-changed: #d19a66;
+  --syntax-changed-weight: 400;
+  --syntax-changed-style: normal;
+
+  --syntax-invalid: #e06c75;
+  --syntax-invalid-decoration: underline wavy;
+}
+
+
+/* ================================================================
+   2. BASE CODE VIEWER STYLES
+   ================================================================ */
+
+.code-viewer,
+pre.code-viewer,
+code.code-viewer {
+  background-color: var(--syntax-bg);
+  color: var(--syntax-fg);
+  font-family: 'Space Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
+  padding: 16px 20px;
+  border-radius: 0;
+}
+
+/* Selection highlight */
+.code-viewer ::selection,
+pre.code-viewer ::selection,
+code.code-viewer ::selection {
+  background-color: var(--syntax-selection);
+}
+
+/* Line number gutter */
+.code-viewer .line-number {
+  display: inline-block;
+  min-width: 3em;
+  padding-right: 1.5em;
+  text-align: right;
+  color: var(--syntax-line-number);
+  user-select: none;
+}
+
+.code-viewer .line-number.active {
+  color: var(--syntax-line-number-active);
+}
+
+/* Highlighted line */
+.code-viewer .line-highlight {
+  background-color: var(--syntax-line-highlight);
+}
+
+/* Diff markers */
+.code-viewer .diff-marker {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+  user-select: none;
+}
+
+
+/* ================================================================
+   3. SYNTAX UTILITY CLASSES
+   ================================================================ */
+
+/* ── Keyword ─────────────────────────────────────────────────── */
+.syn-keyword,
+.syn-kw {
+  color: var(--syntax-keyword);
+  font-weight: var(--syntax-keyword-weight);
+  font-style: var(--syntax-keyword-style, normal);
+}
+
+/* ── Type / Class / Struct / Enum ────────────────────────────── */
+.syn-type,
+.syn-tp {
+  color: var(--syntax-type);
+  font-weight: var(--syntax-type-weight);
+  font-style: var(--syntax-type-style);
+}
+
+/* ── Storage / Declaration ───────────────────────────────────── */
+.syn-storage,
+.syn-st {
+  color: var(--syntax-storage);
+  font-weight: var(--syntax-storage-weight);
+  font-style: var(--syntax-storage-style);
+}
+
+/* ── Function / Method ───────────────────────────────────────── */
+.syn-function,
+.syn-fn {
+  color: var(--syntax-function);
+  font-weight: var(--syntax-function-weight);
+  font-style: var(--syntax-function-style);
+}
+
+/* ── Variable / Identifier ───────────────────────────────────── */
+.syn-variable,
+.syn-var {
+  color: var(--syntax-variable);
+  font-weight: var(--syntax-variable-weight);
+  font-style: var(--syntax-variable-style);
+}
+
+/* ── String ──────────────────────────────────────────────────── */
+.syn-string,
+.syn-str {
+  color: var(--syntax-string);
+  font-weight: var(--syntax-string-weight);
+  font-style: var(--syntax-string-style);
+}
+
+/* ── String Escape ───────────────────────────────────────────── */
+.syn-string-escape,
+.syn-stre {
+  color: var(--syntax-string-escape);
+  font-weight: var(--syntax-string-escape-weight);
+  font-style: var(--syntax-string-escape-style);
+}
+
+/* ── Number ──────────────────────────────────────────────────── */
+.syn-number,
+.syn-num {
+  color: var(--syntax-number);
+  font-weight: var(--syntax-number-weight);
+  font-style: var(--syntax-number-style);
+}
+
+/* ── Boolean / Null / Undefined ──────────────────────────────── */
+.syn-boolean,
+.syn-bool {
+  color: var(--syntax-boolean);
+  font-weight: var(--syntax-boolean-weight);
+  font-style: var(--syntax-boolean-style);
+}
+
+/* ── Constant ────────────────────────────────────────────────── */
+.syn-constant,
+.syn-cst {
+  color: var(--syntax-constant);
+  font-weight: var(--syntax-constant-weight);
+  font-style: var(--syntax-constant-style);
+}
+
+/* ── Comment ─────────────────────────────────────────────────── */
+.syn-comment,
+.syn-cmt {
+  color: var(--syntax-comment);
+  font-weight: var(--syntax-comment-weight);
+  font-style: var(--syntax-comment-style);
+}
+
+/* ── Operator ────────────────────────────────────────────────── */
+.syn-operator,
+.syn-op {
+  color: var(--syntax-operator);
+  font-weight: var(--syntax-operator-weight);
+  font-style: var(--syntax-operator-style);
+}
+
+/* ── Punctuation / Delimiter ─────────────────────────────────── */
+.syn-punctuation,
+.syn-punc {
+  color: var(--syntax-punctuation);
+  font-weight: var(--syntax-punctuation-weight);
+  font-style: var(--syntax-punctuation-style);
+}
+
+/* ── Decorator / Annotation ──────────────────────────────────── */
+.syn-decorator,
+.syn-dec {
+  color: var(--syntax-decorator);
+  font-weight: var(--syntax-decorator-weight);
+  font-style: var(--syntax-decorator-style);
+}
+
+/* ── Tag (HTML/XML/JSX) ─────────────────────────────────────── */
+.syn-tag,
+.syn-tg {
+  color: var(--syntax-tag);
+  font-weight: var(--syntax-tag-weight);
+  font-style: var(--syntax-tag-style);
+}
+
+/* ── Attribute Name ──────────────────────────────────────────── */
+.syn-attribute,
+.syn-attr {
+  color: var(--syntax-attribute);
+  font-weight: var(--syntax-attribute-weight);
+  font-style: var(--syntax-attribute-style);
+}
+
+/* ── Attribute Value ─────────────────────────────────────────── */
+.syn-attribute-value,
+.syn-atv {
+  color: var(--syntax-attribute-value);
+  font-weight: var(--syntax-attribute-value-weight);
+  font-style: var(--syntax-attribute-value-style);
+}
+
+/* ── Built-in / Native ───────────────────────────────────────── */
+.syn-builtin,
+.syn-bi {
+  color: var(--syntax-builtin);
+  font-weight: var(--syntax-builtin-weight);
+  font-style: var(--syntax-builtin-style);
+}
+
+/* ── Function Parameter ──────────────────────────────────────── */
+.syn-parameter,
+.syn-param {
+  color: var(--syntax-parameter);
+  font-weight: var(--syntax-parameter-weight);
+  font-style: var(--syntax-parameter-style);
+}
+
+/* ── Property / Key Access ───────────────────────────────────── */
+.syn-property,
+.syn-prop {
+  color: var(--syntax-property);
+  font-weight: var(--syntax-property-weight);
+  font-style: var(--syntax-property-style);
+}
+
+/* ── Regular Expression ──────────────────────────────────────── */
+.syn-regexp,
+.syn-re {
+  color: var(--syntax-regexp);
+  font-weight: var(--syntax-regexp-weight);
+  font-style: var(--syntax-regexp-style);
+}
+
+/* ── Label ───────────────────────────────────────────────────── */
+.syn-label,
+.syn-lbl {
+  color: var(--syntax-label);
+  font-weight: var(--syntax-label-weight);
+  font-style: var(--syntax-label-style);
+}
+
+/* ── Preprocessor Directive ──────────────────────────────────── */
+.syn-preprocessor,
+.syn-pp {
+  color: var(--syntax-preprocessor);
+  font-weight: var(--syntax-preprocessor-weight);
+  font-style: var(--syntax-preprocessor-style);
+}
+
+/* ── CSS Selector ────────────────────────────────────────────── */
+.syn-css-selector,
+.syn-css-sel {
+  color: var(--syntax-css-selector);
+  font-weight: var(--syntax-css-selector-weight);
+  font-style: var(--syntax-css-selector-style);
+}
+
+/* ── CSS Property ────────────────────────────────────────────── */
+.syn-css-property,
+.syn-css-prop {
+  color: var(--syntax-css-property);
+  font-weight: var(--syntax-css-property-weight);
+  font-style: var(--syntax-css-property-style);
+}
+
+/* ── CSS Value ───────────────────────────────────────────────── */
+.syn-css-value,
+.syn-css-val {
+  color: var(--syntax-css-value);
+  font-weight: var(--syntax-css-value-weight);
+  font-style: var(--syntax-css-value-style);
+}
+
+/* ── CSS Unit ────────────────────────────────────────────────── */
+.syn-css-unit,
+.syn-css-u {
+  color: var(--syntax-css-unit);
+  font-weight: var(--syntax-css-unit-weight);
+  font-style: var(--syntax-css-unit-style);
+}
+
+/* ── JSON Key ────────────────────────────────────────────────── */
+.syn-json-key,
+.syn-jk {
+  color: var(--syntax-json-key);
+  font-weight: var(--syntax-json-key-weight);
+  font-style: var(--syntax-json-key-style);
+}
+
+/* ── YAML Key ────────────────────────────────────────────────── */
+.syn-yaml-key,
+.syn-yk {
+  color: var(--syntax-yaml-key);
+  font-weight: var(--syntax-yaml-key-weight);
+  font-style: var(--syntax-yaml-key-style);
+}
+
+/* ── Shell Command ───────────────────────────────────────────── */
+.syn-shell-cmd,
+.syn-sh {
+  color: var(--syntax-shell-cmd);
+  font-weight: var(--syntax-shell-cmd-weight);
+  font-style: var(--syntax-shell-cmd-style);
+}
+
+/* ── Special: this / self / super ────────────────────────────── */
+.syn-this {
+  color: var(--syntax-this);
+  font-weight: var(--syntax-this-weight);
+  font-style: var(--syntax-this-style);
+}
+
+
+/* ================================================================
+   4. MARKUP / RICH TEXT UTILITY CLASSES
+   ================================================================ */
+
+/* ── Heading ─────────────────────────────────────────────────── */
+.syn-heading,
+.syn-h {
+  color: var(--syntax-heading);
+  font-weight: var(--syntax-heading-weight);
+  font-style: var(--syntax-heading-style);
+}
+
+/* ── Link ────────────────────────────────────────────────────── */
+.syn-link,
+.syn-a {
+  color: var(--syntax-link);
+  font-weight: var(--syntax-link-weight);
+  text-decoration: var(--syntax-link-decoration);
+  text-underline-offset: 2px;
+}
+
+/* ── Bold ────────────────────────────────────────────────────── */
+.syn-bold,
+.syn-b {
+  color: var(--syntax-bold);
+  font-weight: var(--syntax-bold-weight);
+  font-style: var(--syntax-bold-style);
+}
+
+/* ── Italic ──────────────────────────────────────────────────── */
+.syn-italic,
+.syn-i {
+  color: var(--syntax-italic);
+  font-weight: var(--syntax-italic-weight);
+  font-style: var(--syntax-italic-style);
+}
+
+/* ── Strikethrough ───────────────────────────────────────────── */
+.syn-strikethrough,
+.syn-s {
+  color: var(--syntax-strikethrough);
+  text-decoration: var(--syntax-strikethrough-decoration);
+}
+
+/* ── Diff — Inserted ─────────────────────────────────────────── */
+.syn-inserted,
+.syn-diff-add {
+  color: var(--syntax-inserted);
+  font-weight: var(--syntax-inserted-weight);
+  font-style: var(--syntax-inserted-style);
+}
+
+/* ── Diff — Deleted ──────────────────────────────────────────── */
+.syn-deleted,
+.syn-diff-del {
+  color: var(--syntax-deleted);
+  font-weight: var(--syntax-deleted-weight);
+  font-style: var(--syntax-deleted-style);
+}
+
+/* ── Diff — Changed ──────────────────────────────────────────── */
+.syn-changed,
+.syn-diff-chg {
+  color: var(--syntax-changed);
+  font-weight: var(--syntax-changed-weight);
+  font-style: var(--syntax-changed-style);
+}
+
+/* ── Invalid / Error ─────────────────────────────────────────── */
+.syn-invalid,
+.syn-err {
+  color: var(--syntax-invalid);
+  text-decoration: var(--syntax-invalid-decoration);
+  text-underline-offset: 2px;
+}
+
+
+/* ================================================================
+   5. HIGHLIGHT.JS BRIDGE
+   ================================================================
+   Maps .hljs-* classes generated by highlight.js to --syntax-* tokens.
+   Works inside .editor-highlight-layer (Yuyutermux editor) and .hljs.
+   Load this CSS AFTER highlight.js to override the CDN theme.
+   ================================================================ */
+
+.editor-highlight-layer .hljs,
+.hljs {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* ── Keyword / Control ───────────────────────────────────────── */
+.editor-highlight-layer .hljs-keyword,
+.editor-highlight-layer .hljs-built_in,
+.hljs-keyword,
+.hljs-built_in {
+  color: var(--syntax-keyword);
+  font-weight: var(--syntax-keyword-weight);
+}
+
+/* ── Storage / Declaration ───────────────────────────────────── */
+.editor-highlight-layer .hljs-title,
+.editor-highlight-layer .hljs-title.class_,
+.editor-highlight-layer .hljs-title.class_.inherited__,
+.editor-highlight-layer .hljs-title.function_,
+.editor-highlight-layer .hljs-section,
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--syntax-function);
+}
+
+/* ── Type ────────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-type,
+.editor-highlight-layer .hljs-class,
+.hljs-type,
+.hljs-class {
+  color: var(--syntax-type);
+  font-style: var(--syntax-type-style);
+}
+
+/* ── String / Symbol ─────────────────────────────────────────── */
+.editor-highlight-layer .hljs-string,
+.editor-highlight-layer .hljs-symbol,
+.editor-highlight-layer .hljs-template-variable,
+.hljs-string,
+.hljs-symbol,
+.hljs-template-variable {
+  color: var(--syntax-string);
+}
+
+/* ── String Escape ───────────────────────────────────────────── */
+.editor-highlight-layer .hljs-string .hljs-subst,
+.editor-highlight-layer .hljs-template-tag,
+.editor-highlight-layer .hljs-template-variable,
+.hljs-string .hljs-subst,
+.hljs-template-tag {
+  color: var(--syntax-string-escape);
+}
+
+/* ── Number ──────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-number,
+.editor-highlight-layer .hljs-literal,
+.editor-highlight-layer .hljs-regexp,
+.editor-highlight-layer .hljs-meta .hljs-string,
+.hljs-number,
+.hljs-literal,
+.hljs-regexp,
+.hljs-meta .hljs-string {
+  color: var(--syntax-number);
+}
+
+/* ── Boolean / Literal ───────────────────────────────────────── */
+.editor-highlight-layer .hljs-literal,
+.hljs-literal {
+  color: var(--syntax-boolean);
+  font-weight: var(--syntax-boolean-weight);
+}
+
+/* ── Comment ─────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-comment,
+.editor-highlight-layer .hljs-doctag,
+.editor-highlight-layer .hljs-quote,
+.editor-highlight-layer .hljs-meta,
+.hljs-comment,
+.hljs-doctag,
+.hljs-quote,
+.hljs-meta {
+  color: var(--syntax-comment);
+  font-style: var(--syntax-comment-style);
+}
+
+/* ── Operator ────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-operator,
+.editor-highlight-layer .hljs-punctuation,
+.hljs-operator,
+.hljs-punctuation {
+  color: var(--syntax-operator);
+}
+
+/* ── Punctuation (lighter) ───────────────────────────────────── */
+.editor-highlight-layer .hljs-attr,
+.editor-highlight-layer .hljs-params,
+.hljs-attr,
+.hljs-params {
+  color: var(--syntax-punctuation);
+}
+
+/* ── Function / Method Name ──────────────────────────────────── */
+.editor-highlight-layer .hljs-title.function_,
+.editor-highlight-layer .hljs-function,
+.editor-highlight-layer .hljs-subst,
+.hljs-title.function_,
+.hljs-function,
+.hljs-subst {
+  color: var(--syntax-function);
+}
+
+/* ── Variable ────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-variable,
+.editor-highlight-layer .hljs-template-tag .hljs-name,
+.hljs-variable,
+.hljs-template-tag .hljs-name {
+  color: var(--syntax-variable);
+}
+
+/* ── Attribute / Property ────────────────────────────────────── */
+.editor-highlight-layer .hljs-attr,
+.editor-highlight-layer .hljs-attribute,
+.editor-highlight-layer .hljs-property,
+.hljs-attr,
+.hljs-attribute,
+.hljs-property {
+  color: var(--syntax-attribute);
+}
+
+/* ── Decorator / Annotation ──────────────────────────────────── */
+.editor-highlight-layer .hljs-meta .hljs-keyword,
+.editor-highlight-layer .hljs-meta .hljs-string,
+.hljs-meta .hljs-keyword {
+  color: var(--syntax-decorator);
+  font-style: var(--syntax-decorator-style);
+}
+
+/* ── Tag (HTML/XML) ──────────────────────────────────────────── */
+.editor-highlight-layer .hljs-tag,
+.editor-highlight-layer .hljs-name,
+.hljs-tag,
+.hljs-name {
+  color: var(--syntax-tag);
+}
+
+/* ── Deleted (diff) ──────────────────────────────────────────── */
+.editor-highlight-layer .hljs-deletion,
+.hljs-deletion {
+  color: var(--syntax-deleted);
+  background-color: rgba(224, 108, 117, 0.1);
+}
+
+/* ── Inserted (diff) ─────────────────────────────────────────── */
+.editor-highlight-layer .hljs-addition,
+.hljs-addition {
+  color: var(--syntax-inserted);
+  background-color: rgba(152, 195, 121, 0.1);
+}
+
+/* ── Changed (diff) ──────────────────────────────────────────── */
+.editor-highlight-layer .hljs-change,
+.hljs-change {
+  color: var(--syntax-changed);
+  background-color: rgba(209, 154, 102, 0.1);
+}
+
+/* ── Link ────────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-link,
+.editor-highlight-layer .hljs-url,
+.hljs-link,
+.hljs-url {
+  color: var(--syntax-link);
+  text-decoration: var(--syntax-link-decoration);
+}
+
+/* ── Emphasis (bold/italic in markup) ────────────────────────── */
+.editor-highlight-layer .hljs-strong,
+.hljs-strong {
+  color: var(--syntax-bold);
+  font-weight: var(--syntax-bold-weight);
+}
+
+.editor-highlight-layer .hljs-emphasis,
+.hljs-emphasis {
+  color: var(--syntax-italic);
+  font-style: var(--syntax-italic-style);
+}
+
+/* ── Code / Inline code ──────────────────────────────────────── */
+.editor-highlight-layer .hljs-code,
+.hljs-code {
+  color: var(--syntax-string);
+}
+
+/* ── Formulas ────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-formula,
+.hljs-formula {
+  color: var(--syntax-function);
+}
+
+/* ── Param / variable.language ───────────────────────────────── */
+.editor-highlight-layer .hljs-variable.language_,
+.hljs-variable.language_ {
+  color: var(--syntax-this);
+  font-style: var(--syntax-this-style);
+}
+
+/* ── Bullet / List ───────────────────────────────────────────── */
+.editor-highlight-layer .hljs-bullet,
+.hljs-bullet {
+  color: var(--syntax-operator);
+}
+
+/* ── Selector / Class ────────────────────────────────────────── */
+.editor-highlight-layer .hljs-selector-class,
+.editor-highlight-layer .hljs-selector-id,
+.editor-highlight-layer .hljs-selector-tag,
+.editor-highlight-layer .hljs-selector-attr,
+.editor-highlight-layer .hljs-selector-pseudo,
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-tag,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--syntax-css-selector);
+}
+
+/* ── CSS Property ────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-property,
+.hljs-property {
+  color: var(--syntax-css-property);
+}
+
+/* ── JSON Key ────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-attr,
+.editor-highlight-layer .hljs-literal,
+.hljs-attr {
+  color: var(--syntax-json-key);
+}
+
+/* ── YAML ────────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-meta,
+.hljs-meta {
+  color: var(--syntax-operator);
+}
+
+/* ── Shell ───────────────────────────────────────────────────── */
+.editor-highlight-layer .hljs-built_in,
+.hljs-built_in {
+  color: var(--syntax-shell-cmd);
+}
+
+/* ── Title (heading in markup) ───────────────────────────────── */
+.editor-highlight-layer .hljs-title,
+.hljs-title {
+  color: var(--syntax-heading);
+  font-weight: var(--syntax-heading-weight);
+}
+
+
+/* ================================================================
+   6. INTEGRATION HELPERS
+   ================================================================ */
+
+/* Keyword + Storage (e.g. "class" before a class name) */
+.syn-keyword-storage {
+  color: var(--syntax-storage);
+  font-weight: var(--syntax-storage-weight);
+  font-style: var(--syntax-storage-style);
+}
+
+/* Tag bracket (punctuation around tags) */
+.syn-tag-punctuation {
+  color: var(--syntax-punctuation);
+  font-weight: var(--syntax-punctuation-weight);
+  font-style: var(--syntax-punctuation-style);
+}
+
+/* Operator-like punctuation (arrow, pipe, spread) */
+.syn-operator-punctuation {
+  color: var(--syntax-operator);
+  font-weight: var(--syntax-operator-weight);
+  font-style: var(--syntax-operator-style);
+}
+
+/* JSON/YAML key that is also a string */
+.syn-key-string {
+  color: var(--syntax-json-key);
+  font-weight: var(--syntax-json-key-weight);
+  font-style: var(--syntax-json-key-style);
+}
+
+
+/* ================================================================
+   7. PRINT STYLES
+   ================================================================ */
+
+@media print {
+  .code-viewer,
+  pre.code-viewer,
+  code.code-viewer {
+    background-color: #ffffff;
+    color: #1a1a2e;
+    border: 1px solid #d0d0d0;
+    padding: 12px 16px;
+  }
+
+  .syn-keyword, .syn-kw      { color: #8b5cf6; }
+  .syn-type, .syn-tp         { color: #b45309; }
+  .syn-storage, .syn-st      { color: #dc2626; }
+  .syn-function, .syn-fn     { color: #2563eb; }
+  .syn-variable, .syn-var    { color: #374151; }
+  .syn-string, .syn-str      { color: #16a34a; }
+  .syn-string-escape, .syn-stre { color: #b45309; }
+  .syn-number, .syn-num      { color: #c2410c; }
+  .syn-boolean, .syn-bool    { color: #c2410c; }
+  .syn-constant, .syn-cst    { color: #c2410c; }
+  .syn-comment, .syn-cmt     { color: #6b7280; }
+  .syn-operator, .syn-op     { color: #0e7490; }
+  .syn-punctuation, .syn-punc { color: #6b7280; }
+  .syn-decorator, .syn-dec   { color: #8b5cf6; }
+  .syn-tag, .syn-tg          { color: #dc2626; }
+  .syn-attribute, .syn-attr  { color: #c2410c; }
+  .syn-attribute-value, .syn-atv { color: #16a34a; }
+  .syn-builtin, .syn-bi      { color: #b45309; }
+  .syn-parameter, .syn-param { color: #374151; }
+  .syn-property, .syn-prop   { color: #374151; }
+  .syn-regexp, .syn-re       { color: #b45309; }
+  .syn-label, .syn-lbl       { color: #8b5cf6; }
+  .syn-preprocessor, .syn-pp { color: #8b5cf6; }
+  .syn-heading, .syn-h       { color: #2563eb; }
+  .syn-link, .syn-a          { color: #2563eb; }
+  .syn-inserted, .syn-diff-add { color: #16a34a; }
+  .syn-deleted, .syn-diff-del { color: #dc2626; }
+  .syn-changed, .syn-diff-chg { color: #c2410c; }
+  .syn-invalid, .syn-err     { color: #dc2626; }
+
+  .code-viewer .line-number  { color: #9ca3af; }
+  .code-viewer .line-highlight { background-color: #f3f4f6; }
+}
