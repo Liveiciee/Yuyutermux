@@ -864,7 +864,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
                     </div>
                     <h4>Git Panel</h4>
-                    <p>Full Git workflow</p>
+                    <p>Status, commit, push/pull</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -918,12 +918,14 @@
                         <div class="key-item"><span class="key-label">/</span><span class="key-desc">Insert slash</span></div>
                         <div class="key-item"><span class="key-label">-</span><span class="key-desc">Insert dash</span></div>
                         <div class="key-item"><span class="key-label">_</span><span class="key-desc">Insert underscore</span></div>
-                        <div class="key-item"><span class="key-label">&gt; &lt;</span><span class="key-desc">Redirects</span></div>
+                        <div class="key-item"><span class="key-label">&gt;</span><span class="key-desc">Redirect out</span></div>
+                        <div class="key-item"><span class="key-label">&lt;</span><span class="key-desc">Redirect in</span></div>
                         <div class="key-item"><span class="key-label">*</span><span class="key-desc">Wildcard</span></div>
                         <div class="key-item"><span class="key-label">$</span><span class="key-desc">Variable</span></div>
                         <div class="key-item"><span class="key-label">CTRL+C</span><span class="key-desc">Kill process</span></div>
                         <div class="key-item"><span class="key-label">ESC</span><span class="key-desc">Clear input</span></div>
-                        <div class="key-item"><span class="key-label">↑ ↓</span><span class="key-desc">History nav</span></div>
+                        <div class="key-item"><span class="key-label">↑</span><span class="key-desc">History up</span></div>
+                        <div class="key-item"><span class="key-label">↓</span><span class="key-desc">History down</span></div>
                     </div>
                 </article>
 
@@ -944,14 +946,15 @@
 
                 <article class="guide-item">
                     <h3>Code Editor</h3>
-                    <p>The editor uses a dual-layer technique: a <code>&lt;pre&gt;&lt;code&gt;</code> highlight layer sits behind the textarea. When highlighting is active, the textarea's text color becomes transparent and its background becomes transparent, revealing the colored syntax layer beneath. The caret stays visible via <code>caret-color</code>. This approach provides real-time syntax highlighting without a separate preview mode. Highlighting is debounced at 100ms to avoid performance issues during rapid typing. The editor uses <code>document.execCommand('insertText')</code> for Tab and Enter key handling to preserve browser undo/redo history.</p>
+                    <p>The editor uses a dual-layer technique: a <code>&lt;pre&gt;&lt;code&gt;</code> highlight layer sits behind the textarea. When highlighting is active, the textarea's text color becomes transparent and its background becomes transparent, revealing the colored syntax layer beneath. The caret stays visible via <code>caret-color</code>. This approach provides real-time syntax highlighting without a separate preview mode. Highlighting is debounced at 100ms to avoid performance issues during rapid typing. Tab and Enter key handling uses <code>textarea.setRangeText()</code> for text insertion. Note: <code>setRangeText</code> does not integrate with the browser's native undo stack &mdash; Ctrl+Z / Ctrl+Y undo/redo will not work for these insertions.</p>
                     <ul class="sub-list">
-                        <li><strong>Languages</strong> &mdash; Python, JavaScript, TypeScript, HTML, CSS, JSON, Markdown, YAML, TOML, INI</li>
-                        <li><strong>Auto-indent</strong> &mdash; After <code>:</code> (Python), <code>{</code> (JS/JSON), <code>(</code>, <code>[</code> &mdash; adds 4-space indent</li>
-                        <li><strong>Undo/Redo</strong> &mdash; Preserved via execCommand insertText, not .value assignment</li>
-                        <li><strong>Line Numbers</strong> &mdash; Optimized for large files (chunked rendering for 1000+ lines)</li>
+                        <li><strong>Languages</strong> &mdash; Python, JavaScript, TypeScript, Bash, HTML, CSS, JSON, Markdown, YAML, TOML, INI</li>
+                        <li><strong>Auto-indent</strong> &mdash; After <code>:</code> (Python), <code>{</code> (JS/JSON/CSS), <code>(</code>, <code>[</code> &mdash; adds 4-space indent</li>
+                        <li><strong>Undo/Redo</strong> &mdash; Uses setRangeText for Tab/Enter; browser undo stack is not preserved for these keys</li>
+                        <li><strong>Line Numbers</strong> &mdash; Generated as a single joined string; performance degrades on very large files</li>
                         <li><strong>Scroll Sync</strong> &mdash; Gutter, textarea, and highlight layer scroll in unison</li>
                         <li><strong>Viewport Aware</strong> &mdash; Adapts to virtual keyboard height via visualViewport API</li>
+                        <li><strong>Block Mode</strong> &mdash; Structured editing mode for Python, JavaScript, and CSS; toggle with <kbd>Ctrl</kbd>+<kbd>B</kbd> when editor is open</li>
                     </ul>
                 </article>
 
@@ -985,7 +988,7 @@
 
                 <article class="guide-item">
                     <h3>PWA Install</h3>
-                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app &mdash; no browser address bar, icon on home screen, runs like a native app in standalone mode. An automatic install prompt appears when conditions are met, or use "Add to Home Screen" from the browser menu. The Service Worker pre-caches HTML pages and CSS for dynamic assets (JS modules, CDN fonts) at runtime on first load, and never caches API requests. Cache is limited to 100 entries to prevent flooding. Internal URLs (<code>file://</code>, <code>data:text/html</code>) are blocked for security. To force a cache refresh, use the "Bust Cache" feature in <code>run.sh</code> which increments the cache version (currently v16) without requiring a server restart.</p>
+                    <p>Yuyutermux is a Progressive Web App. Install it as a standalone Android app &mdash; no browser address bar, icon on home screen, runs like a native app in standalone mode. An automatic install prompt appears when conditions are met, or use "Add to Home Screen" from the browser menu. The Service Worker pre-caches HTML pages and CSS on install, and caches dynamic assets (JS modules, CDN fonts) at runtime on first load. API requests are never cached. Cache is limited to 100 entries to prevent flooding. Internal URLs (<code>file://</code>, <code>data:text/html</code>) are blocked for security. To force a cache refresh, use the "Bust Cache" feature in <code>run.sh</code> which increments the cache version (currently v25) without requiring a server restart.</p>
                 </article>
 
                 <article class="guide-item">
@@ -1043,9 +1046,9 @@
                         <div class="shortcut-row"><span class="shortcut-action">Previous command</span><span class="shortcut-keys"><kbd>↑</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Next command</span><span class="shortcut-keys"><kbd>↓</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Clear input</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
-                        <div class="shortcut-row"><span class="shortcut-action">Clear output</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>L</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Insert tab</span><span class="shortcut-keys"><kbd>Tab</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Commit (Git)</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Toggle block mode</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>B</kbd> (editor)</span></div>
                     </div>
                 </div>
                 <div class="two-col-item">
@@ -1054,12 +1057,10 @@
                         Navigation
                     </h4>
                     <div class="shortcut-table">
-                        <div class="shortcut-row"><span class="shortcut-action">Open Files modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></span></div>
-                        <div class="shortcut-row"><span class="shortcut-action">Open Git modal</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>G</kbd></span></div>
-                        <div class="shortcut-row"><span class="shortcut-action">Toggle extra keys</span><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>/</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Close modal</span><span class="shortcut-keys"><kbd>Escape</kbd></span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Auto-indent</span><span class="shortcut-keys"><kbd>Enter</kbd> (editor)</span></div>
                         <div class="shortcut-row"><span class="shortcut-action">Search in files</span><span class="shortcut-keys"><kbd>Enter</kbd> (search input)</span></div>
+                        <div class="shortcut-row"><span class="shortcut-action">Exit fullscreen editor</span><span class="shortcut-keys"><kbd>Escape</kbd> (editor)</span></div>
                     </div>
                 </div>
             </div>
@@ -1073,15 +1074,15 @@
             <div class="spec-grid">
                 <div class="spec-item">
                     <h4>Backend</h4>
-                    <p>Python 3 + Flask 3 &middot; Waitress WSGI (production) &middot; subprocess isolation &middot; shlex.split() anti-injection &middot; Blueprint routing (4 blueprints) &middot; Thread-safe CWD management</p>
+                    <p>Python 3 + Flask 3 &middot; Waitress WSGI (production) &middot; subprocess isolation &middot; shlex.split() parsing &middot; Blueprint routing (5 blueprints) &middot; Flask session-based CWD management</p>
                 </div>
                 <div class="spec-item">
                     <h4>Frontend</h4>
-                    <p>Vanilla ES modules &middot; Zero build step &middot; 11 modular JS files &middot; Service Worker (PWA) &middot; Responsive mobile-first design &middot; Dialog API for modals</p>
+                    <p>Vanilla ES modules &middot; Zero build step &middot; 13 modular JS files &middot; Service Worker (PWA) &middot; Responsive mobile-first design &middot; Dialog API for modals</p>
                 </div>
                 <div class="spec-item">
                     <h4>Code Editor</h4>
-                    <p>highlight.js 11.9 (Atom One Dark theme) &middot; 10 languages (Python, JS, TS, HTML, CSS, JSON, Markdown, YAML, TOML, INI) &middot; Dual-layer overlay technique &middot; Debounced highlighting (100ms) &middot; execCommand undo/redo preservation</p>
+                    <p>highlight.js (Atom One Dark theme) &middot; 11 language mappings (Python, JS, TS, Bash, HTML, CSS, JSON, Markdown, YAML, TOML, INI) &middot; Dual-layer overlay technique &middot; Debounced highlighting (100ms) &middot; setRangeText for Tab/Enter insertion</p>
                 </div>
                 <div class="spec-item">
                     <h4>Fonts</h4>
@@ -1093,7 +1094,7 @@
                 </div>
                 <div class="spec-item">
                     <h4>UI/UX</h4>
-                    <p>Cyber-minimalist OLED dark theme &middot; 4 CSS files (base, layout, ui, animation) &middot; color-mix() for theme-aware animations &middot; @supports fallback for env() &middot; Reduced-motion media query</p>
+                    <p>Cyber-minimalist OLED dark theme &middot; 5 CSS files (base, layout, ui, animation, global-syntax) &middot; color-mix() for theme-aware animations &middot; @supports fallback for env() &middot; Reduced-motion media query</p>
                 </div>
                 <div class="spec-item">
                     <h4>Platform</h4>
@@ -1101,15 +1102,15 @@
                 </div>
                 <div class="spec-item">
                     <h4>Security</h4>
-                    <p>Bearer token + HttpOnly cookie &middot; secrets.compare_digest() timing-safe &middot; CSP + SRI &middot; Security headers (6 types) &middot; Rate limiting (periodic cleanup) &middot; 30+ blocked commands &middot; Path traversal guard &middot; Protected file patterns &middot; Process group kill &middot; Content-Type enforcement &middot; Sanitized error messages</p>
+                    <p>Bearer token + HttpOnly cookie &middot; secrets.compare_digest() timing-safe &middot; CSP + SRI &middot; Security headers (7 types) &middot; Rate limiting (periodic cleanup) &middot; 77 blocked commands &middot; Path traversal guard &middot; Protected file patterns &middot; Process group kill &middot; Content-Type enforcement &middot; Sanitized error messages &middot; Env token stripping for subprocesses</p>
                 </div>
                 <div class="spec-item">
                     <h4>Caching</h4>
-                    <p>Service Worker v16 &middot; Pre-cache HTML+CSS (7 assets) &middot; Runtime cache JS/fonts &middot; API never cached &middot; Max 100 cache entries &middot; Internal URL blocking &middot; Cache-bust via run.sh</p>
+                    <p>Service Worker v25 &middot; Pre-cache 7 assets on install (2 HTML, manifest, 4 CSS) &middot; Runtime cache JS/fonts &middot; API never cached &middot; Max 100 cache entries &middot; Internal URL blocking &middot; Cache-bust via run.sh</p>
                 </div>
                 <div class="spec-item">
                     <h4>Git Integration</h4>
-                    <p>subprocess git CLI &middot; 16 endpoints &middot; 30s timeout &middot; Diff viewer &middot; Upstream auto-detection &middot; Token-masked remote display &middot; Branch/remote name validation</p>
+                    <p>subprocess git CLI &middot; 15 endpoints &middot; 30s timeout &middot; Diff viewer &middot; Upstream auto-detection &middot; Token-masked remote display &middot; Branch/remote name validation</p>
                 </div>
                 <div class="spec-item">
                     <h4>CLI Tools</h4>
@@ -1151,7 +1152,7 @@
             <div class="spec-grid">
                 <div class="spec-item">
                     <h4>app.js</h4>
-                    <p>Entry point. Initializes all modules with try-catch isolation (one failure doesn't kill others). Manages interval cleanup on page unload. Binds global keyboard shortcuts (Ctrl+K, Ctrl+L, Ctrl+F, Ctrl+G, Ctrl+/). Controls splash screen animation sequence.</p>
+                    <p>Entry point. Initializes all modules with try-catch isolation (one failure doesn't kill others). Manages interval cleanup on page unload. Binds global keyboard shortcuts (Ctrl+K for clear input, Ctrl+B for block mode toggle in editor). Controls splash screen animation sequence.</p>
                 </div>
                 <div class="spec-item">
                     <h4>terminal.js</h4>
@@ -1159,7 +1160,7 @@
                 </div>
                 <div class="spec-item">
                     <h4>editor.js</h4>
-                    <p>Code editor module (Editor). Dual-layer syntax highlighting with highlight.js overlay. Auto-indent for Python/JS/CSS/JSON/HTML. Line numbers with optimized rendering for large files. Viewport-aware with virtualKeyboard API. Memory-safe with destroy() cleanup.</p>
+                    <p>Code editor module (Editor). Dual-layer syntax highlighting with highlight.js overlay. Auto-indent for Python/JS/CSS/JSON/HTML. Line numbers. Viewport-aware with virtualKeyboard API. Includes block mode (structured editing) for Python, JavaScript, and CSS, with fullscreen support via Fullscreen API. Memory-safe with destroy() cleanup.</p>
                 </div>
                 <div class="spec-item">
                     <h4>file-manager.js</h4>
@@ -1183,7 +1184,7 @@
                 </div>
                 <div class="spec-item">
                     <h4>extra-keys.js</h4>
-                    <p>Symbol bar (ExtraKeys). 12 keys: 9 character inserts + 3 actions (kill, clear, history nav). Ripple animation on press. Inserts at cursor position.</p>
+                    <p>Symbol bar (ExtraKeys). 14 keys: 10 character inserts + 4 actions (kill, clear, history up, history down). Ripple animation on press. Inserts at cursor position.</p>
                 </div>
                 <div class="spec-item">
                     <h4>modal-keyboard.js</h4>
@@ -1192,6 +1193,14 @@
                 <div class="spec-item">
                     <h4>search-utils.js</h4>
                     <p>Search utilities. Provides highlightMatch() for keyword highlighting in search results and escapeHtml() for safe HTML rendering. Regex pattern builder with escaping.</p>
+                </div>
+                <div class="spec-item">
+                    <h4>block-parser.js</h4>
+                    <p>Parses source code into structured blocks (functions, classes, imports) for Python, JavaScript, and CSS. Used by block mode in the editor.</p>
+                </div>
+                <div class="spec-item">
+                    <h4>block-renderer.js</h4>
+                    <p>Renders parsed code blocks as interactive UI cards in the editor's block mode. Handles bidirectional sync between block UI and textarea content.</p>
                 </div>
             </div>
         </div>
@@ -1217,13 +1226,16 @@
                         <li><strong>File Rename</strong> &mdash; Fixed rename to work correctly with proper path handling</li>
                         <li><strong>Auth System</strong> &mdash; Added /api/auth/login and /api/auth/logout routes. Two-cookie system: <code>yuyu_token</code> (HttpOnly, SameSite=Lax) for backend auth and <code>yuyu_authed</code> (non-HttpOnly) for frontend UI state. Uniform error messages. Rate limiting with periodic cleanup</li>
                         <li><strong>Git Config Injection Prevention</strong> &mdash; Git config values now reject control characters (newline, null, etc.) to prevent config injection attacks</li>
-                        <li><strong>Service Worker Hardening</strong> &mdash; Blocks file:// and data:text/html URLs. Cache entry limit (100). Current version: v16</li>
+                        <li><strong>Service Worker Hardening</strong> &mdash; Blocks file:// and data:text/html URLs. Cache entry limit (100). Current version: v25</li>
                         <li><strong>Storage XSS Prevention</strong> &mdash; Version-based invalidation + HTML sanitization on localStorage restore</li>
                         <li><strong>401 Redirect</strong> &mdash; All fetch calls (api.request, Terminal.run, upload) now redirect to /login on 401</li>
-                        <li><strong>Additional Shortcuts</strong> &mdash; Ctrl+K (clear input), Ctrl+L (clear terminal), Ctrl+F (open files), Ctrl+G (open git), Ctrl+/ (toggle extra keys)</li>
-                        <li><strong>Large File Optimization</strong> &mdash; Line number rendering optimized with chunked approach for 1000+ line files</li>
+                        <li><strong>Additional Shortcuts</strong> &mdash; Ctrl+K (clear input), Ctrl+B (toggle block mode in editor)</li>
+                        <li><strong>Large File Line Numbers</strong> &mdash; Line numbers generated as a single joined string for all lines; no chunked rendering</li>
                         <li><strong>Upload Collision Handling</strong> &mdash; Duplicate filenames get timestamp-based unique suffix instead of overwriting</li>
                         <li><strong>Protected File Patterns</strong> &mdash; Write blocked for .auth_token, .env, .bashrc, etc. Delete protected for app.py, utils.py, run.sh</li>
+                        <li><strong>Block Mode Editor</strong> &mdash; Structured code editing with visual block cards for Python, JavaScript, and CSS; toggle with Ctrl+B</li>
+                        <li><strong>Fullscreen Editor</strong> &mdash; Fullscreen editing via Fullscreen API; hides browser address bar and navigation</li>
+                        <li><strong>Env Token Stripping</strong> &mdash; Subprocess calls use filtered environment with YUYUTERMUX_TOKEN removed</li>
                     </ul>
                 </article>
             </div>
