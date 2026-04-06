@@ -1003,7 +1003,7 @@
                         <li>Token displayed once in server log on startup</li>
                         <li>View token via <code>run.sh</code> &rarr; Show Token, or set via <code>YUYUTERMUX_TOKEN</code> env var</li>
                         <li><code>yuyu_token</code> is HttpOnly (prevents XSS theft); <code>yuyu_authed</code> is non-HttpOnly (needed for frontend UI state)</li>
-                        <li>All API routes require auth except <code>/api/health</code>, <code>/api/auth/login</code>, <code>/api/auth/logout</code>, <code>/api/verify-token</code></li>
+                        <li>All API routes require auth except <code>/api/health</code>, <code>/api/auth/login</code>, <code>/api/auth/logout</code>, <code>/api/verify-token</code>, <code>/api/docs/endpoints</code></li>
                     </ul>
                 </article>
 
@@ -1023,7 +1023,7 @@
 
                 <article class="guide-item">
                     <h3>CLI: edit.sh (File Wizard)</h3>
-                    <p>A standalone CLI tool for quick file editing directly from Termux terminal. It scans the project directory for code files up to depth 3 (Python, JS, TS, HTML, CSS, JSON, TXT, MD, YAML, TOML, SH, CFG), lets you pick one interactively &mdash; with <code>fzf</code> for fuzzy search if available, or numbered list otherwise &mdash; then choose an action: edit in nano, delete, empty and edit, or copy to clipboard. Optional dependencies: <code>fzf</code> for fuzzy file picker with preview, <code>termux-clipboard-set</code> for clipboard support (with 1MB size warning).</p>
+                    <p>A standalone CLI tool for quick file editing directly from Termux terminal. It scans the project directory for code files up to depth 3 (Python, JS, HTML, CSS, JSON, TXT, MD, YAML, TOML, SH, CONF), lets you pick one interactively &mdash; with <code>fzf</code> for fuzzy search if available, or numbered list otherwise &mdash; then choose an action: edit in nano, delete, empty and edit, or copy to clipboard. Optional dependencies: <code>fzf</code> for fuzzy file picker with preview, <code>termux-clipboard-set</code> for clipboard support (with 1MB size warning).</p>
                 </article>
 
             </div>
@@ -1086,7 +1086,7 @@
                 </div>
                 <div class="spec-item">
                     <h4>Fonts</h4>
-                    <p>Space Grotesk (headings/UI) &middot; Space Mono (code/terminal) &middot; Google Fonts CDN with preconnect &middot; SRI integrity hashes</p>
+                    <p>Space Grotesk (headings/UI) &middot; Space Mono (code/terminal) &middot; Google Fonts CDN with preconnect</p>
                 </div>
                 <div class="spec-item">
                     <h4>Storage</h4>
@@ -1131,7 +1131,7 @@
                 <li><strong>Token Auth</strong> &mdash; In-memory token via <code>secrets.token_urlsafe(32)</code>, fresh each server start. Or set via <code>YUYUTERMUX_TOKEN</code> env var. Constant-time comparison via <code>secrets.compare_digest()</code>. Two-cookie system: <code>yuyu_token</code> (HttpOnly, SameSite=Lax) for backend auth, <code>yuyu_authed</code> (non-HttpOnly, SameSite=Lax) for frontend UI state.</li>
                 <li><strong>Login Page</strong> &mdash; <code>/login</code> auto-redirect if unauthenticated. Uniform error messages (never reveals if token is empty vs wrong). Spinner state during login attempt.</li>
                 <li><strong>Security Headers</strong> &mdash; <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>X-XSS-Protection: 1; mode=block</code>, <code>Referrer-Policy: no-referrer</code>, <code>Permissions-Policy: camera=(), microphone=(), geolocation=()</code>, <code>Cache-Control: no-store, no-cache</code>, <code>Pragma: no-cache</code></li>
-                <li><strong>CSP + SRI</strong> &mdash; Content Security Policy in <code>index.html</code> (also in login.html). Subresource Integrity hashes on all CDN assets (highlight.js JS + CSS, Google Fonts).</li>
+                <li><strong>CSP</strong> &mdash; Content Security Policy in <code>index.html</code> (also in login.html). Restricts script/style/font/connect sources. <code>unsafe-inline</code> allowed for scripts and styles. No Subresource Integrity hashes are currently applied.</li>
                 <li><strong>Rate Limiting</strong> &mdash; In-memory per-IP with periodic cleanup (every 2 min). Default 30 req/60s. Stricter 15 req/60s on command execution. 10 req/60s on file upload.</li>
                 <li><strong>Blocked Commands</strong> &mdash; 77 commands blocked: <code>rm</code>, <code>sudo</code>, <code>curl</code>, <code>wget</code>, <code>python</code>, <code>node</code>, <code>env</code>, <code>exec</code>, <code>eval</code>, <code>source</code>, <code>busybox</code>, <code>xargs</code>, <code>nohup</code>, <code>find</code>, <code>awk</code>, <code>sed</code>, and more. Includes indirection vectors, shell interpreters, and crypto tools.</li>
                 <li><strong>Path Traversal Guard</strong> &mdash; All file operations use <code>validate_path()</code> which rejects <code>..</code>, resolves symlinks via <code>os.path.realpath()</code>, and checks against <code>PROJECT_DIR</code>. Separate <code>validate_path_terminal()</code> for cd (restricted to home dir).</li>
@@ -1216,7 +1216,7 @@
                     <ul class="sub-list">
                         <li><strong>Editor Highlight Layer</strong> &mdash; New dual-layer syntax highlighting using a &lt;pre&gt; overlay behind the textarea. Text becomes transparent with visible caret. Activated automatically when hljs is loaded.</li>
                         <li><strong>Auto-indent Expansion</strong> &mdash; Auto-indent now works for <code>{</code>, <code>(</code>, <code>[</code> in addition to Python's <code>:</code></li>
-                        <li><strong>Undo/Redo Preservation</strong> &mdash; Tab and Enter key handling now uses document.execCommand('insertText') instead of .value assignment, preserving browser undo history</li>
+                        <li><strong>Undo/Redo Note</strong> &mdash; Tab and Enter key handling uses <code>textarea.setRangeText()</code> for text insertion; this does not integrate with the browser's native undo stack, so Ctrl+Z / Ctrl+Y will not undo these insertions</li>
                         <li><strong>Memory Leak Prevention</strong> &mdash; Added destroy() method to Editor with proper event listener cleanup. Interval references tracked and cleared on beforeunload</li>
                         <li><strong>Null Safety</strong> &mdash; All module init() calls wrapped in try-catch. Lazy DOM references in Terminal. Null guards in Editor.onLoad()</li>
                         <li><strong>Theme-Aware Animations</strong> &mdash; Replaced hardcoded rgba colors in animation.css with color-mix(in srgb, var(--accent), ...) so animations follow the theme accent color</li>
@@ -1274,8 +1274,8 @@
                 </article>
 
                 <article class="guide-item">
-                    <h3>Syntax Highlighting Requires CDN</h3>
-                    <p>The code editor's syntax highlighting depends on <code>highlight.js 11.9</code> loaded from the Cloudflare CDN. If the device is offline or the CDN is unreachable, the editor still works but shows plain unstyled text. The editor detects this gracefully — it removes the <code>highlighting-on</code> class and falls back to normal textarea rendering.</p>
+                    <h3>Syntax Highlighting Requires highlight.js</h3>
+                    <p>The code editor's syntax highlighting depends on <code>highlight.js 11.9</code> served from local static files. If the device is offline or the files are missing, the editor still works but shows plain unstyled text. The editor detects this gracefully — it removes the <code>highlighting-on</code> class and falls back to normal textarea rendering.</p>
                 </article>
 
                 <article class="guide-item">
