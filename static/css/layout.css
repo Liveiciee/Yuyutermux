@@ -364,12 +364,28 @@
     padding: 8px;
   }
 
+  .panel-header {
+    padding: 6px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .panel-header::-webkit-scrollbar {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 3px;
+  }
+
   .status-bar {
     padding: 4px 10px;
     font-size: 8px;
   }
 
   .status-center {
-    display: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
 }

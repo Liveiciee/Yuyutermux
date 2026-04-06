@@ -74,7 +74,13 @@ function initTerminal() {
   const cmdInput = document.getElementById('cmdInput')
 
   if (sendBtn) sendBtn.onclick = () => Terminal.run()
-  if (clearBtn) clearBtn.onclick = () => Terminal.clearAll()
+  
+  // FIX: CLR button now clears localStorage terminal history as well
+  if (clearBtn) clearBtn.onclick = () => {
+    Terminal.clearAll();
+    localStorage.removeItem('terminalHistory');
+    if (window.terminalHistory) window.terminalHistory = [];
+  }
 
   if (cmdInput) {
     cmdInput.onkeydown = (e) => {
