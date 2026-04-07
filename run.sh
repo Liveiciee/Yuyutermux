@@ -1,244 +1,390 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-# ========== KONFIGURASI ==========
-PIDFILE="$HOME/Yuyutermux/server.pid"
-LOGFILE="$HOME/Yuyutermux/server.log"
-PORT=5000
-APP_DIR="$HOME/Yuyutermux"
-SW_FILE="$APP_DIR/static/service-worker.js"
+set -euo pipefail  # STRICT MODE
 
-# ========== WARNA ==========
-G='\033[0;32m'; R='\033[0;31m'; Y='\033[1;33m'; B='\033[0;34m'; N='\033[0m'
+# ==========================================
+# KONFIGURASI STRICT
+# ==========================================
+readonly PIDFILE="$HOME/Yuyutermux/server.pid"
+readonly LOGFILE="$HOME/Yuyutermux/server.log"
+readonly OLDLOG="$HOME/Yuyutermux/server.log.old"
+readonly TOKEN_FILE="$HOME/Yuyutermux/.auth_token"
+readonly BACKUP_DIR="$HOME/Yuyutermux/.backups"
+readonly HEALTH_URL="http://127.0.0.1:5000/api/health"
+readonly PORT=5000
+readonly APP_DIR="$HOME/Yuyutermux"
+readonly API_BIN="$APP_DIR/api"
+readonly MAX_LOG_SIZE=$((5*1024*1024))  # 5MB rotate
+readonly MIN_BATTERY=15
+readonly WATCHDOG_INTERVAL=30
 
-# ========== DEPENDENCY CHECK ==========
-command -v waitress-serve &>/dev/null || {
-    echo -e "${R}❌ waitress-serve tidak ditemukan. Install: pip install waitress${N}"
-    exit 1
+# ==========================================
+# WARNA
+# ==========================================
+declare -r G='\033[0;32m' R='\033[0;31m' Y='\033[1;33m' B='\033[0;34m' C='\033[0;36m' N='\033[0m'
+
+# ==========================================
+# UTILS STRICT
+# ==========================================
+log() { echo -e "[$(date '+%H:%M:%S')] $1" | tee -a "$LOGFILE"; }
+die() { echo -e "${R}💀 FATAL: $1${N}" >&2; exit 1; }
+
+# ==========================================
+# SYSTEM DETECTION
+# ==========================================
+detect_cores() {
+    nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1
 }
-cd "$APP_DIR" || exit 1
 
-# ========== HELPERS ==========
-is_running() { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
-get_pid()    { cat "$PIDFILE" 2>/dev/null; }
+get_battery() {
+    termux-battery-status 2>/dev/null | grep -oP '"percentage": \K\d+' || echo 100
+}
 
-port_busy() {
-    # FIX: Prefer 'ss' over deprecated 'netstat' — both may not be available on all Termux setups
-    if command -v ss &>/dev/null; then
-        ss -tln 2>/dev/null | grep -q ":${PORT} "
-    elif command -v netstat &>/dev/null; then
-        netstat -tun 2>/dev/null | grep -q ":${PORT} "
+get_free_ram() {
+    free -m 2>/dev/null | awk '/^Mem:/ {print $7}' || echo 0
+}
+
+# ==========================================
+# TOKEN MANAGEMENT STRICT
+# ==========================================
+generate_token() {
+    if command -v openssl &>/dev/null; then
+        openssl rand -hex 32 2>/dev/null || openssl rand -base64 32
     else
-        # Fallback: try to connect to the port
-        (echo > "/dev/tcp/127.0.0.1/${PORT}") &>/dev/null
+        head -c 64 /dev/urandom | sha256sum | head -c 64
     fi
 }
 
-port_pid() {
-    # FIX: Use ss first, then fall back to netstat
-    if command -v ss &>/dev/null; then
-        ss -tlnp 2>/dev/null | grep ":${PORT} " | grep -oP 'pid=\K\d+' | head -1
-    elif command -v netstat &>/dev/null; then
-        netstat -tunp 2>/dev/null | grep ":${PORT} " | awk '{print $NF}' | grep -oP '^\d+' | head -1
+load_token() {
+    if [[ -z "${YUYUTERMUX_TOKEN:-}" ]]; then
+        if [[ -f "$TOKEN_FILE" ]]; then
+            export YUYUTERMUX_TOKEN=$(cat "$TOKEN_FILE")
+            [[ -n "$YUYUTERMUX_TOKEN" ]] || {
+                export YUYUTERMUX_TOKEN=$(generate_token)
+                echo "$YUYUTERMUX_TOKEN" > "$TOKEN_FILE"
+                chmod 600 "$TOKEN_FILE"
+            }
+        else
+            export YUYUTERMUX_TOKEN=$(generate_token)
+            echo "$YUYUTERMUX_TOKEN" > "$TOKEN_FILE"
+            chmod 600 "$TOKEN_FILE"
+            log "${G}🔐 New token generated${N}"
+        fi
     fi
 }
 
-free_port() {
-    if command -v fuser &>/dev/null; then
-        fuser -k "$PORT/tcp" 2>/dev/null
-        sleep 1
-        return
-    fi
-    local pid=$(port_pid)
-    [ -n "$pid" ] && kill "$pid" 2>/dev/null && sleep 1
+show_token() {
+    load_token
+    echo -e "${Y}🔑 Auth Token: ${G}${YUYUTERMUX_TOKEN}${N}"
+    echo -e "${Y}   (Simpan baik-baik, token ini untuk login)${N}"
 }
 
-wait_kill() {
-    for ((i=0; i<${2:-5}; i++)); do
-        kill -0 "$1" 2>/dev/null || return 0
+# ==========================================
+# STRICT CHECKS
+# ==========================================
+strict_checks() {
+    # Check binary
+    [[ -x "$API_BIN" ]] || die "Binary tidak executable. Compile: zig build-exe api.zig"
+    
+    # Check storage
+    local free_space=$(df "$APP_DIR" | tail -1 | awk '{print $4}')
+    [[ $free_space -gt 10240 ]] || die "Storage penuh! ($((free_space/1024))MB tersisa)"
+    
+    # Check battery
+    local batt=$(get_battery)
+    [[ $batt -gt $MIN_BATTERY ]] || die "Baterai $batt%! Charge dulu bro ⛔"
+    
+    # Check RAM
+    local ram=$(get_free_ram)
+    [[ $ram -gt 50 ]] || die "RAM tinggal ${ram}MB! Tutup app dulu"
+    
+    log "${G}✅ All systems GO (Bat:${batt}%, RAM:${ram}MB)${N}"
+}
+
+# ==========================================
+# LOG ROTATION STRICT
+# ==========================================
+rotate_logs() {
+    if [[ -f "$LOGFILE" ]] && [[ $(stat -f%z "$LOGFILE" 2>/dev/null || stat -c%s "$LOGFILE" 2>/dev/null || echo 0) -gt $MAX_LOG_SIZE ]]; then
+        mv "$LOGFILE" "$OLDLOG"
+        gzip -f "$OLDLOG" 2>/dev/null &
+        log "${Y}📋 Log rotated${N}"
+    fi
+}
+
+# ==========================================
+# AUTO BACKUP STRICT
+# ==========================================
+auto_backup() {
+    mkdir -p "$BACKUP_DIR"
+    local backup_file="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    
+    tar -czf "$backup_file" -C "$APP_DIR" \
+        "$(basename "$TOKEN_FILE")" \
+        static/ 2>/dev/null || true
+    
+    # Keep only last 5 backups
+    ls -t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+    
+    [[ -f "$backup_file" ]] && log "${C}💾 Backup: $(basename "$backup_file")${N}"
+}
+
+# ==========================================
+# PROCESS MANAGEMENT STRICT
+# ==========================================
+is_running() {
+    [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+get_pid() { cat "$PIDFILE" 2>/dev/null || echo 0; }
+
+kill_zombies() {
+    local pids=$(pgrep -f "$API_BIN" 2>/dev/null || true)
+    for pid in $pids; do
+        [[ "$pid" != "$(get_pid)" ]] && kill -9 "$pid" 2>/dev/null && log "${Y}💀 Killed zombie $pid${N}"
+    done
+}
+
+port_check() {
+    for i in {1..3}; do
+        (echo >/dev/tcp/127.0.0.1/$PORT) 2>/dev/null && return 0
         sleep 1
     done
     return 1
 }
 
-show_ip() {
-    local ip
-    ip=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-    [ -n "$ip" ] && echo -e "${Y}📱 Dari HP lain: http://$ip:$PORT${N}"
+health_check() {
+    local retries=0
+    while [[ $retries -lt 10 ]]; do
+        if curl -sf "$HEALTH_URL" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.5
+        ((retries++))
+    done
+    return 1
 }
 
-pause() { echo -e "\n${Y}Tekan Enter...${N}"; read -r; }
+# ==========================================
+# WATCHDOG DAEMON
+# ==========================================
+start_watchdog() {
+    (
+        while true; do
+            sleep $WATCHDOG_INTERVAL
+            if [[ -f "$PIDFILE" ]]; then
+                local pid=$(cat "$PIDFILE" 2>/dev/null)
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    log "${R}🚨 WATCHDOG: Server crash detected!${N}"
+                    rm -f "$PIDFILE"
+                    sleep 2
+                    ./run.sh start_auto &
+                    exit 0
+                fi
+                
+                local ram=$(get_free_ram)
+                [[ $ram -lt 20 ]] && {
+                    log "${R}⚠️ WATCHDOG: RAM kritis (${ram}MB), restarting...${N}"
+                    ./run.sh restart &
+                    exit 0
+                }
+            fi
+        done
+    ) &>/dev/null &
+    echo $! > "$APP_DIR/.watchdog.pid"
+}
 
-show_token() {
-    if [ -n "$YUYUTERMUX_TOKEN" ]; then
-        echo -e "${Y}🔑 Auth Token (env): ${G}${YUYUTERMUX_TOKEN}${N}"
-        return
-    fi
-    local tok
-    tok=$(grep -m1 '\[YUYU-TOKEN\]' "$LOGFILE" 2>/dev/null | sed 's/.*\[YUYU-TOKEN\] //')
-    if [ -n "$tok" ]; then
-        echo -e "${Y}🔑 Auth Token: ${G}${tok}${N}"
+stop_watchdog() {
+    [[ -f "$APP_DIR/.watchdog.pid" ]] && kill $(cat "$APP_DIR/.watchdog.pid") 2>/dev/null; rm -f "$APP_DIR/.watchdog.pid"
+}
+
+# ==========================================
+# NOTIFICATION
+# ==========================================
+notify() {
+    termux-notification --title "Yuyutermux" --content "$1" 2>/dev/null || true
+    termux-toast "$1" 2>/dev/null || true
+}
+
+# ==========================================
+# COMPILATION STRICT
+# ==========================================
+smart_compile() {
+    [[ "api.zig" -nt "$API_BIN" ]] || return 0
+    
+    log "${Y}🔨 Recompiling...${N}"
+    local cores=$(detect_cores)
+    
+    if zig build-exe api.zig -freference-trace=30 -O ReleaseSmall 2>&1 | tee -a "$LOGFILE"; then
+        log "${G}✅ Compiled (ReleaseSmall, ${cores} cores)${N}"
+        strip "$API_BIN" 2>/dev/null || true
     else
-        echo -e "${R}⚠️  Token belum ada — start server dulu${N}"
+        die "Compilation failed!"
     fi
 }
 
-# ========== ACTIONS ==========
+# ==========================================
+# ACTIONS
+# ==========================================
 do_stop() {
-    is_running || { echo -e "${Y}⚠️  Server tidak berjalan${N}"; return 1; }
+    is_running || { log "${Y}⚠️  Already stopped${N}"; return 0; }
+    
     local pid=$(get_pid)
-    echo -e "${Y}[*] Stopping (PID: $pid)...${N}"
-    kill "$pid" 2>/dev/null
-    wait_kill "$pid" 5 || kill -9 "$pid" 2>/dev/null
+    log "${Y}[*] Stopping Zig server (PID: $pid)...${N}"
+    
+    kill "$pid" 2>/dev/null || true
+    for i in {1..5}; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 1
+    done
+    
+    kill -9 "$pid" 2>/dev/null || true
+    
     rm -f "$PIDFILE"
-    echo -e "${G}✅ Server stopped${N}"
+    stop_watchdog
+    notify "Server stopped"
+    log "${G}✅ Stopped${N}"
 }
 
 do_start() {
-    [ -f "app.py" ] || { echo -e "${R}❌ app.py tidak ditemukan${N}"; return 1; }
-
-    if port_busy; then
-        echo -e "${Y}[*] Port $PORT masih nyangkut, dibersihin...${N}"
-        free_port
-        if port_busy; then
-            echo -e "${Y}[*] Menunggu port release...${N}"
-            for ((i=1; i<=10; i++)); do
-                sleep 1
-                port_busy || break
-                echo -e "   ($i/10)"
-            done
-        fi
-        if port_busy; then
-            echo -e "${R}❌ Port $PORT gagal dibersihin${N}"
-            echo -e "${Y}Coba manual: fuser -k $PORT/tcp${N}"
-            return 1
-        fi
-    fi
-
-    echo -e "${B}[*] Starting Waitress...${N}"
-    # FIX: Warn about 0.0.0.0 binding — exposes to network
-    echo -e "${Y}⚠️  Binding ke 0.0.0.0 (semua interface). Hanya untuk akses dari device lain.${N}"
-    nohup waitress-serve --host=0.0.0.0 --port="$PORT" app:app > "$LOGFILE" 2>&1 &
-    echo $! > "$PIDFILE"
-    sleep 3
-
-    if is_running; then
-        echo -e "${G}✅ Started!${N}  PID: $(get_pid)  URL: http://localhost:$PORT"
-        show_ip
-        show_token
-    else
-        echo -e "${R}❌ Failed to start${N}"
+    local start_type="${1:-manual}"
+    [[ "$start_type" == "auto" ]] && log "${Y}🔄 Auto-restart triggered${N}"
+    
+    is_running && { log "${Y}⚠️  Already running!${N}"; return 1; }
+    
+    # STRICT SEQUENCE
+    rotate_logs
+    strict_checks
+    load_token
+    auto_backup
+    smart_compile
+    kill_zombies
+    
+    cd "$APP_DIR" || die "Cannot cd to $APP_DIR"
+    
+    log "${B}[*] Starting Zig Server...${N}"
+    log "${Y}⚠️  Binding ke 127.0.0.1:$PORT${N}"
+    
+    export YUYUTERMUX_TOKEN
+    
+    # Start dengan nice (low priority)
+    nohup nice -n 10 "$API_BIN" >>"$LOGFILE" 2>&1 &
+    local pid=$!
+    echo $pid > "$PIDFILE"
+    
+    sleep 2
+    if ! port_check; then
         rm -f "$PIDFILE"
-        echo "--- Last 10 lines ---"
-        tail -n 10 "$LOGFILE" 2>/dev/null || echo "(no log)"
-        echo "---------------------"
+        die "Port $PORT not responding! Check logs."
     fi
+    
+    if ! health_check; then
+        log "${Y}⚠️  Health check timeout, tapi port aktif${N}"
+    fi
+    
+    start_watchdog
+    notify "Server UP (PID:$pid)"
+    
+    local ip=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+    echo -e "${G}✅ PID:$pid | http://localhost:$PORT${N}"
+    [[ -n "$ip" ]] && echo -e "${C}📱 http://$ip:$PORT${N}"
+    echo -e "${Y}🔑 ${YUYUTERMUX_TOKEN:0:20}...${N}"
+    echo -e "${C}💾 Log: tail -f $LOGFILE${N}"
 }
 
-do_restart() { do_stop && sleep 1 && do_start; }
+do_restart() {
+    log "${Y}[*] Restarting...${N}"
+    do_stop
+    sleep 2
+    do_start "restart"
+}
 
 do_status() {
     clear
-    echo "========================================"
-    echo "   Yuyutermux Status"
-    echo "========================================"
+    echo "╔════════════════════════════════════╗"
+    echo "║     Yuyutermux Zig Status"
+    echo "╚════════════════════════════════════╝"
+    echo ""
+    
     if is_running; then
         local pid=$(get_pid)
-        echo -e "${G}✅ RUNNING${N}  PID: $pid  Port: $PORT"
-        local up=$(ps -o etime= -p "$pid" 2>/dev/null | xargs)
-        [ -n "$up" ] && echo "   Uptime: $up"
-        [ -f "$LOGFILE" ] && echo "   Log: $(du -h "$LOGFILE" | cut -f1)"
+        local uptime=$(ps -o etime= -p "$pid" 2>/dev/null | xargs || echo "?")
+        local mem=$(ps -o rss= -p "$pid" 2>/dev/null | xargs || echo 0)
+        local threads=$(ls /proc/$pid/task 2>/dev/null | wc -l || echo 0)
+        
+        echo -e "${G}● RUNNING${N}"
+        echo "  PID:      $pid"
+        echo "  Uptime:   $uptime"
+        echo "  Memory:   $((mem/1024))MB"
+        echo "  Threads:  $threads"
+        echo "  Port:     $PORT"
     else
-        echo -e "${R}❌ NOT RUNNING${N}"
+        echo -e "${R}● STOPPED${N}"
     fi
-    if port_busy; then
-        echo -e "   Port $PORT: ${R}BUSY${N} ($(port_pid))"
-    else
-        echo -e "   Port $PORT: ${G}FREE${N}"
-    fi
-    show_token
     
-    # Tampilkan versi cache saat ini
-    if [ -f "$SW_FILE" ]; then
-        local ver=$(grep -oP "yuyutermux-v\K\d+" "$SW_FILE")
-        echo -e "   SW Cache: ${B}v${ver:-?}${N}"
-    fi
-    pause
+    echo ""
+    echo -e "${C}System:${N}"
+    echo "  Battery:  $(get_battery)%"
+    echo "  Free RAM: $(get_free_ram)MB"
+    echo "  Storage:  $(df -h "$APP_DIR" | tail -1 | awk '{print $4}')"
+    [[ -f "$TOKEN_FILE" ]] && echo "  Token:    $(wc -c <"$TOKEN_FILE") bytes"
+    
+    echo ""
+    read -p "Enter to continue..."
 }
 
 do_log() {
-    [ -f "$LOGFILE" ] || { echo -e "${R}❌ No log file${N}"; pause; return; }
+    [[ -f "$LOGFILE" ]] || { echo -e "${R}❌ No log file${N}"; pause; return; }
     echo -e "${B}📄 Last 20 lines:${N}\n---"
     tail -n 20 "$LOGFILE"
     echo "---"
-    pause
+    read -p "Enter to continue..."
 }
 
-do_bust_cache() {
-    echo -e "${B}[*] Busting Service Worker Cache...${N}"
-    
-    if [ ! -f "$SW_FILE" ]; then
-        echo -e "${R}❌ service-worker.js tidak ditemukan di $SW_FILE${N}"
-        pause
-        return 1
-    fi
+# ==========================================
+# MAIN
+# ==========================================
+command="${1:-menu}"
 
-    # Ambil versi sekarang
-    local current=$(grep -oP "yuyutermux-v\K\d+" "$SW_FILE")
-    
-    if [ -z "$current" ]; then
-        echo -e "${R}❌ Format cache tidak dikenali di service-worker.js${N}"
-        pause
-        return 1
-    fi
-
-    local new=$((current + 1))
-
-    # Inject versi baru
-    sed -i "s/yuyutermux-v${current}/yuyutermux-v${new}/" "$SW_FILE"
-
-    echo -e "${G}✅ Cache Version: v${current} → v${new}${N}"
-    echo -e "${Y}   (Server tidak perlu restart. Cukup refresh browser)${N}"
-    pause
-}
-
-# ========== MAIN MENU ==========
-while true; do
-    clear
-    echo "========================================"
-    echo -e "${B}   Yuyutermux Server Manager${N}"
-    echo "========================================"
-
-    if is_running; then
-        echo -e "${G}● Running${N} — PID: $(get_pid) — http://localhost:$PORT\n"
-        echo "  [1] Stop"
-        echo "  [2] Restart"
-        echo "  [3] Status"
-        echo "  [4] Log"
-        echo "  [5] Bust Cache (Clear UI)"
-        echo "  [6] Show Token"
-        echo "  [7] Exit"
-    else
-        echo -e "${R}● Stopped${N}\n"
-        echo "  [1] Start"
-        echo "  [2] Exit"
-    fi
-
-    echo -en "\n${Y}Pilih: ${N}"; read -r
-
-    if is_running; then
-        case $REPLY in
-            1) do_stop; break ;;
-            2) do_restart; break ;;
-            3) do_status ;;
-            4) do_log ;;
-            5) do_bust_cache ;;
-            6) show_token; pause ;;
-            7) echo -e "${G}Server tetap berjalan${N}"; exit 0 ;;
-        esac
-    else
-        case $REPLY in
-            1) do_start; break ;;
-            2) exit 0 ;;
-        esac
-    fi
-done
+case "$command" in
+    start|start_auto) do_start "$command" ;;
+    stop) do_stop ;;
+    restart) do_restart ;;
+    status) do_status ;;
+    compile) smart_compile ;;
+    logs) tail -f "$LOGFILE" ;;
+    token) load_token; echo "$YUYUTERMUX_TOKEN" ;;
+    *) 
+        # Interactive menu
+        while true; do
+            clear
+            echo "╔════════════════════════════════════╗"
+            echo "║     Yuyutermux Zig Server Manager"
+            echo "╚════════════════════════════════════╝"
+            echo ""
+            is_running && echo -e "${G}● RUNNING${N} (PID:$(get_pid))" || echo -e "${R}● STOPPED${N}"
+            echo ""
+            echo "1) 🚀 Start (with checks)"
+            echo "2) ⛔ Stop"
+            echo "3) 🔄 Restart"
+            echo "4) 📊 Status"
+            echo "5) 📋 Logs (follow)"
+            echo "6) 🔨 Compile Only"
+            echo "7) 🔑 Show Token"
+            echo "8) ❌ Exit"
+            echo ""
+            read -p "Pilih: " choice
+            
+            case "$choice" in
+                1) do_start; read ;;
+                2) do_stop; read ;;
+                3) do_restart; read ;;
+                4) do_status ;;
+                5) clear; echo "Ctrl+C to exit..."; tail -f "$LOGFILE" ;;
+                6) smart_compile; read ;;
+                7) load_token; echo "Token: $YUYUTERMUX_TOKEN"; read ;;
+                8) exit 0 ;;
+            esac
+        done
+        ;;
+esac

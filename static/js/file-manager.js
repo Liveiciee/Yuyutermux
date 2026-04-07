@@ -80,6 +80,12 @@ export const FileManager = {
     const browser = this.el.browser
     if (!browser) return
 
+    // Compute full path for each item (Zig doesn't return 'path' field)
+    const itemsWithPath = (items || []).map(item => ({
+      ...item,
+      path: this.dir ? `${this.dir}/${item.name}` : item.name
+    }))
+
     let html = ''
     
     if (this.dir) {
@@ -87,7 +93,7 @@ export const FileManager = {
       html += FileTemplates.parentDir(parent)
     }
     
-    (items || []).forEach(item => {
+    itemsWithPath.forEach(item => {
       const isActive = this.file === item.path
       html += FileTemplates.item(item, isActive)
     })

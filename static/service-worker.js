@@ -1,4 +1,4 @@
-const CACHE = 'yuyutermux-v26'; // naikin versi
+const CACHE = 'yuyutermux-v27'; // naikin versi
 const MAX_CACHE_ENTRIES = 200;
 
 // Asset prioritization

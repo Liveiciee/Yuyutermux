@@ -124,7 +124,7 @@ export const GlobalSearch = {
     if (this.resultsEl) this.resultsEl.innerHTML = '<div style="padding:20px;color:var(--cement);text-align:center">Searching...</div>'
     
     try {
-      const { ok, data } = await api.get(`/api/files/search?q=${encodeURIComponent(q)}&case=${this.caseSensitive ? '1' : '0'}`)
+      const { ok, data } = await api.get(`/api/files/search?q=${encodeURIComponent(q)}&case=${this.caseSensitive ? '1' : '0'}&folder=${encodeURIComponent(FileManager.dir || '')}`)
       const results = (ok && data?.success) ? (data.results || []) : []
       this.renderResults(results, q)
     } catch (err) {

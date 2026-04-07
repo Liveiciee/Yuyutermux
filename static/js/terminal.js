@@ -152,12 +152,6 @@ function applyVirtualScroll(area) {
   })
 }
 
-function stripTerminalMarkers(text) {
-  return text
-    .replace(/\$\$EXIT_CODE:\d+\$\$\n?/g, '')
-    .replace(/\$\$ERROR:[\s\S]*?\$\$\n?/g, '')
-}
-
 export const Terminal = {
   _area: null,
   get area() {
@@ -323,32 +317,22 @@ export const Terminal = {
         throw new Error(`HTTP ${res.status}`)
       }
 
-      if (!res.body) {
-        throw new Error('No response body')
-      }
+      // Zig returns the full output as text/plain (not a stream)
+      const text = await res.text()
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
+      if (pre) pre.textContent = text
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value, { stream: true })
-        if (pre) pre.textContent += chunk
-        resetHangTimer()
-        const area = this.area
-        if (area) area.scrollTop = area.scrollHeight
-        if (chunk.includes('[ERROR:')) isError = true
-      }
-
-      const text = pre ? pre.textContent : ''
-      const exitMatch = text.match(/\$\$EXIT_CODE:(\d+)\$\$/)
+      // Parse exit code from Zig's marker: [EXIT_CODE:N]
+      const exitMatch = text.match(/\[EXIT_CODE:(\d+)\]/)
       if (exitMatch) {
         exitCode = parseInt(exitMatch[1], 10)
         isError = exitCode !== 0
       }
 
-      if (pre) pre.textContent = stripTerminalMarkers(text)
+      // Clean up the exit code marker from display
+      if (pre) {
+        pre.textContent = text.replace(/\[EXIT_CODE:\d+\]\n?$/g, '').replace(/\n$/, '')
+      }
     } catch (err) {
       if (err.name === 'AbortError') {
         await api.post('/api/execute/kill')
