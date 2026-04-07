@@ -1,9 +1,35 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.env
+.env.*
+venv/
+
+# Logs & runtime
 *.log
+*.log.*
 *.pid
+*.pid.lock
+
+# Temp / system
+*.tmp
+*.swp
+*.swo
+.DS_Store
+
+# Secrets
 .auth_token
-*.log
-*.log.old*
-.backups/
+
+# Zig build artifacts
 api
+*.o
+*.obj
+*.exe
+zig-cache/
+zig-out/
+
+# Backups
+.backups/
+*.log.old*
